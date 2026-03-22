@@ -1,0 +1,56 @@
+.section {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.pageTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 30px 0;
+}
+
+.tableContainer {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead {
+  background: var(--bg-main);
+}
+
+.table th {
+  padding: 15px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.table td {
+  padding: 15px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.table tbody tr:hover {
+  background: var(--bg-main);
+}
+
+@media (max-width: 768px) {
+  .tableContainer {
+    overflow-x: scroll;
+  }
+
+  .table {
+    min-width: 600px;
+  }
+}
