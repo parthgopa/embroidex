@@ -1,0 +1,16 @@
+name: Deploy to Coolify
+
+on:
+  push:
+    branches:
+      - main  # change this if your branch is different
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Coolify Deploy
+        run: |
+          curl --request GET \
+            "https://coolify.merishiksha.com/api/v1/deploy?uuid=zsosskog8k0kkwc8gkw84sww&force=false" \
+            --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'
