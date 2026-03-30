@@ -58,6 +58,7 @@ body {
   border-radius: var(--radius);
   transition: var(--transition);
   font-weight: 500;
+  text-decoration: none;
 }
 
 .btn-primary-custom:hover {
@@ -246,7 +247,7 @@ button {
 
 /* Improve spacing */
 section {
-  margin-top: 20px;
+  margin-top: 0px;
 }
 /* ========================= */
 /* 📱 RESPONSIVE */

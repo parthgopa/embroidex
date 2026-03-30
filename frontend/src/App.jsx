@@ -1,6 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import Layout from "./components/Layout";
+import SellerProtectedRoute from "./components/SellerProtectedRoute";
+import ChatbotWidget from "./components/ChatbotWidget";
+import ScrollToTop from "./components/ScrollToTop";
 
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
@@ -25,6 +28,8 @@ import AdminWithdrawals from "./components/Admin/AdminWithdrawals";
 function App() {
   return (
     <Router>
+      <ScrollToTop />
+      <ChatbotWidget />
       <Routes>
         {/* Public and User Routes with Main Layout */}
         <Route path="/" element={<Layout><Home /></Layout>} />
@@ -36,11 +41,13 @@ function App() {
         <Route path="/login" element={<Layout><Login /></Layout>} />
         <Route path="/signup" element={<Layout><Signup /></Layout>} />
         <Route path="/seller/register" element={<Layout><SellerRegister /></Layout>} />
-        <Route path="/seller/upload" element={<Layout><SelUploadV3 /></Layout>} />
-        <Route path="/seller/my-designs" element={<Layout><MyDesigns /></Layout>} />
-        <Route path="/seller/earnings" element={<Layout><WithdrawalRequest /></Layout>} />
-        <Route path="/seller/payment-settings" element={<Layout><PaymentSettings /></Layout>} />
-        <Route path="/seller/withdraw" element={<Layout><WithdrawalRequest /></Layout>} />
+        
+        {/* Protected Seller Routes - Only accessible by sellers */}
+        <Route path="/seller/upload" element={<Layout><SellerProtectedRoute><SelUploadV3 /></SellerProtectedRoute></Layout>} />
+        <Route path="/seller/my-designs" element={<Layout><SellerProtectedRoute><MyDesigns /></SellerProtectedRoute></Layout>} />
+        <Route path="/seller/earnings" element={<Layout><SellerProtectedRoute><WithdrawalRequest /></SellerProtectedRoute></Layout>} />
+        <Route path="/seller/payment-settings" element={<Layout><SellerProtectedRoute><PaymentSettings /></SellerProtectedRoute></Layout>} />
+        <Route path="/seller/withdraw" element={<Layout><SellerProtectedRoute><WithdrawalRequest /></SellerProtectedRoute></Layout>} />
 
 
         {/* Admin Routes without Main Layout (each has AdminLayout) */}

@@ -7,6 +7,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+def _build_context(file_names=None, category=None, subcategory=None):
+    parts = []
+    if file_names:
+        parts.append(f"Embroidery files: {', '.join(file_names[:15])}")
+    if category:
+        parts.append(f"Category: {category}")
+    if subcategory:
+        parts.append(f"Subcategory: {subcategory}")
+    return "\n".join(parts)
+
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if GEMINI_API_KEY:
@@ -74,3 +84,42 @@ DESCRIPTION: [your description here]"""
             "title": "Embroidery Design",
             "description": "Beautiful embroidery design for your creative projects"
         }
+
+
+def refine_design_text(field_type, original_text, file_names=None, category=None, subcategory=None):
+    if field_type not in {"title", "description"}:
+        raise ValueError("Invalid field_type")
+
+    cleaned_text = (original_text or "").strip()
+    if not cleaned_text:
+        raise ValueError("Original text is required")
+
+    if not model:
+        return cleaned_text
+
+    context = _build_context(file_names=file_names, category=category, subcategory=subcategory)
+    instruction = "Create a polished ecommerce-ready title under 60 characters." if field_type == "title" else "Create a polished ecommerce-ready description under 300 characters with strong buyer-facing clarity."
+    label = field_type.upper()
+
+    prompt = f"""You are an expert embroidery ecommerce copywriter.
+
+Refine the seller's {field_type} while keeping the core meaning accurate to the design.
+Do not invent technical details that are not supported.
+Keep the tone professional, clear, and appealing for embroidery buyers.
+Return only the refined {field_type}.
+
+{context}
+Seller {field_type}: {cleaned_text}
+
+Task: {instruction}
+Output format: {label}: [refined text]"""
+
+    response = model.generate_content(prompt)
+    text = (response.text or "").strip()
+
+    for line in text.split("\n"):
+        if line.startswith(f"{label}:"):
+            value = line.replace(f"{label}:", "", 1).strip()
+            return value[:60] if field_type == "title" else value[:300]
+
+    return text[:60] if field_type == "title" else text[:300]

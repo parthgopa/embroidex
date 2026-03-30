@@ -1,0 +1,425 @@
+/* ========================= */
+/* CTA SECTION */
+/* ========================= */
+
+.ctaSection {
+  padding: 60px 25px;
+  background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
+  position: relative;
+}
+
+.ctaHero {
+  text-align: center;
+  margin-bottom: 64px;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.ctaBadge {
+  display: inline-block;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 1px solid #6ee7b7;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #065f46;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ctaTitle {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin: 0 0 16px 0;
+  line-height: 1.2;
+}
+
+.ctaSubtitle {
+  font-size: 20px;
+  color: var(--text-light);
+  margin: 0;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+/* Dual Cards */
+.ctaCards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+  margin-bottom: 80px;
+}
+
+.ctaCard {
+  background: white;
+  border: 2px solid var(--border-color);
+  border-radius: 24px;
+  padding: 40px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  animation: fadeInUp 0.6s ease-out both;
+  display: flex;
+  flex-direction: column;
+}
+
+.ctaCard:nth-child(1) { animation-delay: 0.1s; }
+.ctaCard:nth-child(2) { animation-delay: 0.2s; }
+
+.ctaCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--primary) 0%, #8b5cf6 100%);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.ctaCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
+  border-color: var(--primary);
+}
+
+.ctaCard:hover::before {
+  transform: scaleX(1);
+}
+
+.featured {
+  background: linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%);
+  border-color: var(--primary);
+  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.15);
+}
+
+.featured::before {
+  transform: scaleX(1);
+}
+
+.featuredBadge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 50px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.cardHeader {
+  margin-bottom: 28px;
+}
+
+.cardIcon {
+  font-size: 56px;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+}
+
+.cardTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 12px 0;
+  line-height: 1.3;
+}
+
+.cardDescription {
+  font-size: 16px;
+  color: var(--text-light);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.featureList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 32px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.featureItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.checkIcon {
+  font-size: 22px;
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.cardButton {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.cardButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+}
+
+/* FAQ Section */
+.faqSection {
+  animation: fadeInUp 0.6s ease-out 0.3s both;
+}
+
+.faqHeader {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.faqTitle {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin: 0 0 12px 0;
+  line-height: 1.2;
+}
+
+.faqSubtitle {
+  font-size: 16px;
+  color: var(--text-light);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.faqGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+  margin-bottom: 48px;
+}
+
+.faqItem {
+  background: white;
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  padding: 28px;
+  transition: all 0.3s ease;
+}
+
+.faqItem:hover {
+  border-color: var(--primary);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+}
+
+.faqQuestion {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.faqAnswer {
+  font-size: 15px;
+  color: var(--text-light);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.faqCta {
+  text-align: center;
+  padding: 48px;
+  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  border: 2px dashed var(--border-color);
+  border-radius: 20px;
+}
+
+.faqCtaText {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0 0 20px 0;
+}
+
+.faqCta button {
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================= */
+/* RESPONSIVE */
+/* ========================= */
+
+@media (max-width: 1024px) {
+  .ctaSection {
+    padding: 80px 0;
+  }
+
+  .ctaTitle {
+    font-size: 40px;
+  }
+
+  .ctaSubtitle {
+    font-size: 18px;
+  }
+
+  .ctaCards {
+    gap: 28px;
+    margin-bottom: 64px;
+  }
+
+  .ctaCard {
+    padding: 36px;
+  }
+
+  .faqTitle {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .ctaSection {
+    padding: 60px 0;
+  }
+
+  .ctaHero {
+    margin-bottom: 48px;
+  }
+
+  .ctaTitle {
+    font-size: 36px;
+  }
+
+  .ctaSubtitle {
+    font-size: 16px;
+  }
+
+  .ctaCards {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-bottom: 48px;
+  }
+
+  .ctaCard {
+    padding: 32px;
+  }
+
+  .cardIcon {
+    font-size: 48px;
+  }
+
+  .cardTitle {
+    font-size: 24px;
+  }
+
+  .faqTitle {
+    font-size: 28px;
+  }
+
+  .faqGrid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .faqItem {
+    padding: 24px;
+  }
+
+  .faqQuestion {
+    font-size: 16px;
+  }
+
+  .faqAnswer {
+    font-size: 14px;
+  }
+
+  .faqCta {
+    padding: 36px 24px;
+  }
+
+  .faqCtaText {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ctaSection {
+    padding: 40px 15px;
+  }
+  .ctaBadge {
+    font-size: 12px;
+    padding: 6px 16px;
+  }
+
+  .ctaTitle {
+    font-size: 28px;
+  }
+
+  .ctaCard {
+    padding: 28px;
+  }
+
+  .cardIcon {
+    font-size: 44px;
+  }
+
+  .cardTitle {
+    font-size: 22px;
+  }
+
+  .cardDescription {
+    font-size: 15px;
+  }
+
+  .featureItem {
+    font-size: 14px;
+  }
+
+  .faqTitle {
+    font-size: 24px;
+  }
+
+  .faqItem {
+    padding: 20px;
+  }
+
+  .faqCta {
+    padding: 28px 20px;
+  }
+}

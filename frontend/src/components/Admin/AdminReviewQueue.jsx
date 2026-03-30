@@ -6,7 +6,6 @@ import {
   MdDownload, 
   MdImage,
   MdDescription,
-  MdColorLens,
   MdStraighten,
   MdGridOn
 } from "react-icons/md";
@@ -117,7 +116,7 @@ const AdminReviewQueue = ({
                   onClick={handleDownloadZip}
                 >
                   <MdDownload style={{ marginRight: '8px' }} />
-                  Download ZIP
+                  Download Design File
                 </button>
               </div>
 
@@ -141,7 +140,16 @@ const AdminReviewQueue = ({
                     <strong>Design ID:</strong> {selectedDesign.design_id}
                   </div>
                   <div className={styles.detailItem}>
-                    <strong>Total Files:</strong> {selectedDesign.extracted_files_count || selectedDesign.file_names?.length || 0}
+                    <strong>Upload Type:</strong> {(selectedDesign.design_file_type || "emb").toUpperCase()}
+                  </div>
+                  <div className={styles.detailItem}>
+                    <strong>Total Files:</strong> {selectedDesign.emb_files_count || selectedDesign.file_names?.length || 0}
+                  </div>
+                  <div className={styles.detailItem}>
+                    <strong>Title Source:</strong> {(selectedDesign.title_source || "original").toUpperCase()}
+                  </div>
+                  <div className={styles.detailItem}>
+                    <strong>Description Source:</strong> {(selectedDesign.description_source || "original").toUpperCase()}
                   </div>
                 </div>
               </div>
@@ -150,6 +158,24 @@ const AdminReviewQueue = ({
               <div className={styles.infoSection}>
                 <h3>Description</h3>
                 <p className={styles.descriptionText}>{selectedDesign.description}</p>
+              </div>
+
+              <div className={styles.infoSection}>
+                <h3>Seller Content Versions</h3>
+                <div className={styles.detailsGrid}>
+                  <div className={styles.detailItem}>
+                    <strong>Original Title:</strong> {selectedDesign.title_original || "Not provided"}
+                  </div>
+                  <div className={styles.detailItem}>
+                    <strong>AI Title:</strong> {selectedDesign.title_ai || "Not generated"}
+                  </div>
+                  <div className={styles.detailItem}>
+                    <strong>Original Description:</strong> {selectedDesign.description_original || "Not provided"}
+                  </div>
+                  <div className={styles.detailItem}>
+                    <strong>AI Description:</strong> {selectedDesign.description_ai || "Not generated"}
+                  </div>
+                </div>
               </div>
 
               {/* EMB Files Metadata */}
@@ -166,16 +192,8 @@ const AdminReviewQueue = ({
                             <span>{emb.stitch_count?.toLocaleString()} stitches</span>
                           </div>
                           <div className={styles.embDetailItem}>
-                            <MdColorLens />
-                            <span>{emb.color_count} colors</span>
-                          </div>
-                          <div className={styles.embDetailItem}>
                             <MdStraighten />
                             <span>{emb.width_mm} × {emb.height_mm} mm</span>
-                          </div>
-                          <div className={styles.embDetailItem}>
-                            <MdDescription />
-                            <span>{(emb.file_size / 1024).toFixed(2)} KB</span>
                           </div>
                         </div>
                       </div>
@@ -189,7 +207,7 @@ const AdminReviewQueue = ({
 
               {/* File Names List */}
               <div className={styles.infoSection}>
-                <h3>Extracted Files ({selectedDesign.file_names?.length || 0})</h3>
+                <h3>EMB Files ({selectedDesign.file_names?.length || 0})</h3>
                 <div className={styles.filesList}>
                   {selectedDesign.file_names?.map((fileName, idx) => (
                     <div key={idx} className={styles.fileName}>

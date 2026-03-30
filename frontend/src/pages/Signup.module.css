@@ -64,6 +64,50 @@
   margin-bottom: 8px;
 }
 
+.passwordWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordWrapper input {
+  padding-right: 45px;
+}
+
+/* Hide browser's default password reveal button */
+.passwordWrapper input::-ms-reveal,
+.passwordWrapper input::-ms-clear {
+  display: none;
+}
+
+.passwordWrapper input::-webkit-credentials-auto-fill-button,
+.passwordWrapper input::-webkit-contacts-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+
+.eyeButton {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  border-radius: 4px;
+}
+
+.eyeButton:hover {
+  color: var(--primary);
+  background: var(--bg-main);
+}
+
 .submitBtn {
   width: 100%;
   padding: 14px;

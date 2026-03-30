@@ -10,6 +10,8 @@ import {
 import API from "../../services/api";
 import styles from "./SellerEarnings.module.css";
 
+const MIN_WITHDRAWAL_AMOUNT = 2000;
+
 const SellerEarnings = () => {
   const navigate = useNavigate();
   const [earnings, setEarnings] = useState(null);
@@ -85,8 +87,8 @@ const SellerEarnings = () => {
     
     const amount = parseFloat(withdrawAmount);
     
-    if (amount < 2000) {
-      alert("Minimum withdrawal amount is ₹2000");
+    if (amount < MIN_WITHDRAWAL_AMOUNT) {
+      alert(`Minimum withdrawal amount is ₹${MIN_WITHDRAWAL_AMOUNT}`);
       return;
     }
 
@@ -223,13 +225,13 @@ const SellerEarnings = () => {
           <div className={styles.withdrawHeader}>
             <div>
               <h3>Withdraw Funds</h3>
-              <p>Minimum withdrawal amount: ₹2000</p>
+              <p>Minimum withdrawal amount: ₹{MIN_WITHDRAWAL_AMOUNT}</p>
             </div>
             {!showWithdrawForm && (
               <button
                 className="btn-primary-custom"
                 onClick={() => setShowWithdrawForm(true)}
-                disabled={earnings?.available_balance < 2000}
+                disabled={earnings?.available_balance < MIN_WITHDRAWAL_AMOUNT}
               >
                 Request Withdrawal
               </button>
@@ -243,10 +245,10 @@ const SellerEarnings = () => {
                 <input
                   type="number"
                   className="input-custom"
-                  placeholder="Enter amount (min ₹2000)"
+                  placeholder={`Enter amount (min ₹${MIN_WITHDRAWAL_AMOUNT})`}
                   value={withdrawAmount}
                   onChange={(e) => setWithdrawAmount(e.target.value)}
-                  min="2000"
+                  min={MIN_WITHDRAWAL_AMOUNT}
                   max={earnings?.available_balance}
                   required
                 />

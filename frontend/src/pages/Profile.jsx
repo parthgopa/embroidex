@@ -60,7 +60,7 @@ const Profile = () => {
       const res = await API.get("/payment/payout-details", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setPayoutDetails(res.data);
+      setPayoutDetails(res.data?.payoutDetails || null);
     } catch (err) {
       console.error("Failed to fetch payout details", err);
     }
@@ -141,6 +141,10 @@ const Profile = () => {
                     <span className={styles.detailLabel}>Payment Method:</span>
                     <span className={styles.detailValue}>{payoutDetails.type}</span>
                   </div>
+                  <div className={styles.detailRow}>
+                    <span className={styles.detailLabel}>Verification Status:</span>
+                    <span className={styles.detailValue}>{payoutDetails.verified ? "Verified" : "Pending"}</span>
+                  </div>
                   {payoutDetails.type === "UPI" && (
                     <div className={styles.detailRow}>
                       <span className={styles.detailLabel}>UPI ID:</span>
@@ -155,13 +159,29 @@ const Profile = () => {
                       </div>
                       <div className={styles.detailRow}>
                         <span className={styles.detailLabel}>Account Number:</span>
-                        <span className={styles.detailValue}>****{payoutDetails.accountNumber?.slice(-4)}</span>
+                        <span className={styles.detailValue}>{payoutDetails.accountNumber || "N/A"}</span>
                       </div>
                       <div className={styles.detailRow}>
                         <span className={styles.detailLabel}>IFSC Code:</span>
                         <span className={styles.detailValue}>{payoutDetails.ifscCode}</span>
                       </div>
+                      <div className={styles.detailRow}>
+                        <span className={styles.detailLabel}>Bank Name:</span>
+                        <span className={styles.detailValue}>{payoutDetails.bankName || "N/A"}</span>
+                      </div>
                     </>
+                  )}
+                  {payoutDetails.addedAt && (
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Added On:</span>
+                      <span className={styles.detailValue}>{new Date(payoutDetails.addedAt).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                  {payoutDetails.lastUpdated && (
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Last Updated:</span>
+                      <span className={styles.detailValue}>{new Date(payoutDetails.lastUpdated).toLocaleDateString()}</span>
+                    </div>
                   )}
                 </div>
                 <Link to="/seller/payment-settings" className={styles.editButton}>

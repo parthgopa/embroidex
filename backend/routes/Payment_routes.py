@@ -18,6 +18,41 @@ RAZORPAY_KEY_SECRET = "baN8ZDLE8EvrW1fYmYUDVOVI"
 razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
 
+@payment_bp.route("/payout-details", methods=["GET"])
+def get_payout_details():
+    """Get logged-in user's saved payout details"""
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        token = token.replace("Bearer ", "")
+        user_id = decode_token(token)
+    except:
+        return jsonify({"error": "Invalid token"}), 401
+
+    user = USERS_COLLECTION.find_one({"_id": user_id})
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    payout_details = user.get("payoutDetails")
+
+    if not payout_details:
+        return jsonify({"payoutDetails": None}), 200
+
+    response_details = payout_details.copy()
+    if response_details.get("type") == "BANK" and "accountNumber" in response_details:
+        acc_num = response_details["accountNumber"]
+        response_details["accountNumber"] = acc_num[-4:].rjust(len(acc_num), '*')
+
+    if response_details.get("addedAt"):
+        response_details["addedAt"] = response_details["addedAt"].isoformat()
+    if response_details.get("lastUpdated"):
+        response_details["lastUpdated"] = response_details["lastUpdated"].isoformat()
+
+    return jsonify({"payoutDetails": response_details}), 200
+
+
 @payment_bp.route("/create-order", methods=["POST"])
 def create_order():
     """Create Razorpay order for design purchase"""

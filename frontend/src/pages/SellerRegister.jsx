@@ -11,13 +11,34 @@ const SellerRegister = () => {
     business_address: "",
   });
   const [loading, setLoading] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
 
-  // If alredy a seller redirect him the Mydesigns page.
+  // If already a seller, redirect to My Designs page
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      navigate("/seller/my-designs");
-    }
+    const checkSellerStatus = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const res = await API.get("/auth/me", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // If already a seller, redirect to My Designs
+        if (res.data.is_seller) {
+          navigate("/seller/my-designs");
+        }
+      } catch (err) {
+        console.error("Failed to check seller status", err);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    checkSellerStatus();
   }, [navigate]);
 
   const handleChange = (e) => {
@@ -50,6 +71,18 @@ const SellerRegister = () => {
       setLoading(false);
     }
   };
+
+  if (checkingStatus) {
+    return (
+      <div className={styles.wrapper}>
+        <div className={`container-box ${styles.card}`}>
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <p style={{ color: 'var(--text-light)' }}>Checking status...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.wrapper}>

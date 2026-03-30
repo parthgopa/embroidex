@@ -1,0 +1,258 @@
+/* ========================= */
+/* FEATURES SECTION */
+/* ========================= */
+
+.featuresSection {
+  padding: 60px 25px;
+  background: white;
+  position: relative;
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 64px;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.sectionBadge {
+  display: inline-block;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #fbbf24;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sectionTitle {
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin: 0 0 16px 0;
+  line-height: 1.2;
+}
+
+.sectionSubtitle {
+  font-size: 18px;
+  color: var(--text-light);
+  margin: 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 32px;
+}
+
+.featureCard {
+  background: white;
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  padding: 36px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  animation: fadeInUp 0.6s ease-out both;
+}
+
+.featureCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary) 0%, #ec4899 100%);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.featureCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary);
+}
+
+.featureCard:hover::before {
+  transform: scaleX(1);
+}
+
+.featureCard:nth-child(1) { animation-delay: 0.1s; }
+.featureCard:nth-child(2) { animation-delay: 0.2s; }
+.featureCard:nth-child(3) { animation-delay: 0.3s; }
+.featureCard:nth-child(4) { animation-delay: 0.4s; }
+.featureCard:nth-child(5) { animation-delay: 0.5s; }
+.featureCard:nth-child(6) { animation-delay: 0.6s; }
+
+.featureIconWrapper {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.featureCard:hover .featureIconWrapper {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.featureIconWrapper svg {
+  font-size: 32px;
+  color: white;
+}
+
+.featureTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 12px 0;
+  line-height: 1.3;
+}
+
+.featureDescription {
+  font-size: 15px;
+  color: var(--text-light);
+  line-height: 1.7;
+  margin: 0 0 20px 0;
+}
+
+.featureList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.featureList li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.checkIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================= */
+/* RESPONSIVE */
+/* ========================= */
+
+@media (max-width: 1024px) {
+  .featuresSection {
+    padding: 80px 0;
+  }
+
+  .sectionTitle {
+    font-size: 36px;
+  }
+
+  .featuresGrid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 28px;
+  }
+
+  .featureCard {
+    padding: 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .featuresSection {
+    padding: 60px 0;
+  }
+
+  .sectionHeader {
+    margin-bottom: 48px;
+  }
+
+  .sectionTitle {
+    font-size: 32px;
+  }
+
+  .sectionSubtitle {
+    font-size: 16px;
+  }
+
+  .featuresGrid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .featureCard {
+    padding: 28px;
+  }
+
+  .featureIconWrapper {
+    width: 56px;
+    height: 56px;
+  }
+
+  .featureIconWrapper svg {
+    font-size: 28px;
+  }
+
+  .featureTitle {
+    font-size: 20px;
+  }
+
+  .featureDescription {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .featuresSection {
+    padding: 40px 15px;
+  }
+  .sectionTitle {
+    font-size: 28px;
+  }
+
+  .sectionBadge {
+    font-size: 12px;
+    padding: 6px 16px;
+  }
+
+  .featureCard {
+    padding: 24px;
+  }
+}

@@ -25,8 +25,10 @@ const Explore = () => {
   const fetchApprovedDesigns = async () => {
     try {
       const res = await API.get("/seller/approved");
-      setDesigns(res.data.designs);
-      setFilteredDesigns(res.data.designs);
+      // Reverse to show earliest first
+      const reversedDesigns = [...res.data.designs].reverse();
+      setDesigns(reversedDesigns);
+      setFilteredDesigns(reversedDesigns);
     } catch (err) {
       console.error("Failed to fetch designs", err);
     } finally {
@@ -91,9 +93,9 @@ const Explore = () => {
       {/* Search Header */}
       <div className={styles.searchHeader}>
         <div className="container">
-          <h1 className={styles.title}>Explore Designs</h1>
+          <h1 className={styles.title}>Buy Design</h1>
           <p className={styles.subtitle}>
-            Discover {designs.length} premium embroidery designs from talented creators
+            Discover premium embroidery designs from talented creators
           </p>
 
           <div className={styles.searchBar}>

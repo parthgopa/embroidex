@@ -6,8 +6,9 @@ import {
   MdImage,
   MdDescription,
   MdCategory,
-  MdAttachMoney,
-  MdGridOn
+  MdGridOn,
+  MdStraighten,
+  MdAutoAwesome
 } from "react-icons/md";
 import API from "../services/api";
 import styles from "./DesignDetails.module.css";
@@ -160,6 +161,22 @@ const DesignDetails = () => {
                   <p>{design.file_names?.length || 0} EMB files</p>
                 </div>
               </div>
+
+              {/* <div className={styles.infoCard}>
+                <MdStraighten className={styles.infoIcon} />
+                <div>
+                  <strong>Upload Type</strong>
+                  <p>{(design.design_file_type || "emb").toUpperCase()}</p>
+                </div>
+              </div> */}
+
+              {/* <div className={styles.infoCard}>
+                <MdAutoAwesome className={styles.infoIcon} />
+                <div>
+                  <strong>Content Source</strong>
+                  <p>{`${(design.title_source || "original").toUpperCase()} title • ${(design.description_source || "original").toUpperCase()} description`}</p>
+                </div>
+              </div> */}
             </div>
 
             <div className={styles.descriptionSection}>
@@ -169,6 +186,31 @@ const DesignDetails = () => {
               </h3>
               <p className={styles.description}>{design.description}</p>
             </div>
+
+            {design.emb_metadata && design.emb_metadata.length > 0 && (
+              <div className={styles.filesSection}>
+                <h3>Embroidery File Details</h3>
+                <div className={styles.embMetadataGrid}>
+                  {design.emb_metadata.map((emb, index) => (
+                    <div key={index} className={styles.embMetadataCard}>
+                      <div className={styles.embMetadataTitle}>{emb.file_name}</div>
+                      <div className={styles.embMetadataRow}>
+                        <span>Stitches</span>
+                        <strong>{emb.stitch_count?.toLocaleString() || "N/A"}</strong>
+                      </div>
+                      <div className={styles.embMetadataRow}>
+                        <span>Width</span>
+                        <strong>{emb.width_mm ?? "N/A"} mm</strong>
+                      </div>
+                      <div className={styles.embMetadataRow}>
+                        <span>Height</span>
+                        <strong>{emb.height_mm ?? "N/A"} mm</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {design.file_names && design.file_names.length > 0 && (
               <div className={styles.filesSection}>

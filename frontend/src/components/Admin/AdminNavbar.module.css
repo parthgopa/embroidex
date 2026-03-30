@@ -1,11 +1,11 @@
 .navbar {
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-color);
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
   padding: 15px 0;
   position: sticky;
   top: 0;
   z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .navContent {
@@ -25,13 +25,13 @@
 
 .navIcon {
   font-size: 28px;
-  color: var(--primary);
+  color: #60a5fa;
 }
 
 .navTitle {
   font-size: 20px;
   font-weight: 700;
-  color: var(--text-dark);
+  color: #60a5fa;
   margin: 0;
 }
 

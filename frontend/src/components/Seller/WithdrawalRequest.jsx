@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import API from "../../services/api";
 import styles from "./WithdrawalRequest.module.css";
 
-const MINIMUM_WITHDRAWAL = 500;
+const MINIMUM_WITHDRAWAL = 2000;
 
 const WithdrawalRequest = () => {
   const navigate = useNavigate();

@@ -248,6 +248,41 @@
   font-size: 18px;
 }
 
+.embMetadataGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.embMetadataCard {
+  padding: 16px;
+  background: var(--bg-card);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.embMetadataTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+}
+
+.embMetadataRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-color);
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.embMetadataRow:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
 .purchaseBtn {
   width: 100%;
   padding: 16px;

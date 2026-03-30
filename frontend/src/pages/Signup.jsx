@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { MdVisibility, MdVisibilityOff } from "react-icons/md";
 import API from "../services/api";
 import styles from "./Signup.module.css";
 
@@ -12,6 +13,8 @@ const Signup = () => {
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -78,29 +81,49 @@ const Signup = () => {
 
           <div className={styles.formGroup}>
             <label className={styles.label}>Password</label>
-            <input
-              type="password"
-              name="password"
-              placeholder="Create a password (min. 6 characters)"
-              className="input-custom"
-              onChange={handleChange}
-              value={form.password}
-              required
-              minLength={6}
-            />
+            <div className={styles.passwordWrapper}>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Create a password (min. 6 characters)"
+                className="input-custom"
+                onChange={handleChange}
+                value={form.password}
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                className={styles.eyeButton}
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
+              </button>
+            </div>
           </div>
 
           <div className={styles.formGroup}>
             <label className={styles.label}>Confirm Password</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              placeholder="Re-enter your password"
-              className="input-custom"
-              onChange={handleChange}
-              value={form.confirmPassword}
-              required
-            />
+            <div className={styles.passwordWrapper}>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="Re-enter your password"
+                className="input-custom"
+                onChange={handleChange}
+                value={form.confirmPassword}
+                required
+              />
+              <button
+                type="button"
+                className={styles.eyeButton}
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                aria-label="Toggle confirm password visibility"
+              >
+                {showConfirmPassword ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
+              </button>
+            </div>
           </div>
 
           <button 
