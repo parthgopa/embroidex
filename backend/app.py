@@ -12,10 +12,15 @@ from routes.Withdrawal_routes import withdrawal_bp
 from routes.Settings_routes import settings_bp
 
 app = Flask(__name__)
-# CORS(app)
-CORS(app, resources={r"/*": {"origins": 
-["http://localhost:5173", 
-"https://embroidex.merishiksha.com"]}})
+CORS(app, resources={r"/*": {
+    "origins": [
+        "http://localhost:5173",
+        "https://embroidex.merishiksha.com"
+    ],
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    "allow_headers": ["Content-Type", "Authorization"],
+    "supports_credentials": True
+}})
 
 
 app.register_blueprint(auth_bp, url_prefix="/auth")
