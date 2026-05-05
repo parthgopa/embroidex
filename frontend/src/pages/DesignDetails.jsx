@@ -16,8 +16,6 @@ import styles from "./DesignDetails.module.css";
 const DesignDetails = () => {
   const { designId } = useParams();
   const navigate = useNavigate();
-  const BASE_URL = API.defaults.baseURL;
-  
   const [design, setDesign] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -70,7 +68,7 @@ const DesignDetails = () => {
   }
 
   const allImages = [
-    design.thumbnail_path,
+    design.thumbnail,
     ...(design.additional_images || [])
   ].filter(Boolean);
 
@@ -86,12 +84,9 @@ const DesignDetails = () => {
           <div className={styles.imageSection}>
             <div className={styles.mainImageContainer}>
               <img
-                src={`${BASE_URL}/${allImages[currentImageIndex]}`}
+                src={allImages[currentImageIndex] || "https://via.placeholder.com/600x400"}
                 alt={design.title}
                 className={styles.mainImage}
-                onError={(e) => {
-                  e.target.src = "https://via.placeholder.com/600x400";
-                }}
               />
               {allImages.length > 1 && (
                 <div className={styles.imageCounter}>
@@ -105,15 +100,12 @@ const DesignDetails = () => {
                 {allImages.map((img, index) => (
                   <img
                     key={index}
-                    src={`${BASE_URL}/${img}`}
+                    src={img || "https://via.placeholder.com/100x100"}
                     alt={`${design.title} - ${index + 1}`}
                     className={`${styles.thumbnail} ${
                       currentImageIndex === index ? styles.activeThumbnail : ""
                     }`}
                     onClick={() => setCurrentImageIndex(index)}
-                    onError={(e) => {
-                      e.target.src = "https://via.placeholder.com/100x100";
-                    }}
                   />
                 ))}
               </div>

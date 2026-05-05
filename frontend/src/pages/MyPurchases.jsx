@@ -11,7 +11,6 @@ import API from "../services/api";
 import styles from "./MyPurchases.module.css";
 
 const MyPurchases = () => {
-  const BASE_URL = API.defaults.baseURL;
   const navigate = useNavigate();
   const [purchases, setPurchases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +61,16 @@ const MyPurchases = () => {
       alert("Failed to download design files");
     }
   };
+
+  const getInitials = (title) => {
+    const words = (title || "Design").trim().split(/\s+/);
+    return words.length >= 2
+      ? (words[0][0] + words[1][0]).toUpperCase()
+      : words[0].slice(0, 2).toUpperCase();
+  };
+
+  const avatarColors = ["#6366f1","#8b5cf6","#ec4899","#f59e0b","#10b981","#3b82f6","#ef4444"];
+  const getAvatarColor = (title) => avatarColors[(title?.charCodeAt(0) || 0) % avatarColors.length];
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -128,14 +137,20 @@ const MyPurchases = () => {
               <div key={purchase._id} className={styles.purchaseCard}>
                 <div className={styles.cardContent}>
                   <div className={styles.designInfo}>
-                    <img
-                      src={`${BASE_URL}/${purchase.design_thumbnail}`}
-                      alt={purchase.design_title}
-                      className={styles.thumbnail}
-                      onError={(e) => {
-                        e.target.src = "https://via.placeholder.com/120x120";
-                      }}
-                    />
+                    {purchase.design_thumbnail ? (
+                      <img
+                        src={purchase.design_thumbnail}
+                        alt={purchase.design_title}
+                        className={styles.thumbnail}
+                      />
+                    ) : (
+                      <div
+                        className={styles.thumbnailFallback}
+                        style={{ background: getAvatarColor(purchase.design_title) }}
+                      >
+                        {getInitials(purchase.design_title)}
+                      </div>
+                    )}
                     <div className={styles.details}>
                       <h3 className={styles.designTitle}>
                         {purchase.design_title}

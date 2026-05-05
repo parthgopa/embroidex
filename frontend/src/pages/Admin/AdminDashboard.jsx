@@ -110,6 +110,44 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleUnapproveDesign = async (designId) => {
+    if (!window.confirm("Revert this design back to pending review?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await API.put(`/admin/design/${designId}/unapprove`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchDashboardData();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to unapprove design");
+    }
+  };
+
+  const handleDeactivateUser = async (userId) => {
+    if (!window.confirm("Deactivate this user account?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await API.put(`/admin/user/${userId}/deactivate`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchDashboardData();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to deactivate user");
+    }
+  };
+
+  const handleReactivateUser = async (userId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await API.put(`/admin/user/${userId}/reactivate`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchDashboardData();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to reactivate user");
+    }
+  };
+
   const handleDeleteDesign = async (designId) => {
     if (!window.confirm("Are you sure you want to delete this design?")) return;
 
@@ -192,7 +230,10 @@ const AdminDashboard = () => {
       {activeSection === "designs" && (
         <AdminDesigns
           designs={designs}
-          onDesignClick={setSelectedDesign}
+          onApprove={handleApproveDesign}
+          onReject={handleRejectDesign}
+          onUnapprove={handleUnapproveDesign}
+          onDelete={handleDeleteDesign}
           BASE_URL={BASE_URL}
         />
       )}
@@ -211,7 +252,11 @@ const AdminDashboard = () => {
       )}
 
       {activeSection === "users" && (
-        <AdminUsers users={users} />
+        <AdminUsers
+          users={users}
+          onDeactivate={handleDeactivateUser}
+          onReactivate={handleReactivateUser}
+        />
       )}
 
       {activeSection === "settings" && (

@@ -10,6 +10,8 @@ const Login = () => {
     password: "",
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [deactivated, setDeactivated] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -19,13 +21,20 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
 
+    setError(null);
+    setDeactivated(false);
     try {
       const res = await API.post("/auth/login", form);
       localStorage.setItem("token", res.data.token);
-      // alert("Login successful");
-      window.location.href = "/";
+      window.location.href = "/seller/my-designs";
     } catch (err) {
-      alert(err.response?.data?.error || "Login failed");
+      const status = err.response?.status;
+      const message = err.response?.data?.error || "Login failed";
+      if (status === 403) {
+        setDeactivated(true);
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -38,6 +47,17 @@ const Login = () => {
           <h2 className={styles.title}>Welcome Back</h2>
           <p className={styles.subtitle}>Login to access your account</p>
         </div>
+
+        {deactivated && (
+          <div className={styles.deactivatedBanner}>
+            <strong>Account Deactivated</strong>
+            <p>Your account has been deactivated by the admin. To restore access, please contact Admin.</p>
+          </div>
+        )}
+
+        {error && (
+          <div className={styles.errorBanner}>{error}</div>
+        )}
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>

@@ -333,7 +333,7 @@ def get_my_purchases():
             # Get design thumbnail
             design = DESIGNS_COLLECTION.find_one({"_id": ObjectId(purchase["design_id"])})
             if design:
-                purchase["design_thumbnail"] = design.get("thumbnail_path")
+                purchase["design_thumbnail"] = design.get("thumbnail")
             
             # Convert datetime to string
             if purchase.get("purchased_at"):

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   MdCheckCircle, 
   MdCancel, 
@@ -9,6 +9,7 @@ import {
   MdStraighten,
   MdGridOn
 } from "react-icons/md";
+import API from "../../services/api";
 import styles from "./AdminReviewQueue.module.css";
 
 const AdminReviewQueue = ({ 
@@ -25,22 +26,64 @@ const AdminReviewQueue = ({
   const [queryText, setQueryText] = useState("");
   const [showQueryForm, setShowQueryForm] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [fullDesign, setFullDesign] = useState(null);
+
+  useEffect(() => {
+    if (!selectedDesign) {
+      setFullDesign(null);
+      setSelectedImageIndex(0);
+      return;
+    }
+    const token = localStorage.getItem("token");
+    API.get(`/admin/design/${selectedDesign._id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => setFullDesign(res.data.design))
+      .catch(() => setFullDesign(selectedDesign));
+  }, [selectedDesign]);
 
   const handleAddQuery = async () => {
     if (!queryText.trim()) {
       alert("Please enter a query message");
       return;
     }
-    
+
     await onAddQuery(selectedDesign._id, queryText);
+
+    const newQuery = {
+      message: queryText,
+      created_at: new Date().toISOString(),
+      seller_response: null,
+    };
+    setFullDesign((prev) => {
+      if (!prev) return prev;
+      return { ...prev, admin_queries: [...(prev.admin_queries || []), newQuery] };
+    });
     setQueryText("");
     setShowQueryForm(false);
-    window.location.reload();
+  };
+
+  const handleDeleteQuery = async (queryIndex) => {
+    if (!window.confirm("Remove this query? This means the issue has been resolved.")) return;
+    const token = localStorage.getItem("token");
+    try {
+      await API.delete(`/admin/design/${selectedDesign._id}/query/${queryIndex}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setFullDesign((prev) => {
+        if (!prev) return prev;
+        const updatedQueries = (prev.admin_queries || []).filter((_, i) => i !== queryIndex);
+        return { ...prev, admin_queries: updatedQueries };
+      });
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to delete query");
+    }
   };
 
   const handleDownloadZip = () => {
-    if (selectedDesign?.design_file_path) {
-      const downloadUrl = `${BASE_URL}/${selectedDesign.design_file_path}`;
+    const design = fullDesign || selectedDesign;
+    if (design?.design_file_path) {
+      const downloadUrl = `${BASE_URL}/${design.design_file_path}`;
       window.open(downloadUrl, '_blank');
     }
   };
@@ -55,10 +98,11 @@ const AdminReviewQueue = ({
     return <span className={`tag ${badge.class}`}>{badge.text}</span>;
   };
 
-  const allImages = selectedDesign ? [
-    selectedDesign.thumbnail_path,
-    ...(selectedDesign.additional_images || [])
-  ] : [];
+  const activeDesign = fullDesign || selectedDesign;
+  const allImages = activeDesign ? [
+    activeDesign.thumbnail,
+    ...(activeDesign.additional_images || [])
+  ].filter(Boolean) : [];
 
   return (
     <div className={styles.section}>
@@ -77,14 +121,15 @@ const AdminReviewQueue = ({
             {/* Image Gallery */}
             <div className={styles.imageGallery}>
               <div className={styles.mainImageContainer}>
-                <img
-                  src={`${BASE_URL}/${allImages[selectedImageIndex]}`}
-                  alt={selectedDesign.title}
-                  className={styles.reviewImage}
-                  onError={(e) => {
-                    console.log("Image failed to load:", `${BASE_URL}/${allImages[selectedImageIndex]}`);
-                  }}
-                />
+                {allImages[selectedImageIndex] ? (
+                  <img
+                    src={allImages[selectedImageIndex]}
+                    alt={activeDesign?.title}
+                    className={styles.reviewImage}
+                  />
+                ) : (
+                  <div className={styles.noImage}><MdImage size={48} /></div>
+                )}
                 <div className={styles.imageCounter}>
                   {selectedImageIndex + 1} / {allImages.length}
                 </div>
@@ -95,7 +140,7 @@ const AdminReviewQueue = ({
                   {allImages.map((img, idx) => (
                     <img
                       key={idx}
-                      src={`${BASE_URL}/${img}`}
+                      src={img}
                       alt={`Preview ${idx + 1}`}
                       className={`${styles.thumbnailImage} ${selectedImageIndex === idx ? styles.activeThumbnail : ''}`}
                       onClick={() => setSelectedImageIndex(idx)}
@@ -108,8 +153,8 @@ const AdminReviewQueue = ({
             <div className={styles.reviewDetails}>
               <div className={styles.headerSection}>
                 <div>
-                  <h2>{selectedDesign.title}</h2>
-                  {getStatusBadge(selectedDesign.status)}
+                  <h2>{activeDesign?.title}</h2>
+                  {getStatusBadge(activeDesign?.status)}
                 </div>
                 <button
                   className="btn-outline-custom"
@@ -125,31 +170,31 @@ const AdminReviewQueue = ({
                 <h3><MdDescription style={{ marginRight: '8px', verticalAlign: 'middle' }} />Basic Information</h3>
                 <div className={styles.detailsGrid}>
                   <div className={styles.detailItem}>
-                    <strong>Seller:</strong> {selectedDesign.seller_email}
+                    <strong>Seller:</strong> {activeDesign?.seller_email}
                   </div>
                   <div className={styles.detailItem}>
-                    <strong>Price:</strong> ₹{selectedDesign.price?.toLocaleString()}
+                    <strong>Price:</strong> ₹{activeDesign?.price?.toLocaleString()}
                   </div>
                   <div className={styles.detailItem}>
-                    <strong>Category:</strong> {selectedDesign.category}
+                    <strong>Category:</strong> {activeDesign?.category}
                   </div>
                   <div className={styles.detailItem}>
-                    <strong>Subcategory:</strong> {selectedDesign.subcategory}
+                    <strong>Subcategory:</strong> {activeDesign?.subcategory}
                   </div>
                   <div className={styles.detailItem}>
-                    <strong>Design ID:</strong> {selectedDesign.design_id}
+                    <strong>Design ID:</strong> {activeDesign?.design_id}
                   </div>
                   <div className={styles.detailItem}>
-                    <strong>Upload Type:</strong> {(selectedDesign.design_file_type || "emb").toUpperCase()}
+                    <strong>Upload Type:</strong> {(activeDesign?.design_file_type || "emb").toUpperCase()}
                   </div>
                   <div className={styles.detailItem}>
-                    <strong>Total Files:</strong> {selectedDesign.emb_files_count || selectedDesign.file_names?.length || 0}
+                    <strong>Total Files:</strong> {activeDesign?.emb_files_count || activeDesign?.file_names?.length || 0}
                   </div>
                   <div className={styles.detailItem}>
-                    <strong>Title Source:</strong> {(selectedDesign.title_source || "original").toUpperCase()}
+                    <strong>Title Source:</strong> {(activeDesign?.title_source || "original").toUpperCase()}
                   </div>
                   <div className={styles.detailItem}>
-                    <strong>Description Source:</strong> {(selectedDesign.description_source || "original").toUpperCase()}
+                    <strong>Description Source:</strong> {(activeDesign?.description_source || "original").toUpperCase()}
                   </div>
                 </div>
               </div>
@@ -157,33 +202,33 @@ const AdminReviewQueue = ({
               {/* Description */}
               <div className={styles.infoSection}>
                 <h3>Description</h3>
-                <p className={styles.descriptionText}>{selectedDesign.description}</p>
+                <p className={styles.descriptionText}>{activeDesign?.description}</p>
               </div>
 
               <div className={styles.infoSection}>
                 <h3>Seller Content Versions</h3>
                 <div className={styles.detailsGrid}>
                   <div className={styles.detailItem}>
-                    <strong>Original Title:</strong> {selectedDesign.title_original || "Not provided"}
+                    <strong>Original Title:</strong> {activeDesign?.title_original || "Not provided"}
                   </div>
                   <div className={styles.detailItem}>
-                    <strong>AI Title:</strong> {selectedDesign.title_ai || "Not generated"}
+                    <strong>AI Title:</strong> {activeDesign?.title_ai || "Not generated"}
                   </div>
                   <div className={styles.detailItem}>
-                    <strong>Original Description:</strong> {selectedDesign.description_original || "Not provided"}
+                    <strong>Original Description:</strong> {activeDesign?.description_original || "Not provided"}
                   </div>
                   <div className={styles.detailItem}>
-                    <strong>AI Description:</strong> {selectedDesign.description_ai || "Not generated"}
+                    <strong>AI Description:</strong> {activeDesign?.description_ai || "Not generated"}
                   </div>
                 </div>
               </div>
 
               {/* EMB Files Metadata */}
-              {selectedDesign.emb_metadata && selectedDesign.emb_metadata.length > 0 && (
+              {activeDesign?.emb_metadata && activeDesign.emb_metadata.length > 0 && (
                 <div className={styles.infoSection}>
                   <h3><MdGridOn style={{ marginRight: '8px', verticalAlign: 'middle' }} />EMB Files Details</h3>
                   <div className={styles.embFilesGrid}>
-                    {selectedDesign.emb_metadata.map((emb, idx) => (
+                    {activeDesign.emb_metadata.map((emb, idx) => (
                       <div key={idx} className={styles.embCard}>
                         <h4>{emb.file_name}</h4>
                         <div className={styles.embDetails}>
@@ -200,16 +245,16 @@ const AdminReviewQueue = ({
                     ))}
                   </div>
                   <div className={styles.totalStitches}>
-                    <strong>Total Stitches (All Files):</strong> {selectedDesign.total_stitch_count?.toLocaleString()}
+                    <strong>Total Stitches (All Files):</strong> {activeDesign.total_stitch_count?.toLocaleString()}
                   </div>
                 </div>
               )}
 
               {/* File Names List */}
               <div className={styles.infoSection}>
-                <h3>EMB Files ({selectedDesign.file_names?.length || 0})</h3>
+                <h3>EMB Files ({activeDesign?.file_names?.length || 0})</h3>
                 <div className={styles.filesList}>
-                  {selectedDesign.file_names?.map((fileName, idx) => (
+                  {activeDesign?.file_names?.map((fileName, idx) => (
                     <div key={idx} className={styles.fileName}>
                       <MdDescription style={{ marginRight: '8px' }} />
                       {fileName}
@@ -221,15 +266,24 @@ const AdminReviewQueue = ({
               {/* Admin Queries Section */}
               <div className={styles.infoSection}>
                 <h3>Admin Queries & Notes</h3>
-                {selectedDesign.admin_queries && selectedDesign.admin_queries.length > 0 ? (
+                {activeDesign?.admin_queries && activeDesign.admin_queries.length > 0 ? (
                   <div className={styles.queriesList}>
-                    {selectedDesign.admin_queries.map((query, idx) => (
+                    {activeDesign.admin_queries.map((query, idx) => (
                       <div key={idx} className={styles.queryItem}>
                         <div className={styles.queryHeader}>
                           <strong>Query #{idx + 1}</strong>
-                          <span className={styles.queryDate}>
-                            {new Date(query.created_at).toLocaleDateString()}
-                          </span>
+                          <div className={styles.queryHeaderRight}>
+                            <span className={styles.queryDate}>
+                              {new Date(query.created_at).toLocaleDateString()}
+                            </span>
+                            <button
+                              className={styles.deleteQueryBtn}
+                              onClick={() => handleDeleteQuery(idx)}
+                              title="Remove query (design issue resolved)"
+                            >
+                              ✕ Remove
+                            </button>
+                          </div>
                         </div>
                         <p className={styles.queryText}>{query.message}</p>
                         {query.seller_response && (
@@ -283,7 +337,7 @@ const AdminReviewQueue = ({
               </div>
 
               {/* Action Buttons */}
-              {selectedDesign.status === "pending" && (
+              {activeDesign?.status === "pending" && (
                 <div className={styles.reviewActions}>
                   <button
                     className="btn-primary-custom"
@@ -315,11 +369,17 @@ const AdminReviewQueue = ({
         <div className={styles.queueList}>
           {pendingDesigns.map((design) => (
             <div key={design._id} className={`container-box ${styles.queueItem}`}>
-              <img
-                src={`${BASE_URL}/${design.thumbnail_path}`}
-                alt={design.title}
-                className={styles.queueThumb}
-              />
+              {design.thumbnail ? (
+                <img
+                  src={design.thumbnail}
+                  alt={design.title}
+                  className={styles.queueThumb}
+                />
+              ) : (
+                <div className={styles.queueThumb} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6' }}>
+                  <MdImage size={32} color="#9ca3af" />
+                </div>
+              )}
               <div className={styles.queueInfo}>
                 <h3>{design.title}</h3>
                 <p>by {design.seller_email}</p>

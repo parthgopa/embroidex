@@ -5,7 +5,6 @@ import API from "../services/api";
 import styles from "./Explore.module.css";
 
 const Explore = () => {
-  const BASE_URL = API.defaults.baseURL;
   const navigate = useNavigate();
   const [designs, setDesigns] = useState([]);
   const [filteredDesigns, setFilteredDesigns] = useState([]);
@@ -194,11 +193,8 @@ const Explore = () => {
                 >
                   <div className={styles.cardImage}>
                     <img
-                      src={`${BASE_URL}/${design.thumbnail_path}`}
+                      src={design.thumbnail || "https://via.placeholder.com/300x200"}
                       alt={design.title}
-                      onError={(e) => {
-                        e.target.src = "https://via.placeholder.com/300x200";
-                      }}
                     />
                     <div className={styles.cardOverlay}>
                       <button className="btn-primary-custom">View Details</button>

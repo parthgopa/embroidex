@@ -64,30 +64,84 @@ const SelUploadV3 = () => {
     }
   };
 
-  // Image upload handlers
-  const handleThumbnailChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert("Thumbnail must be less than 5MB");
-        return;
+  // Compress image using canvas — max 1200px, quality 0.82, output as File
+  const compressImage = (file) => new Promise((resolve, reject) => {
+    const MAX_SIDE = 1200;
+    const QUALITY = 0.82;
+    const MAX_BYTES = 10 * 1024 * 1024;
+
+    if (file.size > MAX_BYTES) {
+      reject(new Error(`"${file.name}" exceeds 10MB. Please use a smaller image.`));
+      return;
+    }
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > MAX_SIDE || height > MAX_SIDE) {
+        if (width > height) { height = Math.round((height / width) * MAX_SIDE); width = MAX_SIDE; }
+        else { width = Math.round((width / height) * MAX_SIDE); height = MAX_SIDE; }
       }
-      setThumbnail(file);
-      setThumbnailPreview(URL.createObjectURL(file));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { reject(new Error(`Failed to compress ${file.name}`)); return; }
+          resolve(new File([blob], file.name, { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        QUALITY
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error(`Cannot read ${file.name}`)); };
+    img.src = objectUrl;
+  });
+
+  // Image upload handlers
+  const handleThumbnailChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert(`"${file.name}" exceeds 10MB. Please use a smaller image.`);
+      e.target.value = "";
+      return;
+    }
+    try {
+      const compressed = await compressImage(file);
+      setThumbnail(compressed);
+      setThumbnailPreview(URL.createObjectURL(compressed));
+    } catch (err) {
+      alert(err.message);
+      e.target.value = "";
     }
   };
 
-  const handleAdditionalImagesChange = (e) => {
-    const files = Array.from(e.target.files);
-    
-    if (files.length > 7) {
-      alert("Maximum 7 additional images allowed");
+  const handleAdditionalImagesChange = async (e) => {
+    const newFiles = Array.from(e.target.files);
+    e.target.value = "";
+
+    if (additionalImages.length + newFiles.length > 7) {
+      alert(`You can upload a maximum of 7 additional images. You already have ${additionalImages.length}.`);
       return;
     }
-    
-    setAdditionalImages(files);
-    const previews = files.map(file => URL.createObjectURL(file));
-    setImagesPreviews(previews);
+
+    const oversized = newFiles.find(f => f.size > 10 * 1024 * 1024);
+    if (oversized) {
+      alert(`"${oversized.name}" exceeds 10MB. Please use a smaller image.`);
+      return;
+    }
+
+    try {
+      const compressed = await Promise.all(newFiles.map(compressImage));
+      setAdditionalImages(prev => [...prev, ...compressed]);
+      setImagesPreviews(prev => [...prev, ...compressed.map(f => URL.createObjectURL(f))]);
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   const removeAdditionalImage = (index) => {
@@ -211,11 +265,8 @@ const SelUploadV3 = () => {
       const res = await API.post(
         "/seller/refine-metadata",
         {
-          session_id: sessionId,
           field_type: fieldType,
           original_text: originalText,
-          category,
-          subcategory,
         },
         {
           headers: {
@@ -297,6 +348,8 @@ const SelUploadV3 = () => {
     formData.append("category", category);
     formData.append("subcategory", subcategory);
     formData.append("price", price);
+    formData.append("file_names", JSON.stringify(uploadPreview?.file_names || []));
+    formData.append("design_file_path", uploadPreview?.design_file_path || "");
     formData.append("thumbnail", thumbnail);
 
     additionalImages.forEach((img) => {
@@ -639,22 +692,21 @@ const SelUploadV3 = () => {
               </select>
             </div>
 
-            {category && (
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Subcategory *</label>
-                <select
-                  className="input-custom"
-                  value={subcategory}
-                  onChange={(e) => setSubcategory(e.target.value)}
-                  required
-                >
-                  <option value="">Select Subcategory</option>
-                  {subcategories.map((subcat) => (
-                    <option key={subcat} value={subcat}>{subcat}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Subcategory *</label>
+              <select
+                className="input-custom"
+                value={subcategory}
+                onChange={(e) => setSubcategory(e.target.value)}
+                required
+                disabled={!category}
+              >
+                <option value="">{category ? "Select Subcategory" : "Select a category first"}</option>
+                {subcategories.map((subcat) => (
+                  <option key={subcat} value={subcat}>{subcat}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 

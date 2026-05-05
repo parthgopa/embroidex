@@ -6,8 +6,6 @@ import styles from "./MyDesigns.module.css";
 
 
 const MyDesigns = () => {
-  const BASE_URL = API.defaults.baseURL;
-  // console.log(BASE_URL);
   const [designs, setDesigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingDesign, setEditingDesign] = useState(null);
@@ -254,11 +252,7 @@ const MyDesigns = () => {
               <div key={design._id} className={`card-custom ${styles.designCard}`}>
                 <div className={styles.cardImage}>
                   <img
-                    src={`${BASE_URL}/${design.thumbnail_path}`}
-                    onError={(e) => {
-                      e.target.src = "https://via.placeholder.com/300x200";
-                      console.log("Image failed to load:", `${BASE_URL}/${design.thumbnail_path}`);
-                    }}
+                    src={design.thumbnail || "https://via.placeholder.com/300x200"}
                     alt={design.title}
                   />
                   <div className={styles.statusBadge}>
@@ -459,7 +453,7 @@ const MyDesigns = () => {
                           )}
                         </label>
                       </div>
-                      <small className={styles.hint}>Current: {editingDesign.thumbnail_path?.split('/').pop()}</small>
+                      <small className={styles.hint}>Current thumbnail is stored in database</small>
                     </div>
 
                     <div className={styles.formGroup}>

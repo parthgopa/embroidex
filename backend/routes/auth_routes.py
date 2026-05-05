@@ -36,6 +36,9 @@ def login():
     if not user or not verify_password(data["password"], user["password"]):
         return jsonify({"error": "Invalid credentials"}), 401
 
+    if user.get("is_active") == False:
+        return jsonify({"error": "Your account has been deactivated. Please contact admin."}), 403
+
     token = generate_token(user["_id"])
 
     return jsonify({"token": token})

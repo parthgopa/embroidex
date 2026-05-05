@@ -4,11 +4,12 @@ import uuid
 import shutil
 import json
 
-from config import DESIGNS_COLLECTION, UPLOAD_IMAGE_FOLDER, UPLOAD_FILE_FOLDER
+from config import DESIGNS_COLLECTION, UPLOAD_FILE_FOLDER
 from utils.file_utils import validate_file
 from utils.jwt_utils import decode_token
 from utils.zip_utils import extract_zip_file, categorize_files
 from utils.gemini_utils import refine_design_text
+from utils.image_utils import encode_image_to_base64
 from constants.categories import validate_category, get_all_categories, get_subcategories
 
 sel_design_bp = Blueprint("seller_design", __name__)
@@ -212,6 +213,7 @@ def process_upload():
     return jsonify({
         "session_id": session_id,
         "file_names": file_names,
+        "design_file_path": design_file_path,
         "total_stitch_count": total_stitch_count,
         "emb_files_count": len(emb_metadata_list),
         "emb_metadata": emb_metadata_list,
@@ -232,14 +234,8 @@ def refine_metadata():
         return jsonify({"error": "Invalid token"}), 401
 
     data = request.get_json() or {}
-    session_id = data.get("session_id")
     field_type = (data.get("field_type") or "").strip().lower()
     original_text = (data.get("original_text") or "").strip()
-    category = (data.get("category") or "").strip()
-    subcategory = (data.get("subcategory") or "").strip()
-
-    if not session_id or session_id not in TEMP_UPLOADS:
-        return jsonify({"error": "Invalid or expired session"}), 400
 
     if field_type not in {"title", "description"}:
         return jsonify({"error": "Invalid field type"}), 400
@@ -250,10 +246,7 @@ def refine_metadata():
     try:
         refined_text = refine_design_text(
             field_type=field_type,
-            original_text=original_text,
-            file_names=TEMP_UPLOADS[session_id].get("file_names", []),
-            category=category,
-            subcategory=subcategory
+            original_text=original_text
         )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
@@ -285,7 +278,6 @@ def final_upload():
         return jsonify({"error": "Invalid token"}), 401
     
     # Get form data
-    session_id = request.form.get("session_id")
     title = request.form.get("title")
     description = request.form.get("description")
     category = request.form.get("category")
@@ -298,15 +290,20 @@ def final_upload():
     description_original = (request.form.get("description_original") or "").strip()
     description_ai = (request.form.get("description_ai") or "").strip()
     description_source = (request.form.get("description_source") or "original").strip()
-    
+    design_file_path = (request.form.get("design_file_path") or "").strip()
+    file_names_raw = request.form.get("file_names") or "[]"
+
     # Get files
     thumbnail = request.files.get("thumbnail")
     additional_images = request.files.getlist("additional_images")
-    
-    # Validation
-    if not session_id or session_id not in TEMP_UPLOADS:
-        return jsonify({"error": "Invalid or expired session"}), 400
-    
+
+    try:
+        file_names = json.loads(file_names_raw)
+        if not isinstance(file_names, list):
+            file_names = []
+    except json.JSONDecodeError:
+        file_names = []
+
     if not thumbnail:
         return jsonify({"error": "Thumbnail is required"}), 400
     
@@ -327,32 +324,26 @@ def final_upload():
     
     if not validate_category(category, subcategory):
         return jsonify({"error": "Invalid category or subcategory"}), 400
-    
+
     # Validate thumbnail
     valid_thumb, msg = validate_file(thumbnail, {"png", "jpg", "jpeg"})
     if not valid_thumb:
         return jsonify({"error": f"Thumbnail: {msg}"}), 400
-    
+
     # Validate additional images (max 7)
     if len(additional_images) > 7:
         return jsonify({"error": "Maximum 7 additional images allowed"}), 400
-    
+
     for img in additional_images:
-        if img.filename:  # Check if file is actually uploaded
+        if img.filename:
             valid_img, msg = validate_file(img, {"png", "jpg", "jpeg"})
             if not valid_img:
                 return jsonify({"error": f"Additional image: {msg}"}), 400
-    
-    # Get temporary data
-    temp_data = TEMP_UPLOADS[session_id]
-
-    if str(temp_data.get("user_id")) != str(user_id):
-        return jsonify({"error": "Unauthorized session access"}), 403
 
     try:
         emb_metadata, total_stitch_count = _build_emb_metadata_payload(
             emb_metadata_raw,
-            temp_data.get("file_names", [])
+            file_names
         )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
@@ -363,22 +354,14 @@ def final_upload():
     # Create unique design ID
     design_id = str(uuid.uuid4())
     
-    # Save thumbnail
-    thumbnail_name = f"{design_id}_thumbnail_{thumbnail.filename}"
-    thumbnail_path = f"{UPLOAD_IMAGE_FOLDER}/{thumbnail_name}".replace("\\", "/")
-    thumbnail_save_path = os.path.join(UPLOAD_IMAGE_FOLDER, thumbnail_name)
-    os.makedirs(UPLOAD_IMAGE_FOLDER, exist_ok=True)
-    thumbnail.save(thumbnail_save_path)
-    
-    # Save additional images
-    additional_image_paths = []
-    for idx, img in enumerate(additional_images):
+    # Encode thumbnail to base64
+    thumbnail_data = encode_image_to_base64(thumbnail)
+
+    # Encode additional images to base64
+    additional_image_data = []
+    for img in additional_images:
         if img.filename:
-            img_name = f"{design_id}_img{idx+1}_{img.filename}"
-            img_path = f"{UPLOAD_IMAGE_FOLDER}/{img_name}".replace("\\", "/")
-            img_save_path = os.path.join(UPLOAD_IMAGE_FOLDER, img_name)
-            img.save(img_save_path)
-            additional_image_paths.append(img_path)
+            additional_image_data.append(encode_image_to_base64(img))
     
     # Prepare design document
     design_document = {
@@ -395,23 +378,28 @@ def final_upload():
         "category": category,
         "subcategory": subcategory,
         "price": float(price),
-        "thumbnail_path": thumbnail_path,
-        "design_file_path": temp_data["design_file_path"],
-        "additional_images": additional_image_paths,
-        "file_names": temp_data["file_names"],
+        "thumbnail": thumbnail_data,
+        "design_file_path": design_file_path,
+        "additional_images": additional_image_data,
+        "file_names": file_names,
         "emb_metadata": emb_metadata,
         "total_stitch_count": total_stitch_count,
-        "extracted_files_count": len(temp_data["extracted_files"]),
-        "emb_files_count": len(temp_data["file_names"]),
-        "design_file_type": temp_data.get("design_file_type"),
+        "emb_files_count": len(file_names),
         "status": "pending"
     }
-    
+
+    # Guard: MongoDB BSON limit is 16MB. Check total image data size before inserting.
+    total_image_size = len(thumbnail_data.encode("utf-8")) + sum(len(img.encode("utf-8")) for img in additional_image_data)
+    if total_image_size > 14 * 1024 * 1024:
+        return jsonify({"error": "Total image size is too large. Please use smaller or fewer images (max ~10MB each)."}), 400
+
     # Save to database
     DESIGNS_COLLECTION.insert_one(design_document)
-    
-    # Clean up temporary data
-    del TEMP_UPLOADS[session_id]
+
+    # Clean up session if it still exists
+    session_id = request.form.get("session_id")
+    if session_id and session_id in TEMP_UPLOADS:
+        del TEMP_UPLOADS[session_id]
     
     return jsonify({
         "message": "Design uploaded successfully, pending approval",
