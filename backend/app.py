@@ -15,12 +15,34 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {
     "origins": [
         "http://localhost:5173",
-        "https://embroidex.merishiksha.com"
+        "https://embroidex.merishiksha.com",
+        "https://www.embroidex.merishiksha.com"
     ],
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     "allow_headers": ["Content-Type", "Authorization"],
-    "supports_credentials": True
+    "supports_credentials": True,
+    "expose_headers": ["Content-Type", "Authorization"]
 }})
+
+
+@app.before_request
+def handle_preflight():
+    from flask import request, make_response
+    if request.method == "OPTIONS":
+        origin = request.headers.get("Origin", "")
+        allowed_origins = [
+            "http://localhost:5173",
+            "https://embroidex.merishiksha.com",
+            "https://www.embroidex.merishiksha.com"
+        ]
+        resp = make_response()
+        if origin in allowed_origins:
+            resp.headers["Access-Control-Allow-Origin"] = origin
+        resp.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        resp.headers["Access-Control-Allow-Credentials"] = "true"
+        resp.headers["Access-Control-Max-Age"] = "3600"
+        return resp, 200
 
 
 app.register_blueprint(auth_bp, url_prefix="/auth")
