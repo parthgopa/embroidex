@@ -1,4 +1,5 @@
-from flask import Flask, request, make_response
+from flask import Flask
+from flask_cors import CORS
 import os
 from flask import send_from_directory
 from routes.auth_routes import auth_bp
@@ -12,35 +13,20 @@ from routes.Settings_routes import settings_bp
 
 app = Flask(__name__)
 
-ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "https://embroidex.merishiksha.com",
-    "https://www.embroidex.merishiksha.com"
-]
-
-@app.after_request
-def after_request(response):
-    origin = request.headers.get("Origin", "")
-    if origin in ALLOWED_ORIGINS:
-        response.headers["Access-Control-Allow-Origin"] = origin
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Max-Age"] = "3600"
-    return response
-
-@app.route("/", defaults={"path": ""}, methods=["OPTIONS"])
-@app.route("/<path:path>", methods=["OPTIONS"])
-def handle_preflight(path=None):
-    origin = request.headers.get("Origin", "")
-    response = make_response()
-    if origin in ALLOWED_ORIGINS:
-        response.headers["Access-Control-Allow-Origin"] = origin
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Max-Age"] = "3600"
-    return response, 204
+# Proper Flask-CORS configuration per official documentation
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "http://localhost:5173",
+            "https://embroidex.merishiksha.com",
+            "https://www.embroidex.merishiksha.com"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True,
+        "max_age": 3600
+    }
+})
 
 
 app.register_blueprint(auth_bp, url_prefix="/auth")
