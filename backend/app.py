@@ -1,5 +1,4 @@
-from flask import Flask
-from flask_cors import CORS
+from flask import Flask, request, make_response
 import os
 from flask import send_from_directory
 from routes.auth_routes import auth_bp
@@ -12,37 +11,36 @@ from routes.Withdrawal_routes import withdrawal_bp
 from routes.Settings_routes import settings_bp
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {
-    "origins": [
-        "http://localhost:5173",
-        "https://embroidex.merishiksha.com",
-        "https://www.embroidex.merishiksha.com"
-    ],
-    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    "allow_headers": ["Content-Type", "Authorization"],
-    "supports_credentials": True,
-    "expose_headers": ["Content-Type", "Authorization"]
-}})
 
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "https://embroidex.merishiksha.com",
+    "https://www.embroidex.merishiksha.com"
+]
 
-@app.before_request
-def handle_preflight():
-    from flask import request, make_response
-    if request.method == "OPTIONS":
-        origin = request.headers.get("Origin", "")
-        allowed_origins = [
-            "http://localhost:5173",
-            "https://embroidex.merishiksha.com",
-            "https://www.embroidex.merishiksha.com"
-        ]
-        resp = make_response()
-        if origin in allowed_origins:
-            resp.headers["Access-Control-Allow-Origin"] = origin
-        resp.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-        resp.headers["Access-Control-Allow-Credentials"] = "true"
-        resp.headers["Access-Control-Max-Age"] = "3600"
-        return resp, 200
+@app.after_request
+def after_request(response):
+    origin = request.headers.get("Origin", "")
+    if origin in ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Max-Age"] = "3600"
+    return response
+
+@app.route("/", defaults={"path": ""}, methods=["OPTIONS"])
+@app.route("/<path:path>", methods=["OPTIONS"])
+def handle_preflight(path=None):
+    origin = request.headers.get("Origin", "")
+    response = make_response()
+    if origin in ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Max-Age"] = "3600"
+    return response, 204
 
 
 app.register_blueprint(auth_bp, url_prefix="/auth")
