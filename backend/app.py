@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request, make_response
 from flask_cors import CORS
 import os
 from flask import send_from_directory
@@ -13,20 +13,52 @@ from routes.Settings_routes import settings_bp
 
 app = Flask(__name__)
 
-# Proper Flask-CORS configuration per official documentation
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "https://embroidex.merishiksha.com",
+    "https://www.embroidex.merishiksha.com"
+]
+
+# Flask-CORS configuration
 CORS(app, resources={
     r"/*": {
-        "origins": [
-            "http://localhost:5173",
-            "https://embroidex.merishiksha.com",
-            "https://www.embroidex.merishiksha.com"
-        ],
+        "origins": ALLOWED_ORIGINS,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True,
         "max_age": 3600
     }
 })
+
+# Explicit preflight handler for all routes
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        origin = request.headers.get("Origin", "")
+        response = make_response()
+        if origin in ALLOWED_ORIGINS:
+            response.headers["Access-Control-Allow-Origin"] = origin
+        else:
+            response.headers["Access-Control-Allow-Origin"] = "https://embroidex.merishiksha.com"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Max-Age"] = "3600"
+        response.status_code = 204
+        return response
+
+# Ensure CORS headers on all responses
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get("Origin", "")
+    if origin in ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    else:
+        response.headers["Access-Control-Allow-Origin"] = "https://embroidex.merishiksha.com"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    return response
 
 
 app.register_blueprint(auth_bp, url_prefix="/auth")
