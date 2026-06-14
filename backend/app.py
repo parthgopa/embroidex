@@ -13,20 +13,16 @@ from routes.Settings_routes import settings_bp
 
 app = Flask(__name__)
 
-ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "https://embroidex.merishiksha.com",
-    "https://www.embroidex.merishiksha.com"
-]
-
-# Flask-CORS configuration
 CORS(app, resources={
     r"/*": {
-        "origins": ALLOWED_ORIGINS,
+        "origins": [
+            "http://localhost:5173",
+            "https://embroidex.merishiksha.com",
+            "https://www.embroidex.merishiksha.com",
+        ],
+        "supports_credentials": True,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         "allow_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": True,
-        "max_age": 3600
     }
 })
 
@@ -36,7 +32,7 @@ def handle_preflight():
     if request.method == "OPTIONS":
         origin = request.headers.get("Origin", "")
         response = make_response()
-        if origin in ALLOWED_ORIGINS:
+        if origin in ["http://localhost:5173", "https://embroidex.merishiksha.com", "https://www.embroidex.merishiksha.com"]:
             response.headers["Access-Control-Allow-Origin"] = origin
         else:
             response.headers["Access-Control-Allow-Origin"] = "https://embroidex.merishiksha.com"
@@ -51,7 +47,7 @@ def handle_preflight():
 @app.after_request
 def add_cors_headers(response):
     origin = request.headers.get("Origin", "")
-    if origin in ALLOWED_ORIGINS:
+    if origin in ["http://localhost:5173", "https://embroidex.merishiksha.com", "https://www.embroidex.merishiksha.com"]:
         response.headers["Access-Control-Allow-Origin"] = origin
     else:
         response.headers["Access-Control-Allow-Origin"] = "https://embroidex.merishiksha.com"
