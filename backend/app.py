@@ -38,6 +38,11 @@ app.register_blueprint(webhook_bp, url_prefix="/webhooks")
 app.register_blueprint(withdrawal_bp, url_prefix="/withdrawal")
 app.register_blueprint(settings_bp, url_prefix="/settings")
 
+# Health check endpoint for Coolify
+@app.route("/health")
+def health():
+    return {"status": "ok"}, 200
+
 # Serve uploads folder
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 
@@ -46,4 +51,5 @@ def serve_uploads(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
