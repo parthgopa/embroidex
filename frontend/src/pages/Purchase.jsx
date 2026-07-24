@@ -19,6 +19,7 @@ const Purchase = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(null);
+  const [receiptNumber, setReceiptNumber] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -93,10 +94,13 @@ const Purchase = () => {
             );
 
             if (verifyRes.data.success) {
+              if (verifyRes.data.receipt) {
+                setReceiptNumber(verifyRes.data.receipt);
+              }
               setPaymentStatus("success");
               setTimeout(() => {
                 navigate("/my-purchases");
-              }, 3000);
+              }, 4000);
             }
           } catch (err) {
             console.error("Payment verification failed", err);
@@ -161,6 +165,11 @@ const Purchase = () => {
           <div className={styles.successMessage}>
             <MdCheckCircle className={styles.successIcon} />
             <h2>Payment Successful!</h2>
+            {receiptNumber && (
+              <p style={{ fontWeight: 600, color: "var(--primary)", margin: "10px 0" }}>
+                Receipt No: <span>{receiptNumber}</span>
+              </p>
+            )}
             <p>Your purchase has been completed. Redirecting to your purchases...</p>
           </div>
         )}
@@ -191,73 +200,81 @@ const Purchase = () => {
           <div className={styles.purchaseCard}>
             <h1 className={styles.title}>Complete Your Purchase</h1>
 
-            <div className={styles.designPreview}>
-              <img
-                src={`${BASE_URL}/${design.thumbnail_path}`}
-                alt={design.title}
-                className={styles.designImage}
-                onError={(e) => {
-                  e.target.src = "https://via.placeholder.com/200x150";
-                }}
-              />
-              <div className={styles.designInfo}>
-                <h3>{design.title}</h3>
-                <p className={styles.category}>{design.category} • {design.subcategory}</p>
-                <p className={styles.files}>{design.file_names?.length || 0} EMB files included</p>
-              </div>
-            </div>
+            <div className={styles.contentGrid}>
+              {/* Left Column: Design Info & Benefits */}
+              <div className={styles.leftCol}>
+                <div className={styles.designPreview}>
+                  <img
+                    src={design.thumbnail || "https://via.placeholder.com/200x150"}
+                    alt={design.title}
+                    className={styles.designImage}
+                    onError={(e) => {
+                      e.target.src = "https://via.placeholder.com/200x150";
+                    }}
+                  />
+                  <div className={styles.designInfo}>
+                    <h3>{design.title}</h3>
+                    <p className={styles.category}>{design.category} • {design.subcategory}</p>
+                    <p className={styles.files}>{design.file_names?.length || 0} EMB files included</p>
+                  </div>
+                </div>
 
-            <div className={styles.priceBreakdown}>
-              <h3>Order Summary</h3>
-              <div className={styles.priceRow}>
-                <span>Design Price</span>
-                <span>₹{design.price}</span>
+                <div className={styles.benefits}>
+                  <h4>What you'll get:</h4>
+                  <ul>
+                    <li>✓ Instant download after payment</li>
+                    <li>✓ All {design.file_names?.length || 0} EMB files</li>
+                    <li>✓ High-quality embroidery design</li>
+                    <li>✓ Lifetime access to your purchase</li>
+                  </ul>
+                </div>
               </div>
-              <div className={styles.priceRow}>
-                <span>Platform Fee</span>
-                <span>₹0</span>
-              </div>
-              <div className={styles.divider}></div>
-              <div className={`${styles.priceRow} ${styles.totalRow}`}>
-                <span>Total Amount</span>
-                <span>₹{design.price}</span>
-              </div>
-            </div>
 
-            <div className={styles.securityInfo}>
-              <MdSecurity className={styles.securityIcon} />
-              <div>
-                <strong>Secure Payment</strong>
-                <p>Your payment is secured by Razorpay with 256-bit encryption</p>
+              {/* Right Column: Order Summary & Pay Action */}
+              <div className={styles.rightCol}>
+                <div className={styles.priceBreakdown}>
+                  <h3>Order Summary</h3>
+                  <div className={styles.priceRow}>
+                    <span>Design Price</span>
+                    <span>₹{design.price}</span>
+                  </div>
+                  <div className={styles.priceRow}>
+                    <span>Platform Fee</span>
+                    <span>₹0</span>
+                  </div>
+                  <div className={styles.divider}></div>
+                  <div className={`${styles.priceRow} ${styles.totalRow}`}>
+                    <span>Total Amount</span>
+                    <span>₹{design.price}</span>
+                  </div>
+                </div>
+
+                <div className={styles.securityInfo}>
+                  <MdSecurity className={styles.securityIcon} />
+                  <div>
+                    <strong>Secure Payment</strong>
+                    <p>Secured by Razorpay with 256-bit encryption</p>
+                  </div>
+                </div>
+
+                <button
+                  className={`btn-primary-custom ${styles.payBtn}`}
+                  onClick={handlePayment}
+                  disabled={processing}
+                >
+                  {processing ? (
+                    <>
+                      <div className={styles.btnSpinner}></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <MdShoppingCart />
+                      Pay ₹{design.price} with Razorpay
+                    </>
+                  )}
+                </button>
               </div>
-            </div>
-
-            <button
-              className={`btn-primary-custom ${styles.payBtn}`}
-              onClick={handlePayment}
-              disabled={processing}
-            >
-              {processing ? (
-                <>
-                  <div className={styles.btnSpinner}></div>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <MdShoppingCart />
-                  Pay ₹{design.price} with Razorpay
-                </>
-              )}
-            </button>
-
-            <div className={styles.benefits}>
-              <h4>What you'll get:</h4>
-              <ul>
-                <li>✓ Instant download after payment</li>
-                <li>✓ All {design.file_names?.length || 0} EMB files</li>
-                <li>✓ High-quality embroidery design</li>
-                <li>✓ Lifetime access to your purchase</li>
-              </ul>
             </div>
           </div>
         )}

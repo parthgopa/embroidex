@@ -256,7 +256,7 @@ const AdminDashboardV2 = () => {
                   .map((design) => (
                     <div key={design._id} className={styles.activityItem}>
                       <img
-                        src={`${BASE_URL}/${design.thumbnail_path}`}
+                        src={design.thumbnail || (design.thumbnail_path ? `${BASE_URL}/${design.thumbnail_path}` : "https://via.placeholder.com/150")}
                         alt={design.title}
                         className={styles.activityThumb}
                       />

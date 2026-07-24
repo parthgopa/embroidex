@@ -65,24 +65,56 @@ def _build_emb_metadata_payload(raw_metadata, expected_file_names):
     return normalized_metadata, total_stitch_count
 
 
-# Public route for approved designs
 @sel_design_bp.route("/approved", methods=["GET"])
 def get_approved_designs():
-    """Get all approved designs for public viewing"""
+    """Get approved designs for public viewing with pagination support"""
     try:
-        designs = list(DESIGNS_COLLECTION.find({"status": "approved"}))
+        from routes.Settings_routes import get_designs_per_page
+        import math
         
-        # Convert ObjectId to string
-        for design in designs:
-            design["_id"] = str(design["_id"])
-            if "seller_id" in design:
-                design["seller_id"] = str(design["seller_id"])
+        default_limit = get_designs_per_page()
         
-        return jsonify({"designs": designs}), 200
+        page = request.args.get("page", type=int)
+        limit = request.args.get("limit", type=int)
+        
+        query = {"status": "approved"}
+        
+        if page is not None and page > 0:
+            limit_val = limit if (limit and limit > 0) else default_limit
+            skip_val = (page - 1) * limit_val
+            
+            total_count = DESIGNS_COLLECTION.count_documents(query)
+            designs = list(
+                DESIGNS_COLLECTION.find(query, {"additional_images": 0})
+                .sort("created_at", -1)
+                .skip(skip_val)
+                .limit(limit_val)
+            )
+            
+            for design in designs:
+                design["_id"] = str(design["_id"])
+                if "seller_id" in design:
+                    design["seller_id"] = str(design["seller_id"])
+                    
+            return jsonify({
+                "designs": designs,
+                "page": page,
+                "limit": limit_val,
+                "total_designs": total_count,
+                "total_pages": math.ceil(total_count / limit_val) if limit_val > 0 else 1
+            }), 200
+        else:
+            designs = list(DESIGNS_COLLECTION.find(query, {"additional_images": 0}).sort("created_at", -1))
+            for design in designs:
+                design["_id"] = str(design["_id"])
+                if "seller_id" in design:
+                    design["seller_id"] = str(design["seller_id"])
+            return jsonify({"designs": designs, "total_designs": len(designs)}), 200
+            
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
+ 
 @sel_design_bp.route("/design/<design_id>", methods=["GET"])
 def get_design_details(design_id):
     """Get single design details by ID (public route for approved designs)"""
@@ -418,7 +450,6 @@ def get_categories():
 def get_my_designs():
     """Get all designs uploaded by the seller"""
     token = request.headers.get("Authorization")
-    print(token)
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
     
@@ -441,7 +472,7 @@ def get_my_designs():
 
 @sel_design_bp.route("/design/<design_id>", methods=["PUT"])
 def update_design(design_id):
-    """Update design details (title, description, price)"""
+    """Update design details, thumbnail, additional images, or design file"""
     token = request.headers.get("Authorization")
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
@@ -459,26 +490,111 @@ def update_design(design_id):
     if not design:
         return jsonify({"error": "Design not found or unauthorized"}), 404
     
-    data = request.json
-    
-    # Update only allowed fields
+    design_file_updated = False
     update_data = {}
-    if "title" in data:
-        update_data["title"] = data["title"]
-    if "description" in data:
-        update_data["description"] = data["description"]
-    if "price" in data:
-        update_data["price"] = float(data["price"])
     
+    if request.is_json:
+        data = request.json or {}
+        if "title" in data:
+            update_data["title"] = data["title"]
+        if "description" in data:
+            update_data["description"] = data["description"]
+        if "price" in data:
+            update_data["price"] = float(data["price"])
+        if "category" in data:
+            update_data["category"] = data["category"]
+        if "subcategory" in data:
+            update_data["subcategory"] = data["subcategory"]
+        if "existing_additional_images" in data:
+            update_data["additional_images"] = data["existing_additional_images"]
+    else:
+        # Multipart form data
+        data = request.form
+        if "title" in data:
+            update_data["title"] = data["title"]
+        if "description" in data:
+            update_data["description"] = data["description"]
+        if "price" in data:
+            update_data["price"] = float(data["price"])
+        if "category" in data:
+            update_data["category"] = data["category"]
+        if "subcategory" in data:
+            update_data["subcategory"] = data["subcategory"]
+            
+        # Handle kept additional images by index list
+        existing_imgs = None
+        if "kept_image_indices_json" in request.form:
+            try:
+                kept_indices = json.loads(request.form["kept_image_indices_json"])
+                orig_imgs = design.get("additional_images", [])
+                existing_imgs = [orig_imgs[i] for i in kept_indices if 0 <= i < len(orig_imgs)]
+            except Exception as e:
+                print(f"Error parsing kept_image_indices_json: {e}")
+                existing_imgs = design.get("additional_images", [])
+        elif "existing_additional_images_json" in request.form:
+            try:
+                existing_imgs = json.loads(request.form["existing_additional_images_json"])
+            except Exception as e:
+                print(f"Error parsing existing_additional_images_json: {e}")
+                existing_imgs = design.get("additional_images", [])
+        
+        # New thumbnail
+        if "thumbnail" in request.files:
+            thumb_file = request.files["thumbnail"]
+            if thumb_file and thumb_file.filename:
+                update_data["thumbnail"] = encode_image_to_base64(thumb_file)
+                
+        # New additional images
+        new_additional_imgs = []
+        if "additional_images" in request.files:
+            files_list = request.files.getlist("additional_images")
+            for f in files_list:
+                if f and f.filename:
+                    new_additional_imgs.append(encode_image_to_base64(f))
+                    
+        if existing_imgs is not None or new_additional_imgs:
+            base_imgs = existing_imgs if existing_imgs is not None else design.get("additional_images", [])
+            update_data["additional_images"] = base_imgs + new_additional_imgs
+            
+        # New design file (.zip or .emb) -> ONLY THIS REQUIRES ADMIN RE-APPROVAL
+        if "design_file" in request.files:
+            d_file = request.files["design_file"]
+            if d_file and d_file.filename:
+                import uuid
+                unique_folder_name = str(uuid.uuid4())
+                upload_dir = os.path.join(UPLOAD_FILE_FOLDER, unique_folder_name)
+                os.makedirs(upload_dir, exist_ok=True)
+                
+                saved_path = os.path.join(upload_dir, d_file.filename)
+                d_file.save(saved_path)
+                
+                if d_file.filename.lower().endswith(".zip"):
+                    extraction = extract_zip_file(saved_path, upload_dir)
+                    categorized = categorize_files(extraction["extracted_files"])
+                    emb_files = categorized.get("emb_files", [])
+                    file_names = [os.path.basename(f) for f in emb_files]
+                    update_data["zip_path"] = saved_path
+                    update_data["design_file_path"] = saved_path
+                    update_data["file_names"] = file_names
+                else:
+                    update_data["design_file_path"] = saved_path
+                    update_data["file_names"] = [d_file.filename]
+                
+                design_file_updated = True
+                
+    if design_file_updated:
+        update_data["status"] = "pending"
+        
     if not update_data:
         return jsonify({"error": "No valid fields to update"}), 400
-    
+        
     DESIGNS_COLLECTION.update_one(
         {"_id": ObjectId(design_id)},
         {"$set": update_data}
     )
     
-    return jsonify({"message": "Design updated successfully"}), 200
+    msg = "Design file updated successfully, pending admin review" if design_file_updated else "Design updated successfully"
+    return jsonify({"message": msg}), 200
 
 
 @sel_design_bp.route("/design/<design_id>", methods=["DELETE"])

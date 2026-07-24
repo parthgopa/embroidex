@@ -10,6 +10,8 @@ import styles from "./AdminSettings.module.css";
 const AdminSettings = () => {
   const [platformFee, setPlatformFee] = useState(30);
   const [originalFee, setOriginalFee] = useState(30);
+  const [designsPerPage, setDesignsPerPage] = useState(30);
+  const [originalDesignsPerPage, setOriginalDesignsPerPage] = useState(30);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -24,8 +26,14 @@ const AdminSettings = () => {
       const res = await API.get("/settings/platform-fee", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setPlatformFee(res.data.platformFee);
-      setOriginalFee(res.data.platformFee);
+      if (res.data.platformFee !== undefined) {
+        setPlatformFee(res.data.platformFee);
+        setOriginalFee(res.data.platformFee);
+      }
+      if (res.data.designsPerPage !== undefined) {
+        setDesignsPerPage(res.data.designsPerPage);
+        setOriginalDesignsPerPage(res.data.designsPerPage);
+      }
     } catch (err) {
       console.error("Failed to fetch settings", err);
       setMessage({ type: "error", text: "Failed to load settings" });
@@ -44,27 +52,33 @@ const AdminSettings = () => {
       return;
     }
 
+    const perPageValue = parseInt(designsPerPage, 10);
+    if (isNaN(perPageValue) || perPageValue < 1 || perPageValue > 200) {
+      setMessage({ type: "error", text: "Designs per page must be between 1 and 200" });
+      return;
+    }
+
     setSaving(true);
     setMessage({ type: "", text: "" });
 
     try {
       const token = localStorage.getItem("token");
-      await API.put(
+      const res = await API.put(
         "/settings/platform-fee",
-        { platformFee: feeValue },
+        { platformFee: feeValue, designsPerPage: perPageValue },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setOriginalFee(feeValue);
-      setMessage({ type: "success", text: "Platform fee updated successfully!" });
+      setOriginalFee(res.data.platformFee);
+      setOriginalDesignsPerPage(res.data.designsPerPage);
+      setMessage({ type: "success", text: "Platform settings updated successfully!" });
       
-      // Clear success message after 3 seconds
       setTimeout(() => setMessage({ type: "", text: "" }), 3000);
     } catch (err) {
       console.error("Failed to update settings", err);
       setMessage({ 
         type: "error", 
-        text: err.response?.data?.error || "Failed to update platform fee" 
+        text: err.response?.data?.error || "Failed to update settings" 
       });
     } finally {
       setSaving(false);
@@ -73,10 +87,11 @@ const AdminSettings = () => {
 
   const handleReset = () => {
     setPlatformFee(originalFee);
+    setDesignsPerPage(originalDesignsPerPage);
     setMessage({ type: "", text: "" });
   };
 
-  const hasChanges = platformFee !== originalFee;
+  const hasChanges = platformFee !== originalFee || designsPerPage !== originalDesignsPerPage;
 
   if (loading) {
     return (
@@ -151,6 +166,36 @@ const AdminSettings = () => {
                   </span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className={styles.settingSection} style={{ marginTop: '25px', paddingTop: '20px', borderTop: '1px solid var(--border-color)' }}>
+            <div className={styles.sectionHeader}>
+              <h3>Listing Pagination (Designs Per Page)</h3>
+              <p className={styles.description}>
+                Number of approved design cards loaded per page on the Explore and public listing pages.
+              </p>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="designsPerPage">Items Per Page</label>
+              <div className={styles.inputWrapper}>
+                <input
+                  type="number"
+                  id="designsPerPage"
+                  value={designsPerPage}
+                  onChange={(e) => setDesignsPerPage(e.target.value)}
+                  min="5"
+                  max="200"
+                  step="1"
+                  className={styles.input}
+                  disabled={saving}
+                />
+                <span className={styles.inputSuffix}>items</span>
+              </div>
+              <small className={styles.hint}>
+                Current: {originalDesignsPerPage} designs | Recommended: 24 - 48
+              </small>
             </div>
           </div>
 

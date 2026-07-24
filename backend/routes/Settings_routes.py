@@ -17,6 +17,7 @@ SETTINGS_COLLECTION = db["settings"]
 
 # Default platform fee
 DEFAULT_PLATFORM_FEE = 30
+DEFAULT_DESIGNS_PER_PAGE = 30
 
 
 def get_platform_fee():
@@ -25,6 +26,17 @@ def get_platform_fee():
     if settings:
         return settings.get("value", DEFAULT_PLATFORM_FEE)
     return DEFAULT_PLATFORM_FEE
+
+
+def get_designs_per_page():
+    """Get current designs per page setting from database"""
+    settings = SETTINGS_COLLECTION.find_one({"key": "designs_per_page"})
+    if settings:
+        try:
+            return int(settings.get("value", DEFAULT_DESIGNS_PER_PAGE))
+        except:
+            return DEFAULT_DESIGNS_PER_PAGE
+    return DEFAULT_DESIGNS_PER_PAGE
 
 
 def initialize_settings():
@@ -39,6 +51,16 @@ def initialize_settings():
             "updatedBy": None
         })
 
+    if SETTINGS_COLLECTION.count_documents({"key": "designs_per_page"}) == 0:
+        SETTINGS_COLLECTION.insert_one({
+            "key": "designs_per_page",
+            "value": DEFAULT_DESIGNS_PER_PAGE,
+            "label": "Designs Per Page",
+            "description": "Number of designs shown per page on public listings",
+            "updatedAt": datetime.utcnow(),
+            "updatedBy": None
+        })
+
 
 # Initialize settings on module load
 initialize_settings()
@@ -46,13 +68,14 @@ initialize_settings()
 
 @settings_bp.route("/platform-fee", methods=["GET"])
 def get_platform_fee_route():
-    """Get current platform fee percentage"""
+    """Get current platform fee percentage and designs per page setting"""
     try:
         platform_fee = get_platform_fee()
+        designs_per_page = get_designs_per_page()
         return jsonify({
             "platformFee": platform_fee,
-            "label": "Platform Fee Percentage",
-            "description": "Percentage of each sale taken as platform fee"
+            "designsPerPage": designs_per_page,
+            "label": "Platform Settings"
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -77,36 +100,38 @@ def update_platform_fee():
     if not admin or admin.get("role") != "admin":
         return jsonify({"error": "Admin access required"}), 403
     
-    data = request.json
+    data = request.json or {}
     new_fee = data.get("platformFee")
+    designs_per_page = data.get("designsPerPage")
     
-    if new_fee is None:
-        return jsonify({"error": "platformFee is required"}), 400
-    
-    try:
-        new_fee = float(new_fee)
-    except:
-        return jsonify({"error": "platformFee must be a number"}), 400
-    
-    if new_fee < 0 or new_fee > 100:
-        return jsonify({"error": "platformFee must be between 0 and 100"}), 400
-    
-    # Update or create setting
-    SETTINGS_COLLECTION.update_one(
-        {"key": "platform_fee"},
-        {
-            "$set": {
-                "value": new_fee,
-                "updatedAt": datetime.utcnow(),
-                "updatedBy": admin_id
-            }
-        },
-        upsert=True
-    )
+    if new_fee is not None:
+        try:
+            new_fee = float(new_fee)
+            if 0 <= new_fee <= 100:
+                SETTINGS_COLLECTION.update_one(
+                    {"key": "platform_fee"},
+                    {"$set": {"value": new_fee, "updatedAt": datetime.utcnow(), "updatedBy": admin_id}},
+                    upsert=True
+                )
+        except Exception:
+            pass
+            
+    if designs_per_page is not None:
+        try:
+            designs_per_page = int(designs_per_page)
+            if 1 <= designs_per_page <= 200:
+                SETTINGS_COLLECTION.update_one(
+                    {"key": "designs_per_page"},
+                    {"$set": {"value": designs_per_page, "updatedAt": datetime.utcnow(), "updatedBy": admin_id}},
+                    upsert=True
+                )
+        except Exception:
+            pass
     
     return jsonify({
-        "message": "Platform fee updated successfully",
-        "platformFee": new_fee
+        "message": "Platform settings updated successfully",
+        "platformFee": get_platform_fee(),
+        "designsPerPage": get_designs_per_page()
     }), 200
 
 

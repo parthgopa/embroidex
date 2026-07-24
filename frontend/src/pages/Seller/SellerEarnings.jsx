@@ -169,7 +169,7 @@ const SellerEarnings = () => {
       <div className="container">
         <div className={styles.header}>
           <h1 className={styles.title}>
-            <MdAttachMoney className={styles.titleIcon} />
+            <MdAccountBalance className={styles.titleIcon} />
             Earnings & Withdrawals
           </h1>
           <p className={styles.subtitle}>

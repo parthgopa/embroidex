@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { MdClose, MdImage, MdCloudUpload } from "react-icons/md";
+import { MdClose, MdImage, MdCloudUpload, MdInsertDriveFile, MdCheckCircle } from "react-icons/md";
 import API from "../../services/api";
 import styles from "./MyDesigns.module.css";
 
@@ -18,6 +18,10 @@ const MyDesigns = () => {
     subcategory: "",
   });
   
+  // Existing files for edit
+  const [existingThumbnail, setExistingThumbnail] = useState(null);
+  const [existingAdditionalImages, setExistingAdditionalImages] = useState([]);
+
   // File uploads for edit
   const [newThumbnail, setNewThumbnail] = useState(null);
   const [newThumbnailPreview, setNewThumbnailPreview] = useState(null);
@@ -48,11 +52,9 @@ const MyDesigns = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      // console.log(res.data.designs[0].thumbnail_path);
       setDesigns(res.data.designs);
     } catch (err) {
       console.error("Failed to fetch designs", err);
-      alert("Failed to load designs");
     } finally {
       setLoading(false);
     }
@@ -67,6 +69,11 @@ const MyDesigns = () => {
       category: design.category,
       subcategory: design.subcategory,
     });
+    setExistingThumbnail(design.thumbnail || null);
+    // Keep track of existing images as objects with original index
+    const origAdditional = design.additional_images || [];
+    setExistingAdditionalImages(origAdditional.map((img, idx) => ({ index: idx, src: img })));
+
     // Reset file uploads
     setNewThumbnail(null);
     setNewThumbnailPreview(null);
@@ -102,6 +109,10 @@ const MyDesigns = () => {
     setNewImagesPreviews(previews);
   };
 
+  const removeExistingAdditionalImage = (index) => {
+    setExistingAdditionalImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const removeNewImage = (index) => {
     const newImages = newAdditionalImages.filter((_, i) => i !== index);
     const newPreviews = newImagesPreviews.filter((_, i) => i !== index);
@@ -132,17 +143,18 @@ const MyDesigns = () => {
     try {
       const token = localStorage.getItem("token");
       
-      // Check if files were changed (requires admin approval)
-      const filesChanged = newThumbnail || newAdditionalImages.length > 0 || newDesignFile;
+      const imagesModified = existingAdditionalImages.length !== (editingDesign.additional_images || []).length;
+      const filesChanged = newThumbnail || newAdditionalImages.length > 0 || newDesignFile || imagesModified;
       
-      // Use FormData if files are being updated
-      if (filesChanged) {
+      if (filesChanged || newThumbnail || newAdditionalImages.length > 0 || newDesignFile) {
         const formData = new FormData();
         formData.append("title", editForm.title);
         formData.append("description", editForm.description);
         formData.append("price", editForm.price);
         formData.append("category", editForm.category);
         formData.append("subcategory", editForm.subcategory);
+        const keptIndices = existingAdditionalImages.map(item => item.index);
+        formData.append("kept_image_indices_json", JSON.stringify(keptIndices));
         
         if (newThumbnail) {
           formData.append("thumbnail", newThumbnail);
@@ -156,23 +168,22 @@ const MyDesigns = () => {
           formData.append("design_file", newDesignFile);
         }
         
-        await API.put(`/seller/design/${editingDesign._id}`, formData, {
+        const res = await API.put(`/seller/design/${editingDesign._id}`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
             Authorization: `Bearer ${token}`,
           },
         });
         
-        alert("Design updated successfully!\n\nNote: Since you updated files/images, your design will require admin approval again.");
+        alert(res.data.message || "Design updated successfully!");
       } else {
-        // Only text fields changed - no admin approval needed
-        await API.put(`/seller/design/${editingDesign._id}`, editForm, {
+        const res = await API.put(`/seller/design/${editingDesign._id}`, editForm, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
         
-        alert("Design updated successfully!");
+        alert(res.data.message || "Design updated successfully!");
       }
 
       setEditingDesign(null);
@@ -429,77 +440,124 @@ const MyDesigns = () => {
 
                 {/* Images */}
                 <div className={styles.formSection}>
-                  <h3 className={styles.sectionTitle}>Images (Optional - Requires Admin Approval)</h3>
-                  
-                  <div className={styles.formRow}>
-                    <div className={styles.formGroup}>
-                      <label className={styles.label}>New Thumbnail</label>
-                      <div className={styles.fileUpload}>
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/jpg"
-                          onChange={handleThumbnailChange}
-                          className={styles.fileInput}
-                          id="editThumbnail"
-                        />
-                        <label htmlFor="editThumbnail" className={styles.uploadLabel}>
-                          {newThumbnailPreview ? (
-                            <img src={newThumbnailPreview} alt="New thumbnail" className={styles.previewImg} />
-                          ) : (
-                            <div className={styles.uploadPlaceholder}>
-                              <MdImage size={32} />
-                              <span>Upload new thumbnail</span>
-                            </div>
-                          )}
-                        </label>
-                      </div>
-                      <small className={styles.hint}>Current thumbnail is stored in database</small>
+                  <h3 className={styles.sectionTitle}>Thumbnail Image</h3>
+                  <div className={styles.thumbnailEditBlock}>
+                    <div className={styles.thumbnailPreviewWrapper}>
+                      <img
+                        src={newThumbnailPreview || existingThumbnail || "https://via.placeholder.com/150"}
+                        alt="Design Thumbnail"
+                        className={styles.currentThumbnailImg}
+                      />
                     </div>
-
-                    <div className={styles.formGroup}>
-                      <label className={styles.label}>Additional Images</label>
-                      <div className={styles.fileUpload}>
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/jpg"
-                          multiple
-                          onChange={handleAdditionalImagesChange}
-                          className={styles.fileInput}
-                          id="editAdditionalImages"
-                        />
-                        <label htmlFor="editAdditionalImages" className={styles.uploadLabel}>
-                          <div className={styles.uploadPlaceholder}>
-                            <MdCloudUpload size={32} />
-                            <span>Upload new images (Max 7)</span>
-                          </div>
-                        </label>
-                      </div>
-                      {newImagesPreviews.length > 0 && (
-                        <div className={styles.imagePreviews}>
-                          {newImagesPreviews.map((preview, index) => (
-                            <div key={index} className={styles.previewItem}>
-                              <img src={preview} alt={`Preview ${index + 1}`} />
-                              <button
-                                type="button"
-                                onClick={() => removeNewImage(index)}
-                                className={styles.removeBtn}
-                              >
-                                <MdClose />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
+                    <div className={styles.thumbnailActions}>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg"
+                        onChange={handleThumbnailChange}
+                        className={styles.fileInput}
+                        id="editThumbnail"
+                      />
+                      <label htmlFor="editThumbnail" className="btn-outline-custom">
+                        <MdImage /> {newThumbnail ? "Change Uploaded Thumbnail" : "Replace Thumbnail"}
+                      </label>
+                      {newThumbnailPreview && (
+                        <button
+                          type="button"
+                          className={styles.resetBtn}
+                          onClick={() => { setNewThumbnail(null); setNewThumbnailPreview(null); }}
+                        >
+                          Reset to Original
+                        </button>
                       )}
                     </div>
                   </div>
                 </div>
 
+                {/* Additional Images */}
+                <div className={styles.formSection}>
+                  <h3 className={styles.sectionTitle}>Additional Gallery Images</h3>
+                  
+                  {/* Existing Additional Images Grid */}
+                  {existingAdditionalImages.length > 0 && (
+                    <div className={styles.existingImagesSection}>
+                      <label className={styles.label}>
+                        Current Gallery Images ({existingAdditionalImages.length}) - <em>Click ✕ to remove any image</em>
+                      </label>
+                      <div className={styles.imagePreviews}>
+                        {existingAdditionalImages.map((item, index) => (
+                          <div key={`exist-${item.index}`} className={styles.previewItem}>
+                            <img src={item.src} alt={`Gallery ${index + 1}`} />
+                            <button
+                              type="button"
+                              onClick={() => removeExistingAdditionalImage(index)}
+                              className={styles.removeBtn}
+                              title="Remove image"
+                            >
+                              <MdClose />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className={styles.formGroup} style={{ marginTop: existingAdditionalImages.length > 0 ? '15px' : '0' }}>
+                    <label className={styles.label}>Upload New Gallery Images (Max 7 Total)</label>
+                    <div className={styles.fileUpload}>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg"
+                        multiple
+                        onChange={handleAdditionalImagesChange}
+                        className={styles.fileInput}
+                        id="editAdditionalImages"
+                      />
+                      <label htmlFor="editAdditionalImages" className={styles.uploadLabel}>
+                        <div className={styles.uploadPlaceholder}>
+                          <MdCloudUpload size={28} />
+                          <span>Select new images to add</span>
+                        </div>
+                      </label>
+                    </div>
+                    {newImagesPreviews.length > 0 && (
+                      <div className={styles.imagePreviews}>
+                        {newImagesPreviews.map((preview, index) => (
+                          <div key={`new-${index}`} className={styles.previewItem}>
+                            <img src={preview} alt={`New Preview ${index + 1}`} />
+                            <button
+                              type="button"
+                              onClick={() => removeNewImage(index)}
+                              className={styles.removeBtn}
+                            >
+                              <MdClose />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Design File */}
                 <div className={styles.formSection}>
-                  <h3 className={styles.sectionTitle}>Design File (Optional - Requires Admin Approval)</h3>
+                  <h3 className={styles.sectionTitle}>Design File (.ZIP / .EMB)</h3>
                   
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>New ZIP/EMB File</label>
+                  <div className={styles.existingFileCard}>
+                    <div className={styles.fileCardHeader}>
+                      <MdInsertDriveFile className={styles.fileCardIcon} />
+                      <div>
+                        <div className={styles.fileCardTitle}>
+                          <strong>Preserved Design File:</strong> {editingDesign.design_file_path ? editingDesign.design_file_path.split('/').pop() : "File Attached"}
+                        </div>
+                        <div className={styles.fileCardSubtitle}>
+                          <MdCheckCircle color="#10b981" /> {editingDesign.file_names?.length || 0} EMB Embroidery file(s) inside • Safe & saved in database
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.formGroup} style={{ marginTop: '12px' }}>
+                    <label className={styles.label}>Replace with New ZIP/EMB File (Optional)</label>
                     <div className={styles.fileUpload}>
                       <input
                         type="file"
@@ -510,19 +568,18 @@ const MyDesigns = () => {
                       />
                       <label htmlFor="editDesignFile" className={styles.uploadLabel}>
                         <div className={styles.uploadPlaceholder}>
-                          <MdCloudUpload size={32} />
-                          <span>{newDesignFile ? newDesignFile.name : "Upload new design file"}</span>
+                          <MdCloudUpload size={28} />
+                          <span>{newDesignFile ? newDesignFile.name : "Upload new ZIP/EMB file to replace"}</span>
                         </div>
                       </label>
                     </div>
-                    <small className={styles.hint}>Current: {editingDesign.design_file_path?.split('/').pop()}</small>
                   </div>
                 </div>
 
                 {/* Warning */}
-                {(newThumbnail || newAdditionalImages.length > 0 || newDesignFile) && (
+                {newDesignFile && (
                   <div className={styles.warningBox}>
-                    ⚠️ <strong>Note:</strong> Updating images or design files will require admin approval again.
+                    ⚠️ <strong>Note:</strong> Uploading a new design file (.ZIP / .EMB) will require admin approval again.
                   </div>
                 )}
 

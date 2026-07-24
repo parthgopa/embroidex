@@ -212,21 +212,57 @@
 .actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  min-width: 180px;
+  gap: 8px;
+  min-width: 190px;
 }
 
-.actions button {
+.mainDownloadBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 20px;
-  font-size: 14px;
+  gap: 6px;
+  padding: 9px 16px !important;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.actions button svg {
-  font-size: 18px;
+.mainDownloadBtn svg {
+  font-size: 17px;
+}
+
+.secondaryActions {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.smallOutlineBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.smallOutlineBtn:hover {
+  background: var(--bg-card);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.smallOutlineBtn svg {
+  font-size: 15px;
 }
 
 .transactionInfo {

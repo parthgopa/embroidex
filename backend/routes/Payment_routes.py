@@ -91,11 +91,15 @@ def create_order():
         # if existing_purchase:
         #     return jsonify({"error": "You have already purchased this design"}), 400
         
+        import uuid
+        receipt = f"RCPT-{uuid.uuid4().hex[:8].upper()}"
+        
         # Create Razorpay order
         amount = int(design["price"] * 100)  # Convert to paise
         order_data = {
             "amount": amount,
             "currency": "INR",
+            "receipt": receipt,
             "payment_capture": 1,
             "notes": {
                 "design_id": design_id,
@@ -112,6 +116,7 @@ def create_order():
             "design_id": ObjectId(design_id),
             "seller_id": design.get("seller_id"),
             "order_id": razorpay_order["id"],
+            "receipt": receipt,
             "amount": design["price"],
             "currency": "INR",
             "status": "pending",
@@ -125,6 +130,7 @@ def create_order():
         
         return jsonify({
             "order_id": razorpay_order["id"],
+            "receipt": receipt,
             "amount": amount,
             "currency": "INR",
             "key": RAZORPAY_KEY_ID
@@ -189,12 +195,65 @@ def verify_payment():
         if not design:
             return jsonify({"error": "Design not found"}), 404
         
+        receipt_number = transaction.get("receipt") or f"RCPT-{razorpay_order_id[-8:].upper()}"
+        
+        # Fetch payment details from Razorpay client
+        method = "online"
+        payment_detail = "Razorpay Online Payment"
+        try:
+            p_info = razorpay_client.payment.fetch(razorpay_payment_id)
+            method = p_info.get("method", "online")
+            if method == "card":
+                card = p_info.get("card", {})
+                last4 = card.get("last4", "")
+                network = card.get("network", "Card")
+                card_type = card.get("type", "").capitalize()
+                payment_detail = f"{network} {card_type} (•••• {last4})" if last4 else f"{network} Card"
+            elif method == "upi":
+                vpa = p_info.get("vpa", "")
+                payment_detail = f"UPI ({vpa})" if vpa else "UPI Payment"
+            elif method == "netbanking":
+                bank = p_info.get("bank", "Bank")
+                payment_detail = f"Netbanking ({bank})"
+            elif method == "wallet":
+                wallet = p_info.get("wallet", "Wallet")
+                payment_detail = f"Wallet ({wallet.capitalize()})"
+        except Exception as fetch_err:
+            print(f"Error fetching payment details from Razorpay: {fetch_err}")
+
+        # Ensure purchase record exists in case webhook was delayed
+        existing_purchase = PURCHASES_COLLECTION.find_one({
+            "order_id": razorpay_order_id,
+            "user_id": user_id
+        })
+        
+        if not existing_purchase:
+            purchase = {
+                "user_id": user_id,
+                "design_id": ObjectId(design_id),
+                "seller_id": design.get("seller_id"),
+                "transaction_id": transaction.get("_id"),
+                "order_id": razorpay_order_id,
+                "payment_id": razorpay_payment_id,
+                "receipt": receipt_number,
+                "payment_method": method,
+                "payment_detail": payment_detail,
+                "amount_paid": transaction.get("amount", design.get("price")),
+                "design_title": design.get("title"),
+                "design_thumbnail": design.get("thumbnail"),
+                "design_files": design.get("file_names", []),
+                "zip_path": design.get("zip_path"),
+                "status": "completed",
+                "purchased_at": datetime.utcnow()
+            }
+            PURCHASES_COLLECTION.insert_one(purchase)
+        
         # Update transaction with payment details
-        # Note: Purchase record will be created by webhook handler
         TRANSACTIONS_COLLECTION.update_one(
             {"order_id": razorpay_order_id},
             {
                 "$set": {
+                    "status": "success",
                     "payment_id": razorpay_payment_id,
                     "payment_signature": razorpay_signature,
                     "verified_at": datetime.utcnow(),
@@ -205,8 +264,9 @@ def verify_payment():
         
         return jsonify({
             "success": True,
-            "message": "Payment verified successfully. Your purchase will be available shortly.",
-            "order_id": razorpay_order_id
+            "message": "Payment verified successfully. Your purchase is available.",
+            "order_id": razorpay_order_id,
+            "receipt": receipt_number
         }), 200
         
     except Exception as e:
