@@ -5,7 +5,10 @@ import {
   MdCheckCircle, 
   MdError,
   MdShoppingCart,
-  MdSecurity
+  MdSecurity,
+  MdVerified,
+  MdFileDownload,
+  MdHighQuality
 } from "react-icons/md";
 import API from "../services/api";
 import styles from "./Purchase.module.css";
@@ -13,7 +16,6 @@ import styles from "./Purchase.module.css";
 const Purchase = () => {
   const { designId } = useParams();
   const navigate = useNavigate();
-  const BASE_URL = API.defaults.baseURL;
   
   const [design, setDesign] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,7 +64,6 @@ const Purchase = () => {
     try {
       const token = localStorage.getItem("token");
       
-      // Step 1: Create Razorpay order
       const orderRes = await API.post(
         "/payment/create-order",
         { design_id: designId },
@@ -71,7 +72,6 @@ const Purchase = () => {
 
       const { order_id, amount, currency } = orderRes.data;
 
-      // Step 2: Initialize Razorpay payment
       const options = {
         key: "rzp_test_STud3pKjWPTcMu",
         amount: amount,
@@ -80,7 +80,6 @@ const Purchase = () => {
         description: design.title,
         order_id: order_id,
         handler: async function (response) {
-          // Step 3: Verify payment
           try {
             const verifyRes = await API.post(
               "/payment/verify",
@@ -138,7 +137,7 @@ const Purchase = () => {
     return (
       <div className={styles.loading}>
         <div className={styles.spinner}></div>
-        <p>Loading payment details...</p>
+        <p>Loading checkout details...</p>
       </div>
     );
   }
@@ -156,26 +155,22 @@ const Purchase = () => {
 
   return (
     <div className={styles.container}>
-      <div className="container">
-        <button className={styles.backBtn} onClick={() => navigate(`/design/${designId}`)}>
-          <MdArrowBack /> Back to Design
-        </button>
-
+      <div className={styles.wrapper}>
         {paymentStatus === "success" && (
-          <div className={styles.successMessage}>
+          <div className={styles.statusCard}>
             <MdCheckCircle className={styles.successIcon} />
             <h2>Payment Successful!</h2>
             {receiptNumber && (
-              <p style={{ fontWeight: 600, color: "var(--primary)", margin: "10px 0" }}>
-                Receipt No: <span>{receiptNumber}</span>
+              <p className={styles.receiptText}>
+                Receipt No: <strong>{receiptNumber}</strong>
               </p>
             )}
-            <p>Your purchase has been completed. Redirecting to your purchases...</p>
+            <p>Your purchase is complete. Redirecting to your purchases...</p>
           </div>
         )}
 
         {paymentStatus === "failed" && (
-          <div className={styles.errorMessage}>
+          <div className={styles.statusCard}>
             <MdError className={styles.errorIcon} />
             <h2>Payment Failed</h2>
             <p>There was an issue processing your payment. Please try again.</p>
@@ -186,10 +181,10 @@ const Purchase = () => {
         )}
 
         {paymentStatus === "cancelled" && (
-          <div className={styles.warningMessage}>
+          <div className={styles.statusCard}>
             <MdError className={styles.warningIcon} />
             <h2>Payment Cancelled</h2>
-            <p>You cancelled the payment. You can try again when ready.</p>
+            <p>You cancelled the payment. You can try again whenever ready.</p>
             <button className="btn-primary-custom" onClick={() => setPaymentStatus(null)}>
               Try Again
             </button>
@@ -198,10 +193,18 @@ const Purchase = () => {
 
         {!paymentStatus && (
           <div className={styles.purchaseCard}>
-            <h1 className={styles.title}>Complete Your Purchase</h1>
+            <div className={styles.cardHeader}>
+              <div className={styles.headerLeftGroup}>
+                <button className={styles.backBtn} onClick={() => navigate(`/design/${designId}`)}>
+                  <MdArrowBack /> Back to Design
+                </button>
+                <h1 className={styles.title}>Checkout & Payment</h1>
+              </div>
+              <span className={styles.secureTag}><MdSecurity /> 256-bit Encrypted</span>
+            </div>
 
             <div className={styles.contentGrid}>
-              {/* Left Column: Design Info & Benefits */}
+              {/* Left Column: Design Item & Included Files */}
               <div className={styles.leftCol}>
                 <div className={styles.designPreview}>
                   <img
@@ -214,23 +217,28 @@ const Purchase = () => {
                   />
                   <div className={styles.designInfo}>
                     <h3>{design.title}</h3>
-                    <p className={styles.category}>{design.category} • {design.subcategory}</p>
-                    <p className={styles.files}>{design.file_names?.length || 0} EMB files included</p>
+                    <div className={styles.badgeRow}>
+                      <span className={styles.catBadge}>{design.category}</span>
+                      {design.subcategory && <span className={styles.subcatBadge}>• {design.subcategory}</span>}
+                    </div>
+                    <p className={styles.filesCount}>
+                      <MdFileDownload /> {design.file_names?.length || 0} EMB Embroidery Files
+                    </p>
                   </div>
                 </div>
 
                 <div className={styles.benefits}>
-                  <h4>What you'll get:</h4>
+                  <h4><MdVerified className={styles.benefitHeaderIcon} /> What's included in your purchase:</h4>
                   <ul>
-                    <li>✓ Instant download after payment</li>
-                    <li>✓ All {design.file_names?.length || 0} EMB files</li>
-                    <li>✓ High-quality embroidery design</li>
-                    <li>✓ Lifetime access to your purchase</li>
+                    <li><MdCheckCircle className={styles.checkIcon} /> Instant ZIP download after payment</li>
+                    <li><MdCheckCircle className={styles.checkIcon} /> All {design.file_names?.length || 0} machine EMB files</li>
+                    <li><MdCheckCircle className={styles.checkIcon} /> Premium production-ready design</li>
+                    <li><MdCheckCircle className={styles.checkIcon} /> Lifetime access from your account</li>
                   </ul>
                 </div>
               </div>
 
-              {/* Right Column: Order Summary & Pay Action */}
+              {/* Right Column: Price Breakdown & Checkout Action */}
               <div className={styles.rightCol}>
                 <div className={styles.priceBreakdown}>
                   <h3>Order Summary</h3>
@@ -239,21 +247,21 @@ const Purchase = () => {
                     <span>₹{design.price}</span>
                   </div>
                   <div className={styles.priceRow}>
-                    <span>Platform Fee</span>
-                    <span>₹0</span>
+                    <span>Platform Convenience Fee</span>
+                    <span className={styles.freeTag}>FREE</span>
                   </div>
                   <div className={styles.divider}></div>
                   <div className={`${styles.priceRow} ${styles.totalRow}`}>
                     <span>Total Amount</span>
-                    <span>₹{design.price}</span>
+                    <span className={styles.totalPrice}>₹{design.price}</span>
                   </div>
                 </div>
 
-                <div className={styles.securityInfo}>
+                <div className={styles.securityBadgeBox}>
                   <MdSecurity className={styles.securityIcon} />
                   <div>
-                    <strong>Secure Payment</strong>
-                    <p>Secured by Razorpay with 256-bit encryption</p>
+                    <strong>100% Guaranteed Safe Checkout</strong>
+                    <p>Secured by Razorpay • UPI, Cards, NetBanking, Wallets</p>
                   </div>
                 </div>
 
@@ -270,7 +278,7 @@ const Purchase = () => {
                   ) : (
                     <>
                       <MdShoppingCart />
-                      Pay ₹{design.price} with Razorpay
+                      Pay ₹{design.price} Now
                     </>
                   )}
                 </button>
@@ -279,6 +287,23 @@ const Purchase = () => {
           </div>
         )}
       </div>
+
+      {/* Sticky Mobile Bottom Pay Bar (Mobile Only) */}
+      {!paymentStatus && design && (
+        <div className={styles.stickyMobilePayBar}>
+          <div className={styles.stickyMobileInfo}>
+            <span className={styles.stickyLabel}>Total Amount</span>
+            <span className={styles.stickyPrice}>₹{design.price}</span>
+          </div>
+          <button
+            className={`btn-primary-custom ${styles.stickyPayBtn}`}
+            onClick={handlePayment}
+            disabled={processing}
+          >
+            {processing ? "Processing..." : `Pay ₹${design.price}`}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
