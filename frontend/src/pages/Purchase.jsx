@@ -8,16 +8,23 @@ import {
   MdSecurity,
   MdVerified,
   MdFileDownload,
-  MdHighQuality
+  MdHighQuality,
+  MdFormatListNumbered,
+  MdLayers
 } from "react-icons/md";
 import API from "../services/api";
+import { getCartItems, getCartTotal, clearCart } from "../utils/cartUtils";
 import styles from "./Purchase.module.css";
 
 const Purchase = () => {
   const { designId } = useParams();
   const navigate = useNavigate();
   
+  const isCartCheckout = designId === "checkout";
+
   const [design, setDesign] = useState(null);
+  const [cartItems, setCartItems] = useState([]);
+  const [totalPrice, setTotalPrice] = useState(0);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(null);
@@ -31,9 +38,27 @@ const Purchase = () => {
       return;
     }
 
-    fetchDesignDetails();
+    if (isCartCheckout) {
+      loadCartItemsData();
+    } else {
+      fetchDesignDetails();
+    }
+
     loadRazorpayScript();
   }, [designId]);
+
+  const loadCartItemsData = () => {
+    const userId = localStorage.getItem("user_id");
+    const items = getCartItems(userId);
+    if (items.length === 0) {
+      alert("Your cart is empty!");
+      navigate("/explore");
+      return;
+    }
+    setCartItems(items);
+    setTotalPrice(getCartTotal(userId));
+    setLoading(false);
+  };
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -48,7 +73,9 @@ const Purchase = () => {
   const fetchDesignDetails = async () => {
     try {
       const res = await API.get(`/seller/design/${designId}`);
-      setDesign(res.data.design);
+      const singleDesign = res.data.design;
+      setDesign(singleDesign);
+      setTotalPrice(singleDesign.price || 0);
     } catch (err) {
       console.error("Failed to fetch design details", err);
       alert("Failed to load design details");
@@ -63,12 +90,18 @@ const Purchase = () => {
 
     try {
       const token = localStorage.getItem("token");
-      
-      const orderRes = await API.post(
-        "/payment/create-order",
-        { design_id: designId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const userId = localStorage.getItem("user_id");
+
+      let payload = {};
+      if (isCartCheckout) {
+        payload = { design_ids: cartItems.map((item) => item._id) };
+      } else {
+        payload = { design_id: designId };
+      }
+
+      const orderRes = await API.post("/payment/create-order", payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       const { order_id, amount, currency } = orderRes.data;
 
@@ -77,7 +110,9 @@ const Purchase = () => {
         amount: amount,
         currency: currency,
         name: "Embroidex",
-        description: design.title,
+        description: isCartCheckout 
+          ? `Purchase ${cartItems.length} Embroidery Design(s)`
+          : design?.title,
         order_id: order_id,
         handler: async function (response) {
           try {
@@ -87,12 +122,14 @@ const Purchase = () => {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
-                design_id: designId
               },
               { headers: { Authorization: `Bearer ${token}` } }
             );
 
             if (verifyRes.data.success) {
+              if (isCartCheckout) {
+                clearCart(userId);
+              }
               if (verifyRes.data.receipt) {
                 setReceiptNumber(verifyRes.data.receipt);
               }
@@ -142,7 +179,7 @@ const Purchase = () => {
     );
   }
 
-  if (!design) {
+  if (!isCartCheckout && !design) {
     return (
       <div className={styles.error}>
         <h2>Design not found</h2>
@@ -165,7 +202,10 @@ const Purchase = () => {
                 Receipt No: <strong>{receiptNumber}</strong>
               </p>
             )}
-            <p>Your purchase is complete. Redirecting to your purchases...</p>
+            <p>
+              Your purchase of {isCartCheckout ? `${cartItems.length} designs` : "1 design"} is complete. 
+              Redirecting to your purchases page...
+            </p>
           </div>
         )}
 
@@ -195,8 +235,11 @@ const Purchase = () => {
           <div className={styles.purchaseCard}>
             <div className={styles.cardHeader}>
               <div className={styles.headerLeftGroup}>
-                <button className={styles.backBtn} onClick={() => navigate(`/design/${designId}`)}>
-                  <MdArrowBack /> Back to Design
+                <button 
+                  className={styles.backBtn} 
+                  onClick={() => navigate(isCartCheckout ? "/cart" : `/design/${designId}`)}
+                >
+                  <MdArrowBack /> {isCartCheckout ? "Back to Cart" : "Back to Design"}
                 </button>
                 <h1 className={styles.title}>Checkout & Payment</h1>
               </div>
@@ -204,36 +247,61 @@ const Purchase = () => {
             </div>
 
             <div className={styles.contentGrid}>
-              {/* Left Column: Design Item & Included Files */}
+              {/* Left Column: Items Summary List */}
               <div className={styles.leftCol}>
-                <div className={styles.designPreview}>
-                  <img
-                    src={design.thumbnail || "https://via.placeholder.com/200x150"}
-                    alt={design.title}
-                    className={styles.designImage}
-                    onError={(e) => {
-                      e.target.src = "https://via.placeholder.com/200x150";
-                    }}
-                  />
-                  <div className={styles.designInfo}>
-                    <h3>{design.title}</h3>
-                    <div className={styles.badgeRow}>
-                      <span className={styles.catBadge}>{design.category}</span>
-                      {design.subcategory && <span className={styles.subcatBadge}>• {design.subcategory}</span>}
-                    </div>
-                    <p className={styles.filesCount}>
-                      <MdFileDownload /> {design.file_names?.length || 0} EMB Embroidery Files
-                    </p>
+                {isCartCheckout ? (
+                  <div className={styles.cartItemsListSummary}>
+                    <h3>Order Items ({cartItems.length})</h3>
+                    {cartItems.map((item) => (
+                      <div key={item._id} className={styles.cartItemRowSummary}>
+                        <img
+                          src={item.thumbnail || "https://via.placeholder.com/80"}
+                          alt={item.title}
+                          className={styles.cartItemThumb}
+                        />
+                        <div className={styles.cartItemMeta}>
+                          <h4>{item.title}</h4>
+                          <span className={styles.catBadge}>{item.category}</span>
+                          <span className={styles.specPill}>
+                            <MdFormatListNumbered /> {item.needles || 1} Needles • {(item.file_format || "EMB").toUpperCase()}
+                          </span>
+                        </div>
+                        <div className={styles.cartItemPrice}>
+                          ₹{item.price}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <div className={styles.designPreview}>
+                    <img
+                      src={design.thumbnail || "https://via.placeholder.com/200x150"}
+                      alt={design.title}
+                      className={styles.designImage}
+                      onError={(e) => {
+                        e.target.src = "https://via.placeholder.com/200x150";
+                      }}
+                    />
+                    <div className={styles.designInfo}>
+                      <h3>{design.title}</h3>
+                      <div className={styles.badgeRow}>
+                        <span className={styles.catBadge}>{design.category}</span>
+                        {design.subcategory && <span className={styles.subcatBadge}>• {design.subcategory}</span>}
+                      </div>
+                      <p className={styles.filesCount}>
+                        <MdFileDownload /> {design.file_names?.length || 0} EMB Embroidery Files
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <div className={styles.benefits}>
                   <h4><MdVerified className={styles.benefitHeaderIcon} /> What's included in your purchase:</h4>
                   <ul>
                     <li><MdCheckCircle className={styles.checkIcon} /> Instant ZIP download after payment</li>
-                    <li><MdCheckCircle className={styles.checkIcon} /> All {design.file_names?.length || 0} machine EMB files</li>
-                    <li><MdCheckCircle className={styles.checkIcon} /> Premium production-ready design</li>
-                    <li><MdCheckCircle className={styles.checkIcon} /> Lifetime access from your account</li>
+                    <li><MdCheckCircle className={styles.checkIcon} /> All production-ready machine EMB files</li>
+                    <li><MdCheckCircle className={styles.checkIcon} /> Full commercial use authorization</li>
+                    <li><MdCheckCircle className={styles.checkIcon} /> Lifetime download access from your account</li>
                   </ul>
                 </div>
               </div>
@@ -243,8 +311,8 @@ const Purchase = () => {
                 <div className={styles.priceBreakdown}>
                   <h3>Order Summary</h3>
                   <div className={styles.priceRow}>
-                    <span>Design Price</span>
-                    <span>₹{design.price}</span>
+                    <span>Subtotal ({isCartCheckout ? cartItems.length : 1} item{isCartCheckout && cartItems.length !== 1 ? "s" : ""})</span>
+                    <span>₹{totalPrice.toLocaleString()}</span>
                   </div>
                   <div className={styles.priceRow}>
                     <span>Platform Convenience Fee</span>
@@ -253,7 +321,7 @@ const Purchase = () => {
                   <div className={styles.divider}></div>
                   <div className={`${styles.priceRow} ${styles.totalRow}`}>
                     <span>Total Amount</span>
-                    <span className={styles.totalPrice}>₹{design.price}</span>
+                    <span className={styles.totalPrice}>₹{totalPrice.toLocaleString()}</span>
                   </div>
                 </div>
 
@@ -278,7 +346,7 @@ const Purchase = () => {
                   ) : (
                     <>
                       <MdShoppingCart />
-                      Pay ₹{design.price} Now
+                      Pay ₹{totalPrice.toLocaleString()} Now
                     </>
                   )}
                 </button>
@@ -289,18 +357,18 @@ const Purchase = () => {
       </div>
 
       {/* Sticky Mobile Bottom Pay Bar (Mobile Only) */}
-      {!paymentStatus && design && (
+      {!paymentStatus && (
         <div className={styles.stickyMobilePayBar}>
           <div className={styles.stickyMobileInfo}>
             <span className={styles.stickyLabel}>Total Amount</span>
-            <span className={styles.stickyPrice}>₹{design.price}</span>
+            <span className={styles.stickyPrice}>₹{totalPrice.toLocaleString()}</span>
           </div>
           <button
             className={`btn-primary-custom ${styles.stickyPayBtn}`}
             onClick={handlePayment}
             disabled={processing}
           >
-            {processing ? "Processing..." : `Pay ₹${design.price}`}
+            {processing ? "Processing..." : `Pay ₹${totalPrice.toLocaleString()}`}
           </button>
         </div>
       )}

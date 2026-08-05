@@ -34,34 +34,50 @@ def _build_emb_metadata_payload(raw_metadata, expected_file_names):
     try:
         parsed_metadata = json.loads(raw_metadata or "[]")
     except json.JSONDecodeError:
-        raise ValueError("Invalid embroidery metadata payload")
+        parsed_metadata = []
 
     if not isinstance(parsed_metadata, list):
-        raise ValueError("Embroidery metadata payload must be a list")
+        parsed_metadata = []
 
     metadata_by_file = {}
     for item in parsed_metadata:
-        if not isinstance(item, dict):
-            raise ValueError("Each embroidery metadata entry must be an object")
-
-        file_name = (item.get("file_name") or "").strip()
-        if not file_name:
-            raise ValueError("Each embroidery metadata entry must include file_name")
-
-        metadata_by_file[file_name] = {
-            "file_name": file_name,
-            "stitch_count": _parse_number(item.get("stitch_count"), f"Stitches for {file_name}"),
-            "width_mm": _parse_number(item.get("width_mm"), f"Width for {file_name}", allow_decimal=True),
-            "height_mm": _parse_number(item.get("height_mm"), f"Height for {file_name}", allow_decimal=True)
-        }
+        if isinstance(item, dict):
+            file_name = (item.get("file_name") or "").strip()
+            if file_name:
+                metadata_by_file[file_name] = item
 
     normalized_metadata = []
-    for file_name in expected_file_names:
-        if file_name not in metadata_by_file:
-            raise ValueError(f"Missing embroidery details for {file_name}")
-        normalized_metadata.append(metadata_by_file[file_name])
+    total_stitch_count = 0
 
-    total_stitch_count = sum(item["stitch_count"] for item in normalized_metadata)
+    for file_name in expected_file_names:
+        item = metadata_by_file.get(file_name, {})
+        stitch_raw = item.get("stitch_count")
+        try:
+            stitch_count = int(float(stitch_raw)) if stitch_raw is not None and str(stitch_raw).strip() != "" else 0
+        except (ValueError, TypeError):
+            stitch_count = 0
+
+        width_raw = item.get("width_mm")
+        try:
+            width_mm = float(width_raw) if width_raw is not None and str(width_raw).strip() != "" else ""
+        except (ValueError, TypeError):
+            width_mm = ""
+
+        height_raw = item.get("height_mm")
+        try:
+            height_mm = float(height_raw) if height_raw is not None and str(height_raw).strip() != "" else ""
+        except (ValueError, TypeError):
+            height_mm = ""
+
+        normalized_entry = {
+            "file_name": file_name,
+            "stitch_count": stitch_count,
+            "width_mm": width_mm,
+            "height_mm": height_mm
+        }
+        normalized_metadata.append(normalized_entry)
+        total_stitch_count += stitch_count
+
     return normalized_metadata, total_stitch_count
 
 
@@ -168,7 +184,8 @@ def process_upload():
         return jsonify({"error": "Design file is required"}), 400
     
     # Validate design file
-    valid_file, msg = validate_file(design_file, {"zip", "emb"})
+    allowed_design_extensions = {"zip", "emb", "dst", "pes", "jef", "exp", "vp3", "art", "xxx", "hus", "vip", "sew"}
+    valid_file, msg = validate_file(design_file, allowed_design_extensions)
     if not valid_file:
         return jsonify({"error": f"Design file: {msg}"}), 400
     
@@ -202,7 +219,10 @@ def process_upload():
         file_names = [os.path.basename(emb_file) for emb_file in categorized["emb"]]
 
         if not file_names:
-            return jsonify({"error": "ZIP file must contain at least one .emb file"}), 400
+            file_names = [os.path.basename(f) for f in extracted_files if os.path.splitext(f)[1].lower().replace('.', '') in allowed_design_extensions]
+
+        if not file_names:
+            file_names = [os.path.basename(design_file.filename)]
 
         emb_metadata_list = [
             {
@@ -214,8 +234,8 @@ def process_upload():
             for file_name in file_names
         ]
     
-    elif file_extension == '.emb':
-        # Single EMB file
+    else:
+        # Single design file (.emb, .dst, .pes, etc.)
         file_names = [design_file.filename]
         emb_metadata_list = [
             {
@@ -345,8 +365,8 @@ def final_upload():
     if title_source not in {"original", "ai"} or description_source not in {"original", "ai"}:
         return jsonify({"error": "Invalid content source selection"}), 400
 
-    if not title_original or not description_original:
-        return jsonify({"error": "Manual title and description are required"}), 400
+    if not (title_original or title_ai) or not (description_original or description_ai):
+        return jsonify({"error": "Title and description are required"}), 400
 
     if title_source == "ai" and not title_ai:
         return jsonify({"error": "AI title is required when AI title is selected"}), 400
@@ -395,6 +415,18 @@ def final_upload():
         if img.filename:
             additional_image_data.append(encode_image_to_base64(img))
     
+    needles_raw = request.form.get("needles", "1")
+    file_format_raw = (request.form.get("file_format") or request.form.get("design_file_type") or "EMB").strip().upper()
+    if file_format_raw.startswith("."):
+        file_format_raw = file_format_raw[1:]
+
+    try:
+        needles = int(needles_raw)
+        if needles < 1 or needles > 15:
+            needles = 1
+    except (TypeError, ValueError):
+        needles = 1
+
     # Prepare design document
     design_document = {
         "design_id": design_id,
@@ -409,6 +441,9 @@ def final_upload():
         "description_source": description_source,
         "category": category,
         "subcategory": subcategory,
+        "needles": needles,
+        "file_format": file_format_raw,
+        "design_file_type": file_format_raw.lower(),
         "price": float(price),
         "thumbnail": thumbnail_data,
         "design_file_path": design_file_path,

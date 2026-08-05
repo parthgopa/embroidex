@@ -8,10 +8,14 @@ import {
   MdChevronRight, 
   MdOutlineSwapVert,
   MdLayers,
-  MdCheck
+  MdCheck,
+  MdFormatListNumbered
 } from "react-icons/md";
 import API from "../services/api";
 import styles from "./Explore.module.css";
+
+const NEEDLE_OPTIONS = ["1", "2", "3", "4", "5", "5+"];
+const FILE_FORMAT_OPTIONS = ["DST", "PES", "EMB", "JEF", "EXP", "VP3", "ART", "XXX", "HUS", "VIP", "SEW"];
 
 const Explore = () => {
   const navigate = useNavigate();
@@ -23,7 +27,8 @@ const Explore = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryTree, setCategoryTree] = useState({});
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [selectedSubcategories, setSelectedSubcategories] = useState([]);
+  const [selectedNeedles, setSelectedNeedles] = useState([]);
+  const [selectedFileFormats, setSelectedFileFormats] = useState([]);
   const [selectedPriceRanges, setSelectedPriceRanges] = useState([]);
   const [sortBy, setSortBy] = useState("latest");
 
@@ -37,7 +42,15 @@ const Explore = () => {
 
   useEffect(() => {
     filterDesigns();
-  }, [searchQuery, selectedCategories, selectedSubcategories, selectedPriceRanges, sortBy, designs]);
+  }, [
+    searchQuery, 
+    selectedCategories, 
+    selectedNeedles, 
+    selectedFileFormats, 
+    selectedPriceRanges, 
+    sortBy, 
+    designs
+  ]);
 
   const fetchApprovedDesigns = async () => {
     try {
@@ -78,14 +91,28 @@ const Explore = () => {
       );
     }
 
-    // Category filter (multi-select)
+    // Main Category filter (multi-select)
     if (selectedCategories.length > 0) {
       filtered = filtered.filter((design) => selectedCategories.includes(design.category));
     }
 
-    // Subcategory filter (multi-select)
-    if (selectedSubcategories.length > 0) {
-      filtered = filtered.filter((design) => selectedSubcategories.includes(design.subcategory));
+    // Needles filter (multi-select)
+    if (selectedNeedles.length > 0) {
+      filtered = filtered.filter((design) => {
+        const needles = design.needles || 1;
+        return selectedNeedles.some((val) => {
+          if (val === "5+") return needles >= 5;
+          return needles === parseInt(val);
+        });
+      });
+    }
+
+    // File Format filter (multi-select)
+    if (selectedFileFormats.length > 0) {
+      filtered = filtered.filter((design) => {
+        const fmt = (design.file_format || design.design_file_type || "EMB").toUpperCase();
+        return selectedFileFormats.includes(fmt);
+      });
     }
 
     // Price ranges filter (multi-select)
@@ -122,11 +149,19 @@ const Explore = () => {
     }
   };
 
-  const toggleSubcategory = (subcat) => {
-    if (selectedSubcategories.includes(subcat)) {
-      setSelectedSubcategories(selectedSubcategories.filter((s) => s !== subcat));
+  const toggleNeedle = (needle) => {
+    if (selectedNeedles.includes(needle)) {
+      setSelectedNeedles(selectedNeedles.filter((n) => n !== needle));
     } else {
-      setSelectedSubcategories([...selectedSubcategories, subcat]);
+      setSelectedNeedles([...selectedNeedles, needle]);
+    }
+  };
+
+  const toggleFileFormat = (fmt) => {
+    if (selectedFileFormats.includes(fmt)) {
+      setSelectedFileFormats(selectedFileFormats.filter((f) => f !== fmt));
+    } else {
+      setSelectedFileFormats([...selectedFileFormats, fmt]);
     }
   };
 
@@ -141,7 +176,8 @@ const Explore = () => {
   const resetAllFilters = () => {
     setSearchQuery("");
     setSelectedCategories([]);
-    setSelectedSubcategories([]);
+    setSelectedNeedles([]);
+    setSelectedFileFormats([]);
     setSelectedPriceRanges([]);
     setSortBy("latest");
   };
@@ -149,93 +185,83 @@ const Explore = () => {
   const activeFilterCount =
     (searchQuery ? 1 : 0) +
     selectedCategories.length +
-    selectedSubcategories.length +
-    selectedPriceRanges.length +
-    (sortBy !== "latest" ? 1 : 0);
+    selectedNeedles.length +
+    selectedFileFormats.length +
+    selectedPriceRanges.length;
 
-  const getUniqueCategories = () => {
-    const categories = designs.map((d) => d.category).filter(Boolean);
-    return [...new Set(categories)];
+  const getMainCategories = () => {
+    if (Object.keys(categoryTree).length > 0) {
+      return Object.keys(categoryTree);
+    }
+    return Array.from(new Set(designs.map((d) => d.category).filter(Boolean)));
   };
 
   if (loading) {
     return (
-      <div className={styles.loading}>
+      <div className={styles.loadingContainer}>
         <div className={styles.spinner}></div>
-        <p>Loading designs...</p>
+        <p>Loading embroidery designs...</p>
       </div>
     );
   }
 
   return (
     <div className={styles.container}>
-      {/* Sticky Mobile/Tablet Compact Header Bar */}
-      <div className={styles.stickyHeader}>
-        <div className={styles.topSearchWrapper}>
-          <div className={styles.compactSearchBar}>
+      {/* Top Banner / Search Header */}
+      <div className={styles.heroBanner}>
+        <div className={styles.heroContent}>
+          <h1 className={styles.pageTitle}>Explore Embroidery Designs</h1>
+          <p className={styles.pageSubtitle}>
+            Discover verified high-quality embroidery patterns ready for instant download
+          </p>
+
+          {/* Search Input Bar */}
+          <div className={styles.searchBarWrapper}>
             <MdSearch className={styles.searchIcon} />
             <input
               type="text"
-              placeholder="Search embroidery designs..."
-              className={styles.searchInput}
+              placeholder="Search by design name, category (e.g. Saree, Kurti)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
             />
             {searchQuery && (
-              <button className={styles.clearBtn} onClick={() => setSearchQuery("")}>
+              <button className={styles.clearSearchBtn} onClick={() => setSearchQuery("")}>
                 <MdClose />
               </button>
             )}
           </div>
-
-          <button
-            className={`${styles.mobileFilterToggle} ${activeFilterCount > 0 ? styles.activeFilterBtn : ""}`}
-            onClick={() => setIsFilterDrawerOpen(true)}
-          >
-            <MdTune className={styles.tuneIcon} />
-            <span>Filters</span>
-            {activeFilterCount > 0 && <span className={styles.filterBadge}>{activeFilterCount}</span>}
-          </button>
-        </div>
-
-        {/* Quick Filter Pills / Result Bar */}
-        <div className={styles.filterPillsRow}>
-          <span className={styles.resultsBadge}>
-            <strong>{filteredDesigns.length}</strong> designs
-          </span>
-
-          {selectedCategories.map((cat) => (
-            <span key={cat} className={styles.activePill} onClick={() => toggleCategory(cat)}>
-              {cat} <MdClose />
-            </span>
-          ))}
-
-          {selectedSubcategories.map((subcat) => (
-            <span key={subcat} className={styles.activePill} onClick={() => toggleSubcategory(subcat)}>
-              {subcat} <MdClose />
-            </span>
-          ))}
-
-          {selectedPriceRanges.map((range) => (
-            <span key={range} className={styles.activePill} onClick={() => togglePriceRange(range)}>
-              ₹{range} <MdClose />
-            </span>
-          ))}
-
-          {activeFilterCount > 0 && (
-            <button className={styles.clearAllTextBtn} onClick={resetAllFilters}>
-              Clear All
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Main Content Layout */}
+      {/* Main Content Layout: Left Sidebar Filters + Right Designs Grid */}
       <div className={styles.mainLayout}>
-        {/* Desktop Sidebar Filters */}
+        
+        {/* Mobile Filter Toggle Header */}
+        <div className={styles.mobileFilterHeader}>
+          <button
+            className={styles.mobileFilterBtn}
+            onClick={() => setIsFilterDrawerOpen(true)}
+          >
+            <MdFilterList size={20} />
+            <span>Filters {activeFilterCount > 0 && `(${activeFilterCount})`}</span>
+          </button>
+
+          <div className={styles.resultsCountMobile}>
+            Showing <strong>{filteredDesigns.length}</strong> designs
+          </div>
+        </div>
+
+        {/* Desktop Left Sidebar Filters */}
         <aside className={styles.desktopSidebar}>
           <div className={styles.sidebarHeader}>
-            <h3><MdFilterList /> Filters</h3>
+            <div className={styles.sidebarTitleRow}>
+              <MdTune className={styles.filterHeaderIcon} />
+              <h3>Filters</h3>
+              {activeFilterCount > 0 && (
+                <span className={styles.activeBadge}>{activeFilterCount}</span>
+              )}
+            </div>
             {activeFilterCount > 0 && (
               <button className={styles.clearAllBtn} onClick={resetAllFilters}>
                 Clear All
@@ -258,49 +284,54 @@ const Explore = () => {
             </select>
           </div>
 
-          {/* Categories & Subcategories Tree */}
+          {/* Main Categories Filter */}
           <div className={styles.sidebarGroup}>
             <label className={styles.groupTitle}>Categories</label>
             <div className={styles.treeList}>
-              {Object.keys(categoryTree).length > 0 ? (
-                Object.entries(categoryTree).map(([catName, subcats]) => (
-                  <div key={catName} className={styles.categoryBlock}>
-                    <label className={styles.checkboxRow}>
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(catName)}
-                        onChange={() => toggleCategory(catName)}
-                      />
-                      <span className={styles.catName}>{catName}</span>
-                    </label>
-                    {subcats && subcats.length > 0 && (
-                      <div className={styles.subcatList}>
-                        {subcats.map((subcat) => (
-                          <label key={subcat} className={styles.subCheckboxRow}>
-                            <input
-                              type="checkbox"
-                              checked={selectedSubcategories.includes(subcat)}
-                              onChange={() => toggleSubcategory(subcat)}
-                            />
-                            <span>{subcat}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                getUniqueCategories().map((cat) => (
-                  <label key={cat} className={styles.checkboxRow}>
-                    <input
-                      type="checkbox"
-                      checked={selectedCategories.includes(cat)}
-                      onChange={() => toggleCategory(cat)}
-                    />
-                    <span>{cat}</span>
-                  </label>
-                ))
-              )}
+              {getMainCategories().map((cat) => (
+                <label key={cat} className={styles.checkboxRow}>
+                  <input
+                    type="checkbox"
+                    checked={selectedCategories.includes(cat)}
+                    onChange={() => toggleCategory(cat)}
+                  />
+                  <span className={styles.catName}>{cat}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Number of Needles Filter */}
+          <div className={styles.sidebarGroup}>
+            <label className={styles.groupTitle}>Number of Needles</label>
+            <div className={styles.treeList}>
+              {NEEDLE_OPTIONS.map((needle) => (
+                <label key={needle} className={styles.checkboxRow}>
+                  <input
+                    type="checkbox"
+                    checked={selectedNeedles.includes(needle)}
+                    onChange={() => toggleNeedle(needle)}
+                  />
+                  <span>{needle} {needle === "1" ? "Needle" : "Needles"}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* File Format Filter */}
+          <div className={styles.sidebarGroup}>
+            <label className={styles.groupTitle}>File Format</label>
+            <div className={styles.treeList}>
+              {FILE_FORMAT_OPTIONS.map((fmt) => (
+                <label key={fmt} className={styles.checkboxRow}>
+                  <input
+                    type="checkbox"
+                    checked={selectedFileFormats.includes(fmt)}
+                    onChange={() => toggleFileFormat(fmt)}
+                  />
+                  <span className={styles.formatTag}>.{fmt}</span>
+                </label>
+              ))}
             </div>
           </div>
 
@@ -331,7 +362,7 @@ const Explore = () => {
             <div className={styles.emptyState}>
               <MdSearch className={styles.emptyIcon} />
               <h3>No designs match your filters</h3>
-              <p>Try clearing your search or expanding price range</p>
+              <p>Try clearing your search or expanding category/needle selection</p>
               <button className="btn-outline-custom" onClick={resetAllFilters}>
                 Reset Filters
               </button>
@@ -342,16 +373,14 @@ const Explore = () => {
                 <div
                   key={design._id}
                   className={styles.designCard}
-                  onClick={() => navigate(`/design/${design._id}`)}
+                  onClick={() => window.open(`/design/${design._id}`, "_blank")}
                 >
                   <div className={styles.cardImage}>
                     <img
                       src={design.thumbnail || "https://via.placeholder.com/300x200"}
                       alt={design.title}
+                      loading="lazy"
                     />
-                    <div className={styles.cardOverlay}>
-                      <button className="btn-primary-custom">View Details</button>
-                    </div>
                   </div>
 
                   <div className={styles.cardBody}>
@@ -359,17 +388,17 @@ const Explore = () => {
                       <h3 className={styles.cardTitle}>{design.title}</h3>
                       <div className={styles.cardBadges}>
                         <span className={styles.categoryBadge}>{design.category}</span>
-                        {design.subcategory && (
-                          <span className={styles.subcategoryBadge}>• {design.subcategory}</span>
-                        )}
+                        <span className={styles.needleBadgeText}>
+                          {design.needles || 1} Needle{design.needles !== 1 ? "s" : ""}
+                        </span>
+                        <span className={styles.formatTag}>
+                          .{(design.file_format || design.design_file_type || "EMB").toUpperCase()}
+                        </span>
                       </div>
                     </div>
 
                     <div className={styles.cardFooter}>
-                      <span className={styles.cardPrice}>₹{design.price}</span>
-                      <span className={styles.mobileDetailsBtn}>
-                        Details <MdChevronRight />
-                      </span>
+                      <span className={styles.cardPrice}>₹{design.price?.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -379,29 +408,22 @@ const Explore = () => {
         </main>
       </div>
 
-      {/* Amazon-Style Slide-Over Drawer for Mobile & Tablet */}
+      {/* Mobile Filters Slide-over Drawer */}
       {isFilterDrawerOpen && (
         <div className={styles.drawerOverlay} onClick={() => setIsFilterDrawerOpen(false)}>
           <div className={styles.drawerContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.drawerHeader}>
-              <h3>Filters & Categories</h3>
-              <div className={styles.drawerHeaderRight}>
-                {activeFilterCount > 0 && (
-                  <button className={styles.drawerClearBtn} onClick={resetAllFilters}>
-                    Clear All
-                  </button>
-                )}
-                <button className={styles.closeDrawerBtn} onClick={() => setIsFilterDrawerOpen(false)}>
-                  <MdClose size={24} />
-                </button>
-              </div>
+              <h3>Filter Designs</h3>
+              <button className={styles.closeDrawerBtn} onClick={() => setIsFilterDrawerOpen(false)}>
+                <MdClose size={24} />
+              </button>
             </div>
 
             <div className={styles.drawerBody}>
               {/* Sort By Section */}
               <div className={styles.drawerSection}>
                 <h4>Sort By</h4>
-                <div className={styles.sortPillsGrid}>
+                <div className={styles.sortPillGroup}>
                   {[
                     { id: "latest", label: "Newest First" },
                     { id: "price_asc", label: "Price: Low to High" },
@@ -419,48 +441,49 @@ const Explore = () => {
                 </div>
               </div>
 
-              {/* Category Tree Section */}
+              {/* Main Categories Section */}
               <div className={styles.drawerSection}>
-                <h4>Categories & Subcategories</h4>
-                {Object.keys(categoryTree).length > 0 ? (
-                  Object.entries(categoryTree).map(([catName, subcats]) => (
-                    <div key={catName} className={styles.drawerCategoryGroup}>
-                      <label className={styles.drawerCheckboxRow}>
-                        <input
-                          type="checkbox"
-                          checked={selectedCategories.includes(catName)}
-                          onChange={() => toggleCategory(catName)}
-                        />
-                        <span className={styles.drawerCatTitle}>{catName}</span>
-                      </label>
-                      {subcats && subcats.length > 0 && (
-                        <div className={styles.drawerSubcatGrid}>
-                          {subcats.map((subcat) => (
-                            <label key={subcat} className={styles.drawerSubCheckboxRow}>
-                              <input
-                                type="checkbox"
-                                checked={selectedSubcategories.includes(subcat)}
-                                onChange={() => toggleSubcategory(subcat)}
-                              />
-                              <span>{subcat}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  getUniqueCategories().map((cat) => (
-                    <label key={cat} className={styles.drawerCheckboxRow}>
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(cat)}
-                        onChange={() => toggleCategory(cat)}
-                      />
-                      <span>{cat}</span>
-                    </label>
-                  ))
-                )}
+                <h4>Main Categories</h4>
+                {getMainCategories().map((cat) => (
+                  <label key={cat} className={styles.drawerCheckboxRow}>
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(cat)}
+                      onChange={() => toggleCategory(cat)}
+                    />
+                    <span>{cat}</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Needles Section */}
+              <div className={styles.drawerSection}>
+                <h4>Number of Needles</h4>
+                {NEEDLE_OPTIONS.map((needle) => (
+                  <label key={needle} className={styles.drawerCheckboxRow}>
+                    <input
+                      type="checkbox"
+                      checked={selectedNeedles.includes(needle)}
+                      onChange={() => toggleNeedle(needle)}
+                    />
+                    <span>{needle} {needle === "1" ? "Needle" : "Needles"}</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* File Format Section */}
+              <div className={styles.drawerSection}>
+                <h4>File Format</h4>
+                {FILE_FORMAT_OPTIONS.map((fmt) => (
+                  <label key={fmt} className={styles.drawerCheckboxRow}>
+                    <input
+                      type="checkbox"
+                      checked={selectedFileFormats.includes(fmt)}
+                      onChange={() => toggleFileFormat(fmt)}
+                    />
+                    <span>.{fmt}</span>
+                  </label>
+                ))}
               </div>
 
               {/* Price Range Section */}

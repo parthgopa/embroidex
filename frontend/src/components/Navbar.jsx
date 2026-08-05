@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { MdPerson, MdMenu, MdClose } from "react-icons/md";
+import { MdPerson, MdMenu, MdClose, MdShoppingCart } from "react-icons/md";
 import API from "../services/api";
 import BecomeSellerModal from "./BecomeSellerModal";
+import { getCartCount } from "../utils/cartUtils";
 import styles from "./Navbar.module.css";
 
 const Navbar = () => {
@@ -11,7 +12,13 @@ const Navbar = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [userName, setUserName] = useState("");
+  const [cartCount, setCartCount] = useState(0);
   const navigate = useNavigate();
+
+  const updateCartBadge = () => {
+    const userId = localStorage.getItem("user_id");
+    setCartCount(getCartCount(userId));
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -22,6 +29,12 @@ const Navbar = () => {
       setIsLoggedIn(false);
       setIsSeller(false);
     }
+    updateCartBadge();
+
+    window.addEventListener("embroidex_cart_updated", updateCartBadge);
+    return () => {
+      window.removeEventListener("embroidex_cart_updated", updateCartBadge);
+    };
   }, []);
 
   const fetchUserInfo = async (token) => {
@@ -67,6 +80,12 @@ const Navbar = () => {
           <div className={styles.navLinks}>
             <Link to="/" className="nav-link-custom">Home</Link>
             <Link to="/explore" className="nav-link-custom">Buy Design</Link>
+
+            <Link to="/cart" className={styles.cartNavLink}>
+              <MdShoppingCart className={styles.cartIconNav} />
+              <span>Cart</span>
+              {cartCount > 0 && <span className={styles.navCartBadge}>{cartCount}</span>}
+            </Link>
 
             {!isLoggedIn ? (
               <>

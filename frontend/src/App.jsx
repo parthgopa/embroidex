@@ -8,6 +8,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
 import DesignDetails from "./pages/DesignDetails";
+import Cart from "./pages/Cart";
 import Purchase from "./pages/Purchase";
 import MyPurchases from "./pages/MyPurchases";
 import Login from "./pages/Login";
@@ -35,6 +36,7 @@ function App() {
         <Route path="/" element={<Layout><Home /></Layout>} />
         <Route path="/explore" element={<Layout><Explore /></Layout>} />
         <Route path="/design/:designId" element={<Layout><DesignDetails /></Layout>} />
+        <Route path="/cart" element={<Layout><Cart /></Layout>} />
         <Route path="/purchase/:designId" element={<Layout><Purchase /></Layout>} />
         <Route path="/my-purchases" element={<Layout><MyPurchases /></Layout>} />
         <Route path="/profile" element={<Layout><Profile /></Layout>} />

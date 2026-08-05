@@ -1,0 +1,178 @@
+.floatingWidgetContainer {
+  position: fixed;
+  bottom: 24px;
+  right: 104px;
+  z-index: 9980;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.bounce {
+  transform: scale(1.08);
+}
+
+.widgetCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 999px;
+  box-shadow: 0 10px 30px rgba(49, 46, 129, 0.4), 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  border: 1px solid rgba(199, 210, 254, 0.25);
+  transition: all 0.2s ease;
+}
+
+.widgetCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(49, 46, 129, 0.5);
+  border-color: rgba(199, 210, 254, 0.5);
+}
+
+.iconWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+}
+
+.cartIcon {
+  font-size: 1.4rem;
+  color: #a5b4fc;
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #1e1b4b;
+}
+
+.widgetInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.itemCountText {
+  font-size: 0.75rem;
+  color: #c7d2fe;
+  font-weight: 500;
+}
+
+.totalPrice {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.viewCartBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.viewCartBtn:hover {
+  background: #4f46e5;
+}
+
+.arrowIcon {
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .floatingWidgetContainer {
+    bottom: 104px;
+    right: 16px;
+    left: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .floatingWidgetContainer {
+    bottom: 96px;
+    right: 16px;
+  }
+  
+  .widgetCard {
+    padding: 6px 12px;
+    gap: 8px;
+  }
+
+  .itemCountText {
+    display: none;
+  }
+
+  .btnLabel {
+    display: none;
+  }
+
+  .viewCartBtn {
+    padding: 6px;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    justify-content: center;
+  }
+
+  .totalPrice {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .widgetInfo {
+    display: none;
+  }
+  
+  .viewCartBtn {
+    display: none;
+  }
+
+  .widgetCard {
+    padding: 4px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+    box-shadow: 0 6px 20px rgba(49, 46, 129, 0.5);
+  }
+
+  .iconWrapper {
+    width: 48px;
+    height: 48px;
+    background: transparent;
+  }
+
+  .cartIcon {
+    font-size: 1.5rem;
+    color: #ffffff;
+  }
+
+  .badge {
+    top: -2px;
+    right: -2px;
+  }
+}

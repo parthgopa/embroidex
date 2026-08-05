@@ -1,40 +1,117 @@
 /**
  * SelUploadV3 - Redesigned Upload Flow
- * New Flow: Images → ZIP → AI Processing → Category → Price
- * Single page, full width, expandable EMB file details
+ * Order: Images → Design Details (Name, Description, Category, Needles, Price) → File Format & Upload File
+ * Features:
+ * - Prominent "✨ Write with AI" buttons for Title & Description
+ * - Simple File Upload Status Card (no tedious 50-file manual stitch/height/width input boxes)
+ * - 70/30 Split Layout with Brief Simple-English Guidance Card
  */
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  MdCheckCircle, 
-  MdUploadFile, 
-  MdImage, 
-  MdAutoAwesome, 
+import {
+  MdCheckCircle,
+  MdUploadFile,
+  MdImage,
+  MdAutoAwesome,
   MdClose,
   MdCloudUpload,
-  MdPhotoLibrary
+  MdPhotoLibrary,
+  MdInfoOutline,
+  MdLightbulbOutline,
+  MdCategory,
+  MdFormatListNumbered,
+  MdFolderZip,
+  MdExpandMore,
+  MdExpandLess
 } from "react-icons/md";
 import API from "../../services/api";
 import styles from "./SelUploadV3.module.css";
 
+// Available file formats in UPPERCASE
+const FILE_FORMAT_OPTIONS = [
+  ".DST", ".PES", ".EMB", ".JEF", ".EXP", ".VP3",
+  ".ART", ".XXX", ".HUS", ".VIP", ".SEW"
+];
+
+// Brief, simple English guide sections
+const GUIDE_SECTIONS = [
+  {
+    id: "images",
+    stepNum: "1",
+    title: "1. Design Photos",
+    icon: MdPhotoLibrary,
+    description: "Upload clear photos of your embroidery design.",
+    details: [
+      {
+        subtitle: "Main Photo *",
+        points: [
+          "Upload 1 main photo for design preview.",
+          "Use JPG or PNG photo (Max 10 MB)."
+        ]
+      },
+      {
+        subtitle: "Extra Photos (Max 7)",
+        points: [
+          "Upload up to 7 extra photos.",
+          "Show close-up stitches and thread work."
+        ]
+      }
+    ]
+  },
+  {
+    id: "details",
+    stepNum: "2",
+    title: "2. Design Details & Needles",
+    icon: MdCategory,
+    description: "Type your design details, category, and needle count.",
+    details: [
+      {
+        subtitle: "Name & Description",
+        points: [
+          "Type design name and description.",
+          "Click '✨ Write with AI' to automatically write name & description!"
+        ]
+      },
+      {
+        subtitle: "Category & Needles",
+        points: [
+          "Select category and subcategory.",
+          "Choose number of needles (1 to 15).",
+          "Set selling price in Rupees (₹)."
+        ]
+      }
+    ]
+  },
+  {
+    id: "fileUpload",
+    stepNum: "3",
+    title: "3. File Format & Upload",
+    icon: MdUploadFile,
+    description: "Select file format and upload your design file.",
+    details: [
+      {
+        subtitle: "File Format & File",
+        points: [
+          "Select format: .DST, .PES, .EMB, .JEF, etc.",
+          "Upload .ZIP or single design file (Max 20 MB)."
+        ]
+      }
+    ]
+  }
+];
+
 const SelUploadV3 = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState({});
-  
-  // Form state - single page flow
+
+  // Form state - Images
   const [thumbnail, setThumbnail] = useState(null);
   const [additionalImages, setAdditionalImages] = useState([]);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
   const [imagesPreviews, setImagesPreviews] = useState([]);
-  
-  const [designFile, setDesignFile] = useState(null);
-  const [processing, setProcessing] = useState(false);
-  
-  // AI-generated data (editable)
-  const [sessionId, setSessionId] = useState("");
-  const [uploadPreview, setUploadPreview] = useState(null);
-  const [embMetadata, setEmbMetadata] = useState([]);
+
+  // Form state - Details
   const [form, setForm] = useState({
     titleOriginal: "",
     titleAi: "",
@@ -43,13 +120,23 @@ const SelUploadV3 = () => {
     descriptionAi: "",
     descriptionSource: "original",
   });
-  const [refiningField, setRefiningField] = useState("");
-  
   const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState("");
+  const [needles, setNeedles] = useState("1");
   const [price, setPrice] = useState("");
-  
+  const [refiningField, setRefiningField] = useState("");
+
+  // Form state - File Format & File Upload
+  const [fileFormat, setFileFormat] = useState(".EMB");
+  const [designFile, setDesignFile] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [sessionId, setSessionId] = useState("");
+  const [uploadPreview, setUploadPreview] = useState(null);
+  const [embMetadata, setEmbMetadata] = useState([]);
+  const [showFileList, setShowFileList] = useState(false);
+
   const [uploading, setUploading] = useState(false);
+  const [activeSectionId, setActiveSectionId] = useState("images");
 
   useEffect(() => {
     fetchCategories();
@@ -64,7 +151,7 @@ const SelUploadV3 = () => {
     }
   };
 
-  // Compress image using canvas — max 1200px, quality 0.82, output as File
+  // Compress image using canvas
   const compressImage = (file) => new Promise((resolve, reject) => {
     const MAX_SIDE = 1200;
     const QUALITY = 0.82;
@@ -151,15 +238,10 @@ const SelUploadV3 = () => {
     setImagesPreviews(newPreviews);
   };
 
-  // ZIP file upload handler
+  // Design file upload handler
   const handleDesignFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const ext = file.name.split('.').pop().toLowerCase();
-      if (ext !== 'zip' && ext !== 'emb') {
-        alert("Please upload a .zip or .emb file");
-        return;
-      }
       if (file.size > 20 * 1024 * 1024) {
         alert("File must be less than 20MB");
         return;
@@ -168,20 +250,11 @@ const SelUploadV3 = () => {
       setSessionId("");
       setUploadPreview(null);
       setEmbMetadata([]);
-      setForm({
-        titleOriginal: "",
-        titleAi: "",
-        titleSource: "original",
-        descriptionOriginal: "",
-        descriptionAi: "",
-        descriptionSource: "original",
-      });
-      // Auto-process when file is selected
       processDesignFile(file);
     }
   };
 
-  // Process ZIP file with AI
+  // Process design file with AI / scanner
   const processDesignFile = async (file) => {
     setProcessing(true);
 
@@ -200,8 +273,6 @@ const SelUploadV3 = () => {
       setSessionId(res.data.session_id);
       setUploadPreview(res.data);
       setEmbMetadata(res.data.emb_metadata || []);
-
-      alert(`✓ Design processed successfully!\n\nEMB files found: ${res.data.file_names.length}`);
     } catch (err) {
       alert(err.response?.data?.error || "Processing failed");
       setDesignFile(null);
@@ -211,16 +282,6 @@ const SelUploadV3 = () => {
     } finally {
       setProcessing(false);
     }
-  };
-
-  const handleFormChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleEmbMetadataChange = (index, field, value) => {
-    setEmbMetadata((prev) => prev.map((item, currentIndex) => (
-      currentIndex === index ? { ...item, [field]: value } : item
-    )));
   };
 
   const handleContentSourceChange = (fieldType, source) => {
@@ -245,17 +306,12 @@ const SelUploadV3 = () => {
     }));
   };
 
-  const handleRefineField = async (fieldType) => {
-    const originalText = fieldType === "title" ? form.titleOriginal : form.descriptionOriginal;
-
-    if (!sessionId) {
-      alert("Please upload and process a design file first");
-      return;
-    }
+  // "Write with AI" handler - works even if field is empty!
+  const handleWriteWithAi = async (fieldType) => {
+    let originalText = fieldType === "title" ? form.titleOriginal : form.descriptionOriginal;
 
     if (!originalText.trim()) {
-      alert(`Please enter a ${fieldType} before refining with AI`);
-      return;
+      originalText = `${category || "Embroidery"} ${subcategory || "Design"} ${designFile ? designFile.name.replace(/\.[^/.]+$/, "") : "Neck Pattern"}`.trim();
     }
 
     setRefiningField(fieldType);
@@ -281,26 +337,23 @@ const SelUploadV3 = () => {
         [`${fieldType}Source`]: "ai",
       }));
     } catch (err) {
-      alert(err.response?.data?.error || `Failed to refine ${fieldType}`);
+      alert(err.response?.data?.error || `Failed to write ${fieldType} with AI`);
     } finally {
       setRefiningField("");
     }
   };
 
-
-  // Final submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
     if (!thumbnail) {
       return alert("Thumbnail image is required");
     }
-    if (!designFile || !uploadPreview || !sessionId) {
-      return alert("Please upload and process a design file");
+    if (!form.titleOriginal && !form.titleAi) {
+      return alert("Please enter design name or use '✨ Write with AI'");
     }
-    if (!form.titleOriginal || !form.descriptionOriginal) {
-      return alert("Please enter the original title and description");
+    if (!form.descriptionOriginal && !form.descriptionAi) {
+      return alert("Please enter description or use '✨ Write with AI'");
     }
     if (!category || !subcategory) {
       return alert("Please select category and subcategory");
@@ -308,29 +361,12 @@ const SelUploadV3 = () => {
     if (!price || parseFloat(price) <= 0) {
       return alert("Please enter a valid price");
     }
-    if (form.titleSource === "ai" && !form.titleAi.trim()) {
-      return alert("Please generate the AI title or switch to Original title");
-    }
-    if (form.descriptionSource === "ai" && !form.descriptionAi.trim()) {
-      return alert("Please generate the AI description or switch to Original description");
-    }
-    if (embMetadata.length === 0) {
-      return alert("No EMB files were found to save");
+    if (!designFile || !uploadPreview || !sessionId) {
+      return alert("Please upload a design file");
     }
 
-    const hasInvalidEmbMetadata = embMetadata.some((item) => {
-      const stitchCount = item.stitch_count;
-      const width = item.width_mm;
-      const height = item.height_mm;
-      return stitchCount === "" || width === "" || height === "" || Number(stitchCount) < 0 || Number(width) < 0 || Number(height) < 0;
-    });
-
-    if (hasInvalidEmbMetadata) {
-      return alert("Please fill stitches, width, and height for every EMB file");
-    }
-
-    const selectedTitle = form.titleSource === "ai" ? form.titleAi : form.titleOriginal;
-    const selectedDescription = form.descriptionSource === "ai" ? form.descriptionAi : form.descriptionOriginal;
+    const selectedTitle = form.titleSource === "ai" ? form.titleAi : (form.titleOriginal || form.titleAi);
+    const selectedDescription = form.descriptionSource === "ai" ? form.descriptionAi : (form.descriptionOriginal || form.descriptionAi);
 
     setUploading(true);
 
@@ -338,16 +374,18 @@ const SelUploadV3 = () => {
     formData.append("session_id", sessionId);
     formData.append("title", selectedTitle);
     formData.append("description", selectedDescription);
-    formData.append("title_original", form.titleOriginal);
+    formData.append("title_original", form.titleOriginal || selectedTitle);
     formData.append("title_ai", form.titleAi);
     formData.append("title_source", form.titleSource);
-    formData.append("description_original", form.descriptionOriginal);
+    formData.append("description_original", form.descriptionOriginal || selectedDescription);
     formData.append("description_ai", form.descriptionAi);
     formData.append("description_source", form.descriptionSource);
-    formData.append("emb_metadata", JSON.stringify(embMetadata));
     formData.append("category", category);
     formData.append("subcategory", subcategory);
+    formData.append("needles", needles);
+    formData.append("file_format", fileFormat.replace(".", "").toUpperCase());
     formData.append("price", price);
+    formData.append("emb_metadata", JSON.stringify(embMetadata));
     formData.append("file_names", JSON.stringify(uploadPreview?.file_names || []));
     formData.append("design_file_path", uploadPreview?.design_file_path || "");
     formData.append("thumbnail", thumbnail);
@@ -375,231 +413,143 @@ const SelUploadV3 = () => {
   };
 
   const subcategories = category ? categories[category] || [] : [];
-  const totalEnteredStitches = embMetadata.reduce((total, item) => total + (Number(item.stitch_count) || 0), 0);
+  const fileNames = uploadPreview?.file_names || [];
 
   return (
     <div className={styles.fullWidthContainer}>
       <div className={styles.header}>
         <h1 className={styles.title}>Upload New Design</h1>
-        <p className={styles.subtitle}>Follow the steps below to upload your embroidery design</p>
+        <p className={styles.subtitle}>Follow the simple steps below to upload your embroidery design</p>
       </div>
 
-      <form onSubmit={handleSubmit} className={styles.uploadForm} noValidate>
+      <div className={styles.layoutGrid}>
+        {/* LEFT COLUMN: FORM INPUTS (~70%) */}
+        <form onSubmit={handleSubmit} className={styles.uploadForm} noValidate>
 
-        {/* STEP 1: Upload Design Images */}
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>
-              <MdPhotoLibrary className={styles.titleIcon} />
-              1. Upload Design Images
-            </h2>
-            <span className={styles.required}>Required</span>
-          </div>
-          
-          <div className={styles.imagesUploadGrid}>
-            {/* Thumbnail Upload */}
-            <div className={styles.thumbnailUpload}>
-              <label className={styles.uploadLabel}>Main Thumbnail *</label>
-              <div className={styles.uploadBox}>
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg"
-                  onChange={handleThumbnailChange}
-                  className={styles.fileInput}
-                  id="thumbnail"
-                />
-                <label htmlFor="thumbnail" className={styles.uploadArea}>
-                  {thumbnailPreview ? (
-                    <img src={thumbnailPreview} alt="Thumbnail" className={styles.previewImage} />
-                  ) : (
-                    <div className={styles.uploadPlaceholder}>
-                      <MdImage className={styles.uploadIcon} />
-                      <p>Click to upload</p>
-                      <small>PNG, JPG (Max 5MB)</small>
-                    </div>
-                  )}
-                </label>
-              </div>
-            </div>
-
-            {/* Additional Images Upload */}
-            <div className={styles.additionalUpload}>
-              <label className={styles.uploadLabel}>Additional Images (Max 7)</label>
-              <div className={styles.uploadBox}>
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg"
-                  multiple
-                  onChange={handleAdditionalImagesChange}
-                  className={styles.fileInput}
-                  id="additionalImages"
-                />
-                <label htmlFor="additionalImages" className={styles.uploadArea}>
-                  <div className={styles.uploadPlaceholder}>
-                    <MdCloudUpload className={styles.uploadIcon} />
-                    <p>Click to upload multiple</p>
-                    <small>Showcase your design</small>
-                  </div>
-                </label>
-              </div>
-              
-              {imagesPreviews.length > 0 && (
-                <div className={styles.additionalPreviews}>
-                  {imagesPreviews.map((preview, index) => (
-                    <div key={index} className={styles.previewItem}>
-                      <img src={preview} alt={`Preview ${index + 1}`} />
-                      <button
-                        type="button"
-                        onClick={() => removeAdditionalImage(index)}
-                        className={styles.removeBtn}
-                      >
-                        <MdClose />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* STEP 2: Upload ZIP File */}
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>
-              <MdUploadFile className={styles.titleIcon} />
-              2. Upload Design File (ZIP/EMB)
-            </h2>
-            <span className={styles.required}>Required</span>
-          </div>
-          
-          <div className={styles.zipUploadBox}>
-            <input
-              type="file"
-              accept=".zip,.emb"
-              onChange={handleDesignFileChange}
-              className={styles.fileInput}
-              id="designFile"
-              disabled={processing}
-            />
-            <label htmlFor="designFile" className={styles.zipUploadLabel}>
-              {designFile ? (
-                <div className={styles.fileSelected}>
-                  <MdCheckCircle className={styles.successIcon} />
-                  <div>
-                    <p className={styles.fileName}>{designFile.name}</p>
-                    <small>Click to change file</small>
-                  </div>
-                </div>
-              ) : (
-                <div className={styles.zipPlaceholder}>
-                  <MdCloudUpload className={styles.zipIcon} />
-                  <p>Click to upload ZIP or EMB file</p>
-                  <small>Max 20MB • ZIP will list EMB files for manual details entry</small>
-                </div>
-              )}
-            </label>
-            
-            {processing && (
-              <div className={styles.processingIndicator}>
-                <MdAutoAwesome className={styles.spinIcon} />
-                <span>Processing with AI...</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* STEP 3: AI-Generated Details (shown after ZIP processing) */}
-        {uploadPreview && (
-          <div className={styles.section}>
+          {/* STEP 1: Upload Design Images */}
+          <div
+            className={`${styles.section} ${activeSectionId === "images" ? styles.sectionActive : ""}`}
+            onMouseEnter={() => setActiveSectionId("images")}
+            onFocus={() => setActiveSectionId("images")}
+          >
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
-                <MdAutoAwesome className={styles.titleIcon} />
-                3. Design Details
+                <MdPhotoLibrary className={styles.titleIcon} />
+                1. Upload Design Images
               </h2>
-              <span className={styles.badge}>Editable</span>
-            </div>
-            
-            <div className={styles.aiSummary}>
-              <div className={styles.statCard}>
-                <span className={styles.statLabel}>Files Found</span>
-                <span className={styles.statValue}>{uploadPreview.file_names.length}</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statLabel}>Upload Type</span>
-                <span className={styles.statValue}>{(uploadPreview.design_file_type || "emb").toUpperCase()}</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statLabel}>Entered Stitches</span>
-                <span className={styles.statValue}>{totalEnteredStitches.toLocaleString()}</span>
-              </div>
+              <span className={styles.required}>Required</span>
             </div>
 
-            {embMetadata.length > 0 && (
-              <div className={styles.embFilesSection}>
-                <h3 className={styles.subsectionTitle}>EMB File Details</h3>
-                {embMetadata.map((fileItem, index) => (
-                  <div key={index} className={styles.embFileCard}>
-                    <div className={styles.embFileHeaderStatic}>
-                      <span className={styles.fileName}>{fileItem.file_name}</span>
-                    </div>
-                    <div className={styles.embFileDetails}>
-                      <div className={styles.metadataInputsRow}>
-                        <div className={styles.metadataInputGroup}>
-                          <label className={styles.metadataLabel}>Stitches</label>
-                          <input
-                            type="number"
-                            className="input-custom"
-                            min="0"
-                            step="1"
-                            value={fileItem.stitch_count}
-                            onChange={(e) => handleEmbMetadataChange(index, "stitch_count", e.target.value)}
-                            placeholder="Enter stitches"
-                          />
-                        </div>
-                        <div className={styles.metadataInputGroup}>
-                          <label className={styles.metadataLabel}>Height (mm)</label>
-                          <input
-                            type="number"
-                            className="input-custom"
-                            min="0"
-                            step="0.01"
-                            value={fileItem.height_mm}
-                            onChange={(e) => handleEmbMetadataChange(index, "height_mm", e.target.value)}
-                            placeholder="Enter height"
-                          />
-                        </div>
-                        <div className={styles.metadataInputGroup}>
-                          <label className={styles.metadataLabel}>Width (mm)</label>
-                          <input
-                            type="number"
-                            className="input-custom"
-                            min="0"
-                            step="0.01"
-                            value={fileItem.width_mm}
-                            onChange={(e) => handleEmbMetadataChange(index, "width_mm", e.target.value)}
-                            placeholder="Enter width"
-                          />
+            <div className={styles.imagesUploadGrid}>
+              {/* Thumbnail Upload */}
+              <div
+                className={styles.thumbnailUpload}
+                onClick={() => setActiveSectionId("images")}
+              >
+                <label className={styles.uploadLabel}>Main Thumbnail *</label>
+                <div className={styles.uploadBox}>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    onChange={handleThumbnailChange}
+                    className={styles.fileInput}
+                    id="thumbnail"
+                  />
+                  <label htmlFor="thumbnail" className={styles.uploadAreaCompact}>
+                    {thumbnailPreview ? (
+                      <div className={styles.compactPreviewWrapper}>
+                        <img src={thumbnailPreview} alt="Thumbnail" className={styles.previewImageCompact} />
+                        <span className={styles.changeBadge}>Change</span>
+                      </div>
+                    ) : (
+                      <div className={styles.uploadPlaceholderCompact}>
+                        <MdImage className={styles.uploadIconCompact} />
+                        <div>
+                          <p className={styles.uploadTextCompact}>Click to upload thumbnail</p>
+                          <small className={styles.uploadSubCompact}>PNG, JPG (Max 10MB)</small>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    )}
+                  </label>
+                </div>
               </div>
-            )}
 
+              {/* Additional Images Upload */}
+              <div
+                className={styles.additionalUpload}
+                onClick={() => setActiveSectionId("images")}
+              >
+                <label className={styles.uploadLabel}>Additional Images (Max 7)</label>
+                <div className={styles.uploadBox}>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    multiple
+                    onChange={handleAdditionalImagesChange}
+                    className={styles.fileInput}
+                    id="additionalImages"
+                  />
+                  <label htmlFor="additionalImages" className={styles.uploadAreaCompact}>
+                    <div className={styles.uploadPlaceholderCompact}>
+                      <MdCloudUpload className={styles.uploadIconCompact} />
+                      <div>
+                        <p className={styles.uploadTextCompact}>Click to upload extra photos</p>
+                        <small className={styles.uploadSubCompact}>Showcase stitch details</small>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                {imagesPreviews.length > 0 && (
+                  <div className={styles.additionalPreviewsCompact}>
+                    {imagesPreviews.map((preview, index) => (
+                      <div key={index} className={styles.previewItemCompact}>
+                        <img src={preview} alt={`Preview ${index + 1}`} />
+                        <button
+                          type="button"
+                          onClick={() => removeAdditionalImage(index)}
+                          className={styles.removeBtnCompact}
+                        >
+                          <MdClose />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* STEP 2: Design Details (Name, Description, Category, Subcategory, Needles, Price) */}
+          <div
+            className={`${styles.section} ${activeSectionId === "details" ? styles.sectionActive : ""}`}
+            onMouseEnter={() => setActiveSectionId("details")}
+            onFocus={() => setActiveSectionId("details")}
+          >
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>
+                <MdCategory className={styles.titleIcon} />
+                2. Design Details & Classification
+              </h2>
+              <span className={styles.required}>Required</span>
+            </div>
+
+            {/* Design Name / Title */}
             <div className={styles.formGroup}>
               <div className={styles.labelRow}>
-                <label className={styles.label}>Design Title *</label>
+                <label className={styles.label}>Design Name *</label>
                 <button
                   type="button"
-                  className={styles.refineButton}
-                  onClick={() => handleRefineField("title")}
+                  className={styles.writeAiButton}
+                  onClick={() => handleWriteWithAi("title")}
                   disabled={refiningField === "title" || processing}
+                  title="Click to automatically generate design name with AI"
                 >
-                  <MdAutoAwesome /> {refiningField === "title" ? "Refining..." : "Refine with AI"}
+                  <MdAutoAwesome className={styles.sparkleIcon} />
+                  {refiningField === "title" ? "Writing..." : "Write with AI"}
                 </button>
               </div>
+
               <div className={styles.contentTabs}>
                 <button
                   type="button"
@@ -613,30 +563,35 @@ const SelUploadV3 = () => {
                   className={`${styles.contentTab} ${form.titleSource === "ai" ? styles.contentTabActive : ""}`}
                   onClick={() => handleContentSourceChange("title", "ai")}
                 >
-                  AI
+                  AI Generated
                 </button>
               </div>
+
               <input
                 type="text"
                 className="input-custom"
                 value={getFieldValue("title")}
                 onChange={(e) => handleFieldValueChange("title", e.target.value)}
-                placeholder={form.titleSource === "ai" ? "AI refined title will appear here" : "Enter your design title"}
+                placeholder={form.titleSource === "ai" ? "AI generated name will appear here" : "Enter your design name (or click ✨ Write with AI)"}
               />
             </div>
 
+            {/* Description */}
             <div className={styles.formGroup}>
               <div className={styles.labelRow}>
                 <label className={styles.label}>Description *</label>
                 <button
                   type="button"
-                  className={styles.refineButton}
-                  onClick={() => handleRefineField("description")}
+                  className={styles.writeAiButton}
+                  onClick={() => handleWriteWithAi("description")}
                   disabled={refiningField === "description" || processing}
+                  title="Click to automatically write design description with AI"
                 >
-                  <MdAutoAwesome /> {refiningField === "description" ? "Refining..." : "Refine with AI"}
+                  <MdAutoAwesome className={styles.sparkleIcon} />
+                  {refiningField === "description" ? "Writing..." : "Write with AI"}
                 </button>
               </div>
+
               <div className={styles.contentTabs}>
                 <button
                   type="button"
@@ -650,115 +605,281 @@ const SelUploadV3 = () => {
                   className={`${styles.contentTab} ${form.descriptionSource === "ai" ? styles.contentTabActive : ""}`}
                   onClick={() => handleContentSourceChange("description", "ai")}
                 >
-                  AI
+                  AI Generated
                 </button>
               </div>
+
               <textarea
                 className={`input-custom ${styles.textarea}`}
                 value={getFieldValue("description")}
                 onChange={(e) => handleFieldValueChange("description", e.target.value)}
-                placeholder={form.descriptionSource === "ai" ? "AI refined description will appear here" : "Enter your design description"}
-                rows={5}
+                placeholder={form.descriptionSource === "ai" ? "AI generated description will appear here" : "Enter design description (or click ✨ Write with AI)"}
+                rows={4}
               />
             </div>
-          </div>
-        )}
 
-        {/* STEP 4: Category & Subcategory */}
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>
-              4. Category & Subcategory
-            </h2>
-            <span className={styles.required}>Required</span>
-          </div>
-          
-          <div className={styles.categoryGrid}>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Category *</label>
-              <select
-                className="input-custom"
-                value={category}
-                onChange={(e) => {
-                  setCategory(e.target.value);
-                  setSubcategory("");
-                }}
-                required
-              >
-                <option value="">Select Category</option>
-                {Object.keys(categories).map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+            {/* Category, Subcategory, Needles, Price Grid */}
+            <div className={styles.detailsGrid}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Category *</label>
+                <select
+                  className="input-custom"
+                  value={category}
+                  onChange={(e) => {
+                    setCategory(e.target.value);
+                    setSubcategory("");
+                  }}
+                  required
+                >
+                  <option value="">Select Category</option>
+                  {Object.keys(categories).map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Subcategory *</label>
+                <select
+                  className="input-custom"
+                  value={subcategory}
+                  onChange={(e) => setSubcategory(e.target.value)}
+                  required
+                  disabled={!category}
+                >
+                  <option value="">{category ? "Select Subcategory" : "Select category first"}</option>
+                  {subcategories.map((subcat) => (
+                    <option key={subcat} value={subcat}>{subcat}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Number of Needles (1 to 15) */}
+              <div className={styles.formGroup}>
+                <label className={styles.label}>
+                  <MdFormatListNumbered className={styles.fieldIcon} /> Number of Needles *
+                </label>
+                <select
+                  className="input-custom"
+                  value={needles}
+                  onChange={(e) => setNeedles(e.target.value)}
+                  required
+                >
+                  {Array.from({ length: 15 }, (_, i) => i + 1).map((num) => (
+                    <option key={num} value={num.toString()}>
+                      {num} {num === 1 ? "Needle" : "Needles"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Selling Price */}
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Selling Price (₹) *</label>
+                <input
+                  type="number"
+                  className="input-custom"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="Price in rupees"
+                  min="1"
+                  step="1"
+                  required
+                />
+              </div>
             </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Subcategory *</label>
-              <select
-                className="input-custom"
-                value={subcategory}
-                onChange={(e) => setSubcategory(e.target.value)}
-                required
-                disabled={!category}
-              >
-                <option value="">{category ? "Select Subcategory" : "Select a category first"}</option>
-                {subcategories.map((subcat) => (
-                  <option key={subcat} value={subcat}>{subcat}</option>
-                ))}
-              </select>
-            </div>
           </div>
-        </div>
 
-        {/* STEP 5: Selling Price */}
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>
-              5. Selling Price
-            </h2>
-            <span className={styles.required}>Required</span>
-          </div>
-          
-          <div className={styles.priceInput}>
-            <label className={styles.label}>Price (₹) *</label>
-            <input
-              type="number"
-              className="input-custom"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="Enter price in rupees"
-              min="1"
-              step="1"
-              required
-            />
-            <small className={styles.hint}>Set a competitive price for your design</small>
-          </div>
-        </div>
-
-        {/* Submit Button */}
-        <div className={styles.submitSection}>
-          <button
-            type="submit"
-            className={`btn-primary-custom ${styles.submitButton}`}
-            disabled={uploading || processing}
+          {/* STEP 3: Upload Design File & Format */}
+          <div
+            className={`${styles.section} ${activeSectionId === "fileUpload" ? styles.sectionActive : ""}`}
+            onMouseEnter={() => setActiveSectionId("fileUpload")}
+            onFocus={() => setActiveSectionId("fileUpload")}
           >
-            {uploading ? (
-              <>
-                <MdCloudUpload className={styles.btnIcon} />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <MdCheckCircle className={styles.btnIcon} />
-                Submit Design for Approval
-              </>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>
+                <MdUploadFile className={styles.titleIcon} />
+                3. Upload Design File & Format
+              </h2>
+              <span className={styles.required}>Required</span>
+            </div>
+
+            {/* Design File Format Selection (UPPERCASE) */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Design File Type / Format *</label>
+              <div className={styles.formatPillsContainer}>
+                {FILE_FORMAT_OPTIONS.map((fmt) => (
+                  <button
+                    key={fmt}
+                    type="button"
+                    className={`${styles.formatPill} ${fileFormat === fmt ? styles.formatPillActive : ""}`}
+                    onClick={() => setFileFormat(fmt)}
+                  >
+                    {fmt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Design File Upload Box */}
+            <div className={styles.zipUploadBox}>
+              <input
+                type="file"
+                accept=".zip,.emb,.dst,.pes,.jef,.exp,.vp3,.art,.xxx,.hus,.vip,.sew"
+                onChange={handleDesignFileChange}
+                className={styles.fileInput}
+                id="designFile"
+                disabled={processing}
+              />
+              <label htmlFor="designFile" className={styles.zipUploadLabelCompact}>
+                {designFile ? (
+                  <div className={styles.fileSelected}>
+                    <MdCheckCircle className={styles.successIcon} />
+                    <div>
+                      <p className={styles.fileName}>{designFile.name}</p>
+                      <small>Click to change file ({fileFormat})</small>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.zipPlaceholderCompact}>
+                    <MdCloudUpload className={styles.zipIconCompact} />
+                    <div>
+                      <p className={styles.uploadTextCompact}>Click to upload design file or ZIP</p>
+                      <small className={styles.uploadSubCompact}>Supports {fileFormat} and .ZIP files (Max 20MB)</small>
+                    </div>
+                  </div>
+                )}
+              </label>
+
+              {processing && (
+                <div className={styles.processingIndicator}>
+                  <MdAutoAwesome className={styles.spinIcon} />
+                  <span>Processing design file...</span>
+                </div>
+              )}
+            </div>
+
+            {/* Clean File Uploaded Status Card (No tedious 50-file manual input boxes!) */}
+            {uploadPreview && (
+              <div className={styles.fileSuccessCard}>
+                <div className={styles.fileSuccessHeader}>
+                  <div className={styles.fileSuccessLeft}>
+                    <MdFolderZip className={styles.fileSuccessIcon} />
+                    <div>
+                      <h4 className={styles.fileSuccessTitle}>File Uploaded Successfully</h4>
+                      <p className={styles.fileSuccessSubtitle}>
+                        {designFile?.name} • <strong>{fileNames.length} file{fileNames.length !== 1 ? "s" : ""} included</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  {fileNames.length > 1 && (
+                    <button
+                      type="button"
+                      className={styles.toggleFilesBtn}
+                      onClick={() => setShowFileList(!showFileList)}
+                    >
+                      {showFileList ? (
+                        <>Hide file list <MdExpandLess /></>
+                      ) : (
+                        <>View files ({fileNames.length}) <MdExpandMore /></>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {showFileList && fileNames.length > 0 && (
+                  <div className={styles.fileNamesListContainer}>
+                    <h5 className={styles.fileListHeading}>Extracted Design Files:</h5>
+                    <ul className={styles.fileNamesList}>
+                      {fileNames.map((fn, idx) => (
+                        <li key={idx}>
+                          <span className={styles.fileDot}>•</span> {fn}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             )}
-          </button>
-          <p className={styles.submitNote}>
-            Your design will be reviewed by our team before being published
-          </p>
+          </div>
+
+          {/* Submit Button */}
+          <div className={styles.submitSection}>
+            <button
+              type="submit"
+              className={`btn-primary-custom ${styles.submitButton}`}
+              disabled={uploading || processing}
+            >
+              {uploading ? (
+                <>
+                  <MdCloudUpload className={styles.btnIcon} />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <MdCheckCircle className={styles.btnIcon} />
+                  Submit Design for Approval
+                </>
+              )}
+            </button>
+            <p className={styles.submitNote}>
+              Your design will be reviewed by our team before being published live.
+            </p>
+          </div>
+        </form>
+
+        {/* RIGHT COLUMN: BRIEF SIMPLE-ENGLISH SCROLLING GUIDE CARD (~30%) */}
+        <div className={styles.rightSidebar}>
+          <div className={styles.fullGuideCard}>
+            <div className={styles.mainGuideHeader}>
+              <MdInfoOutline className={styles.mainGuideHeaderIcon} />
+              <div>
+                <h3 className={styles.mainGuideTitle}>Simple Upload Help</h3>
+                <p className={styles.mainGuideSubtitle}>Easy instructions to upload your design</p>
+              </div>
+            </div>
+
+            <div className={styles.guideBlocksContainer}>
+              {GUIDE_SECTIONS.map((sec) => {
+                const SecIcon = sec.icon;
+                const isActive = activeSectionId === sec.id;
+                return (
+                  <div
+                    key={sec.id}
+                    className={`${styles.guideBlock} ${isActive ? styles.guideBlockActive : ""}`}
+                    onClick={() => setActiveSectionId(sec.id)}
+                  >
+                    <div className={styles.guideBlockHeader}>
+                      <span className={styles.stepBadge}>{sec.stepNum}</span>
+                      <SecIcon className={styles.guideBlockIcon} />
+                      <h4 className={styles.guideBlockTitle}>{sec.title}</h4>
+                    </div>
+
+                    <p className={styles.guideBlockDesc}>{sec.description}</p>
+
+                    <div className={styles.guideBlockDetails}>
+                      {sec.details.map((det, idx) => (
+                        <div key={idx} className={styles.detailSubBlock}>
+                          <h5 className={styles.detailSubtitle}>
+                            <MdLightbulbOutline className={styles.detailBulb} />
+                            {det.subtitle}
+                          </h5>
+                          <ul className={styles.detailList}>
+                            {det.points.map((pt, pIdx) => (
+                              <li key={pIdx}>{pt}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 };

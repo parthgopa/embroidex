@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { MdClose, MdSend } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
+import { Link } from "react-router-dom";
+import API from "../services/api";
 import styles from "./ChatbotWidget.module.css";
 
-const WEBHOOK_URL = "https://n8n.merishiksha.com/webhook/76a9b7f7-c5ab-43dc-a5ef-81c9b6ba18d5/chat";
 const SESSION_KEY = "embroidex_chatbot_session";
 
 const ChatbotWidget = () => {
@@ -52,44 +53,40 @@ const ChatbotWidget = () => {
   };
 
   const sendMessage = async () => {
-    if (!inputValue.trim() || !sessionId) return;
+    const textToSend = inputValue.trim();
+    if (!textToSend) return;
 
     const userMessage = {
       type: "user",
-      text: inputValue,
+      text: textToSend,
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const currentHistory = [...messages, userMessage];
+    setMessages(currentHistory);
     setInputValue("");
     setIsTyping(true);
 
     try {
-      const response = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          chatInput: inputValue,
-          sessionId: sessionId,
-        }),
+      const res = await API.post("/chatbot/message", {
+        message: textToSend,
+        history: messages,
       });
 
-      const data = await response.json();
-      
+      const replyText = res.data?.reply || res.data?.text || "I'm not sure about that — please contact our support team for help.";
+
       const botMessage = {
         type: "bot",
-        text: data.output || "Sorry, I couldn't process that. Please try again.",
+        text: replyText,
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
-      console.error("Chatbot error:", error);
+      console.error("Chatbot API error:", error);
       const errorMessage = {
         type: "bot",
-        text: "Sorry, I'm having trouble connecting. Please try again later.",
+        text: "Sorry, I'm having trouble connecting to Gemini API right now. Please try again in a moment.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -118,34 +115,49 @@ const ChatbotWidget = () => {
           <div className={styles.chatHeader}>
             <div className={styles.headerContent}>
               <div className={styles.botAvatar}>🧵</div>
-              <div className={styles.headerText}>
-                <h4>Embroidex Assistant</h4>
-                <span className={styles.statusOnline}>Online</span>
+              <div>
+                <h3>Embroidex Assistant</h3>
               </div>
             </div>
             <button className={styles.closeButton} onClick={toggleChat}>
-              <MdClose size={24} />
+              <MdClose size={22} />
             </button>
           </div>
 
-          {/* Messages Area */}
+          {/* Messages Container */}
           <div className={styles.messagesArea}>
-            {messages.map((message, index) => (
+            {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`${styles.message} ${
-                  message.type === "user" ? styles.userMessage : styles.botMessage
-                }`}
+                className={`${styles.message} ${msg.type === "user" ? styles.userMessage : styles.botMessage
+                  }`}
               >
                 <div className={styles.messageBubble}>
-                  {message.type === "user" ? (
-                    <p>{message.text}</p>
-                  ) : (
+                  {msg.type === "bot" ? (
                     <div className={styles.markdown}>
-                      <ReactMarkdown>
-                        {message.text}
+                      <ReactMarkdown
+                        components={{
+                          a: ({ node, ...props }) => {
+                            if (props.href && props.href.startsWith("/")) {
+                              return (
+                                <Link to={props.href}>
+                                  {props.children}
+                                </Link>
+                              );
+                            }
+                            return (
+                              <a {...props} target="_blank" rel="noopener noreferrer">
+                                {props.children}
+                              </a>
+                            );
+                          },
+                        }}
+                      >
+                        {msg.text}
                       </ReactMarkdown>
                     </div>
+                  ) : (
+                    msg.text
                   )}
                 </div>
               </div>
@@ -162,7 +174,6 @@ const ChatbotWidget = () => {
                 </div>
               </div>
             )}
-
             <div ref={messagesEndRef} />
           </div>
 
@@ -170,35 +181,32 @@ const ChatbotWidget = () => {
           <div className={styles.inputArea}>
             <input
               type="text"
-              placeholder="Type your message..."
+              placeholder="Ask about buying, selling, fees..."
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               className={styles.messageInput}
+              disabled={isTyping}
             />
             <button
               onClick={sendMessage}
-              disabled={!inputValue.trim() || isTyping}
               className={styles.sendButton}
+              disabled={!inputValue.trim() || isTyping}
             >
-              <MdSend size={20} />
+              <MdSend size={18} />
             </button>
           </div>
         </div>
       )}
 
-      {/* Floating Button */}
+      {/* Floating Toggle Button */}
       <button className={styles.floatingButton} onClick={toggleChat}>
-        {isOpen ? (
-          <MdClose size={28} />
-        ) : (
-          <div className={styles.chatbotIcon}>
-            {/* User can replace this with custom image */}
-            <span className={styles.iconEmoji}>
-              <img src="/chatlogonew.png" alt="Embroidex Logo" className={styles.iconEmoji}/>
-            </span>
-          </div>
-        )}
+        <div className={styles.chatbotIcon}>
+          {/* User can replace this with custom image */}
+          <span className={styles.iconEmoji}>
+            <img src="/chatlogonew.png" alt="Embroidex Logo" className={styles.iconEmoji} />
+          </span>
+        </div>
       </button>
     </>
   );

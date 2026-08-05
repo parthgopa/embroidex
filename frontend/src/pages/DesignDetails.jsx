@@ -16,10 +16,12 @@ import {
   MdLayers,
   MdFormatListBulleted,
   MdShield,
-  MdZoomIn,
-  MdClose
+  MdFormatListNumbered,
+  MdAddShoppingCart,
+  MdLock
 } from "react-icons/md";
 import API from "../services/api";
+import { addToCart, getCartItems } from "../utils/cartUtils";
 import styles from "./DesignDetails.module.css";
 
 const DesignDetails = () => {
@@ -28,11 +30,74 @@ const DesignDetails = () => {
   const [design, setDesign] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [screenProtected, setScreenProtected] = useState(false);
 
   useEffect(() => {
     fetchDesignDetails();
+    const activeUserId = localStorage.getItem("user_id");
+    setUserId(activeUserId);
   }, [designId]);
+
+  useEffect(() => {
+    if (design) {
+      const cartItems = getCartItems(userId);
+      const inCart = cartItems.some((item) => item._id === design._id);
+      setAddedToCart(inCart);
+    }
+  }, [design, userId]);
+
+  // Anti-Screenshot & Screen Capture Detection
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Intercept PrintScreen (KeyCode 44 or 'PrintScreen')
+      if (e.key === "PrintScreen" || e.keyCode === 44) {
+        e.preventDefault();
+        setScreenProtected(true);
+        setTimeout(() => setScreenProtected(false), 2000);
+      }
+      // Intercept Mac Screenshot (Cmd+Shift+3, Cmd+Shift+4, Cmd+Shift+5)
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === "3" || e.key === "4" || e.key === "5" || e.key === "S" || e.key === "s")) {
+        e.preventDefault();
+        setScreenProtected(true);
+        setTimeout(() => setScreenProtected(false), 2500);
+      }
+      // Intercept Ctrl+P (Print) and Ctrl+S (Save)
+      if ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P" || e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+        alert("Printing and Saving are disabled to protect design copyright.");
+      }
+    };
+
+    const handleKeyUp = (e) => {
+      if (e.key === "PrintScreen" || e.keyCode === 44) {
+        setScreenProtected(true);
+        setTimeout(() => setScreenProtected(false), 2000);
+      }
+    };
+
+    const handleBlur = () => {
+      // Protect preview image when window loses focus (e.g. Snipping tool opened)
+      setScreenProtected(true);
+    };
+
+    const handleFocus = () => {
+      setScreenProtected(false);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
 
   const fetchDesignDetails = async () => {
     try {
@@ -47,13 +112,24 @@ const DesignDetails = () => {
     }
   };
 
-  const handlePurchase = () => {
+  const handleAddToCart = () => {
+    if (!design) return;
+    const success = addToCart(design, userId);
+    if (success) {
+      setAddedToCart(true);
+    } else {
+      alert("Design is already in your cart!");
+    }
+  };
+
+  const handleBuyNow = () => {
     const token = localStorage.getItem("token");
     if (!token) {
       alert("Please login to purchase designs");
       navigate("/login");
       return;
     }
+    addToCart(design, userId);
     navigate(`/purchase/${designId}`);
   };
 
@@ -82,20 +158,18 @@ const DesignDetails = () => {
     ...(design.additional_images || [])
   ].filter(Boolean);
 
-  const prevImage = (e) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
-  };
-
-  const nextImage = (e) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
-  };
+  const formatName = (design.file_format || design.design_file_type || "EMB").toUpperCase();
+  const needlesCount = design.needles || 1;
 
   return (
-    <div className={styles.container}>
+    <div 
+      className={styles.container}
+      onContextMenu={(e) => e.preventDefault()}
+      onCopy={(e) => e.preventDefault()}
+      onCut={(e) => e.preventDefault()}
+    >
       <div className={styles.wrapper}>
-        {/* Amazon-Style Breadcrumb Navigation */}
+        {/* Breadcrumb Navigation */}
         <nav className={styles.breadcrumbNav}>
           <Link to="/explore">Explore</Link>
           <MdChevronRight />
@@ -110,23 +184,29 @@ const DesignDetails = () => {
           <span className={styles.breadcrumbCurrent}>{design.title}</span>
         </nav>
 
-        {/* Amazon 2-Column Product Layout */}
+        {/* Product Layout: Protected Gallery (Left) | Specs Table (Middle) | Buy Card (Right) */}
         <div className={styles.productGrid}>
-          {/* Left Column: Sticky Image Gallery & Zoom */}
+          
+          {/* Left Column: Anti-Screenshot Watermarked Compact Image Gallery */}
           <div className={styles.imageGalleryCol}>
-            <div className={styles.mainImageCard} onClick={() => setIsLightboxOpen(true)}>
+            <div 
+              className={`${styles.mainImageCard} ${screenProtected ? styles.blurProtected : ""}`}
+              onContextMenu={(e) => e.preventDefault()}
+            >
               <img
                 src={allImages[currentImageIndex] || "https://via.placeholder.com/600x400"}
                 alt={design.title}
                 className={styles.mainImage}
+                onContextMenu={(e) => e.preventDefault()}
+                draggable={false}
               />
-              <div className={styles.zoomHint}>
-                <MdZoomIn /> Click to expand
-              </div>
-              {allImages.length > 1 && (
-                <span className={styles.imageBadge}>
-                  {currentImageIndex + 1} of {allImages.length} Photos
-                </span>
+
+              {/* Blur Protection Screen when Window Unfocused or Screenshot Triggered */}
+              {screenProtected && (
+                <div className={styles.screenshotShield}>
+                  <MdLock size={32} />
+                  <span>Preview Shielded</span>
+                </div>
               )}
             </div>
 
@@ -137,17 +217,22 @@ const DesignDetails = () => {
                     key={index}
                     className={`${styles.thumbBtn} ${currentImageIndex === index ? styles.activeThumb : ""}`}
                     onClick={() => setCurrentImageIndex(index)}
+                    onContextMenu={(e) => e.preventDefault()}
                   >
-                    <img src={img} alt={`Preview ${index + 1}`} />
+                    <img 
+                      src={img} 
+                      alt={`Preview ${index + 1}`} 
+                      onContextMenu={(e) => e.preventDefault()} 
+                      draggable={false} 
+                    />
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Right Column: Complete Product Details, Buy Card & Specifications */}
-          <div className={styles.productInfoCol}>
-            {/* Title & Badges */}
+          {/* Middle Column: Details & Input Specifications Table */}
+          <div className={styles.middleDetailsCol}>
             <div className={styles.headerInfo}>
               <div className={styles.tagRow}>
                 <span className={styles.categoryTag}>{design.category}</span>
@@ -157,132 +242,110 @@ const DesignDetails = () => {
               <h1 className={styles.productTitle}>{design.title}</h1>
             </div>
 
-            {/* Amazon Buy Box / Action Section */}
+            {/* Input Specifications 2-Column Table */}
+            <div className={styles.specsTableBox}>
+              <h3 className={styles.sectionHeaderTitle}>
+                <MdFormatListBulleted className={styles.sectionIcon} />
+                Design Specification Details
+              </h3>
+
+              <div className={styles.tableWrapper}>
+                <table className={styles.specDetailsTable}>
+                  <tbody>
+                    <tr>
+                      <td className={styles.specLabelCell}>Design Name</td>
+                      <td className={styles.specValCell}><strong>{design.title}</strong></td>
+                    </tr>
+                    <tr>
+                      <td className={styles.specLabelCell}>Category</td>
+                      <td className={styles.specValCell}>{design.category}</td>
+                    </tr>
+                    <tr>
+                      <td className={styles.specLabelCell}>Subcategory</td>
+                      <td className={styles.specValCell}>{design.subcategory || "N/A"}</td>
+                    </tr>
+                    <tr>
+                      <td className={styles.specLabelCell}>Number of Needles</td>
+                      <td className={styles.specValCell}>
+                        <span className={styles.needlePill}>
+                          <MdFormatListNumbered /> {needlesCount} Needle{needlesCount !== 1 ? "s" : ""}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className={styles.specLabelCell}>Design File Format</td>
+                      <td className={styles.specValCell}>
+                        <span className={styles.formatPill}>
+                          <MdLayers /> {formatName}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className={styles.specLabelCell}>Total Stitches</td>
+                      <td className={styles.specValCell}>
+                        {design.total_stitch_count ? (
+                          <span className={styles.stitchHighlight}>
+                            <MdGridOn /> {design.total_stitch_count.toLocaleString()} stitches
+                          </span>
+                        ) : (
+                          "Available in files"
+                        )}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className={styles.specLabelCell}>Files Included</td>
+                      <td className={styles.specValCell}>{design.file_names?.length || 1} File{design.file_names?.length !== 1 ? "s" : ""}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Description Box */}
+            <div className={styles.aboutSection}>
+              <h3>Product Description</h3>
+              <p className={styles.descriptionText}>{design.description}</p>
+            </div>
+          </div>
+
+          {/* Right Column: Price & Add to Cart / Buy Action Card */}
+          <div className={styles.rightActionCol}>
             <div className={styles.buyBoxCard}>
               <div className={styles.priceRow}>
+                <span className={styles.priceLabelText}>Price</span>
                 <div className={styles.priceDisplay}>
                   <span className={styles.currencySymbol}>₹</span>
                   <span className={styles.priceValue}>{design.price}</span>
                 </div>
-                <span className={styles.freeFeeBadge}>No Convenience Fee</span>
               </div>
 
               <div className={styles.stockStatus}>
                 <MdCheckCircle className={styles.inStockIcon} />
-                <span>Instant Digital Download Available Immediately</span>
+                <span>Instant Digital Download</span>
               </div>
 
-              <button className={`btn-primary-custom ${styles.buyNowBtn}`} onClick={handlePurchase}>
-                <MdShoppingCart /> Purchase Design - ₹{design.price}
-              </button>
+              <div className={styles.actionButtonsCol}>
+                <button 
+                  className={`btn-primary-custom ${styles.addToCartBtn} ${addedToCart ? styles.addedBtn : ""}`} 
+                  onClick={handleAddToCart}
+                >
+                  <MdAddShoppingCart />
+                  {addedToCart ? "✓ Added to Cart" : "Add to Cart"}
+                </button>
+
+                <button className={styles.buyNowBtn} onClick={handleBuyNow}>
+                  <MdShoppingCart /> Buy Now - ₹{design.price}
+                </button>
+              </div>
 
               <div className={styles.guaranteeRow}>
-                <span><MdCheckCircle /> {design.file_names?.length || 0} EMB Files Included</span>
+                <span><MdCheckCircle /> {design.file_names?.length || 1} Machine Files Included</span>
                 <span><MdCheckCircle /> Lifetime Download Access</span>
-                <span><MdShield /> Razorpay Safe Payment</span>
+                <span><MdShield /> 100% Safe & Secure Payment</span>
               </div>
             </div>
-
-            {/* Quick Spec Highlights Grid */}
-            <div className={styles.specHighlightsGrid}>
-              <div className={styles.specBox}>
-                <MdGridOn className={styles.specIcon} />
-                <div>
-                  <span className={styles.specLabel}>Total Stitches</span>
-                  <strong className={styles.specVal}>{design.total_stitch_count?.toLocaleString() || "N/A"}</strong>
-                </div>
-              </div>
-
-              <div className={styles.specBox}>
-                <MdFileDownload className={styles.specIcon} />
-                <div>
-                  <span className={styles.specLabel}>Files Included</span>
-                  <strong className={styles.specVal}>{design.file_names?.length || 0} EMB Files</strong>
-                </div>
-              </div>
-
-              <div className={styles.specBox}>
-                <MdLayers className={styles.specIcon} />
-                <div>
-                  <span className={styles.specLabel}>Format</span>
-                  <strong className={styles.specVal}>Machine EMB ZIP</strong>
-                </div>
-              </div>
-            </div>
-
-            {/* About / Description Section */}
-            <div className={styles.aboutSection}>
-              <h3><MdFormatListBulleted /> Product Description</h3>
-              <p className={styles.descriptionText}>{design.description}</p>
-            </div>
-
-            {/* Individual File Specifications Table */}
-            {design.emb_metadata && design.emb_metadata.length > 0 && (
-              <div className={styles.fileSpecsSection}>
-                <h3>Embroidery File Specifications</h3>
-                <div className={styles.specsTableWrapper}>
-                  <table className={styles.specsTable}>
-                    <thead>
-                      <tr>
-                        <th>File Name</th>
-                        <th>Stitch Count</th>
-                        <th>Width</th>
-                        <th>Height</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {design.emb_metadata.map((emb, idx) => (
-                        <tr key={idx}>
-                          <td className={styles.fileNameCell}>{emb.file_name}</td>
-                          <td><strong>{emb.stitch_count?.toLocaleString() || "N/A"}</strong></td>
-                          <td>{emb.width_mm ?? "N/A"} mm</td>
-                          <td>{emb.height_mm ?? "N/A"} mm</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
           </div>
         </div>
-      </div>
-
-      {/* Fullscreen Lightbox Modal */}
-      {isLightboxOpen && (
-        <div className={styles.lightboxOverlay} onClick={() => setIsLightboxOpen(false)}>
-          <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.lightboxCloseBtn} onClick={() => setIsLightboxOpen(false)}>
-              <MdClose size={28} />
-            </button>
-            {allImages.length > 1 && (
-              <>
-                <button className={`${styles.lightboxNavBtn} ${styles.prevBtn}`} onClick={prevImage}>
-                  <MdChevronLeft size={36} />
-                </button>
-                <button className={`${styles.lightboxNavBtn} ${styles.nextBtn}`} onClick={nextImage}>
-                  <MdChevronRight size={36} />
-                </button>
-              </>
-            )}
-            <img
-              src={allImages[currentImageIndex]}
-              alt={design.title}
-              className={styles.lightboxImage}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Sticky Mobile Buy Bar */}
-      <div className={styles.stickyMobileBuyBar}>
-        <div className={styles.mobilePriceInfo}>
-          <span className={styles.mobilePriceLabel}>Total</span>
-          <span className={styles.mobilePriceVal}>₹{design.price}</span>
-        </div>
-        <button className={`btn-primary-custom ${styles.mobileBuyBtn}`} onClick={handlePurchase}>
-          <MdShoppingCart /> Buy Now
-        </button>
       </div>
     </div>
   );

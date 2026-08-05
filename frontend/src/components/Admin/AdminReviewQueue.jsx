@@ -7,7 +7,8 @@ import {
   MdImage,
   MdDescription,
   MdStraighten,
-  MdGridOn
+  MdGridOn,
+  MdTableChart
 } from "react-icons/md";
 import API from "../../services/api";
 import styles from "./AdminReviewQueue.module.css";
@@ -165,37 +166,70 @@ const AdminReviewQueue = ({
                 </button>
               </div>
 
-              {/* Basic Info */}
+              {/* 2-Column Details Table */}
               <div className={styles.infoSection}>
-                <h3><MdDescription style={{ marginRight: '8px', verticalAlign: 'middle' }} />Basic Information</h3>
-                <div className={styles.detailsGrid}>
-                  <div className={styles.detailItem}>
-                    <strong>Seller:</strong> {activeDesign?.seller_email}
-                  </div>
-                  <div className={styles.detailItem}>
-                    <strong>Price:</strong> ₹{activeDesign?.price?.toLocaleString()}
-                  </div>
-                  <div className={styles.detailItem}>
-                    <strong>Category:</strong> {activeDesign?.category}
-                  </div>
-                  <div className={styles.detailItem}>
-                    <strong>Subcategory:</strong> {activeDesign?.subcategory}
-                  </div>
-                  <div className={styles.detailItem}>
-                    <strong>Design ID:</strong> {activeDesign?.design_id}
-                  </div>
-                  <div className={styles.detailItem}>
-                    <strong>Upload Type:</strong> {(activeDesign?.design_file_type || "emb").toUpperCase()}
-                  </div>
-                  <div className={styles.detailItem}>
-                    <strong>Total Files:</strong> {activeDesign?.emb_files_count || activeDesign?.file_names?.length || 0}
-                  </div>
-                  <div className={styles.detailItem}>
-                    <strong>Title Source:</strong> {(activeDesign?.title_source || "original").toUpperCase()}
-                  </div>
-                  <div className={styles.detailItem}>
-                    <strong>Description Source:</strong> {(activeDesign?.description_source || "original").toUpperCase()}
-                  </div>
+                <h3><MdTableChart style={{ marginRight: '8px', verticalAlign: 'middle' }} />Design Specification Details</h3>
+                <div className={styles.tableWrapper}>
+                  <table className={styles.infoTable}>
+                    <tbody>
+                      <tr>
+                        <td className={styles.tableLabel}>Seller Email</td>
+                        <td className={styles.tableValue}>{activeDesign?.seller_email}</td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tableLabel}>Design Name</td>
+                        <td className={styles.tableValue}><strong>{activeDesign?.title}</strong></td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tableLabel}>Selling Price</td>
+                        <td className={styles.tableValue}>₹{activeDesign?.price?.toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tableLabel}>Category</td>
+                        <td className={styles.tableValue}>{activeDesign?.category}</td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tableLabel}>Subcategory</td>
+                        <td className={styles.tableValue}>{activeDesign?.subcategory || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tableLabel}>Number of Needles</td>
+                        <td className={styles.tableValue}>
+                          <span className={styles.needleBadge}>
+                            {activeDesign?.needles || 1} {activeDesign?.needles === 1 ? "Needle" : "Needles"}
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tableLabel}>File Format</td>
+                        <td className={styles.tableValue}>
+                          <span className={styles.formatBadge}>
+                            {(activeDesign?.file_format || activeDesign?.design_file_type || "EMB").toUpperCase()}
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tableLabel}>Total Stitches</td>
+                        <td className={styles.tableValue}>{activeDesign?.total_stitch_count?.toLocaleString() || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tableLabel}>Files Included</td>
+                        <td className={styles.tableValue}>{activeDesign?.emb_files_count || activeDesign?.file_names?.length || 0} Files</td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tableLabel}>Design ID</td>
+                        <td className={styles.tableValue}><code>{activeDesign?.design_id}</code></td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tableLabel}>Title Source</td>
+                        <td className={styles.tableValue}>{(activeDesign?.title_source || "original").toUpperCase()}</td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tableLabel}>Description Source</td>
+                        <td className={styles.tableValue}>{(activeDesign?.description_source || "original").toUpperCase()}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
@@ -353,51 +387,54 @@ const AdminReviewQueue = ({
                     <MdCancel style={{ marginRight: '8px' }} />
                     Reject Design
                   </button>
+                  <button
+                    className="btn-outline-custom"
+                    onClick={() => onDelete(selectedDesign._id)}
+                    style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
+                  >
+                    Delete Permanent
+                  </button>
                 </div>
               )}
-
-              <button
-                className="btn-danger-custom"
-                onClick={() => onDelete(selectedDesign._id)}
-              >
-                Delete Design
-              </button>
             </div>
           </div>
         </div>
       ) : (
-        <div className={styles.queueList}>
-          {pendingDesigns.map((design) => (
-            <div key={design._id} className={`container-box ${styles.queueItem}`}>
-              {design.thumbnail ? (
-                <img
-                  src={design.thumbnail}
-                  alt={design.title}
-                  className={styles.queueThumb}
-                />
-              ) : (
-                <div className={styles.queueThumb} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6' }}>
-                  <MdImage size={32} color="#9ca3af" />
-                </div>
-              )}
-              <div className={styles.queueInfo}>
-                <h3>{design.title}</h3>
-                <p>by {design.seller_email}</p>
-                <p className={styles.queuePrice}>₹{design.price}</p>
-              </div>
-              <button
-                className="btn-primary-custom"
+        <div className={styles.queueGrid}>
+          {pendingDesigns.length === 0 ? (
+            <div className={styles.emptyState}>
+              <MdCheckCircle size={64} color="var(--success)" />
+              <h2>All Caught Up!</h2>
+              <p>There are no pending designs to review.</p>
+            </div>
+          ) : (
+            pendingDesigns.map((design) => (
+              <div
+                key={design._id}
+                className={`container-box ${styles.designCard}`}
                 onClick={() => onDesignSelect(design)}
               >
-                Review Now
-              </button>
-            </div>
-          ))}
+                <div className={styles.cardHeader}>
+                  <img
+                    src={design.thumbnail || "https://via.placeholder.com/150"}
+                    alt={design.title}
+                    className={styles.thumbnail}
+                  />
+                  <div className={styles.cardMeta}>
+                    <h3>{design.title}</h3>
+                    <p className={styles.sellerEmail}>{design.seller_email}</p>
+                    <p className={styles.categoryInfo}>
+                      {design.category} {design.subcategory && `• ${design.subcategory}`}
+                    </p>
+                  </div>
+                </div>
 
-          {pendingDesigns.length === 0 && (
-            <div className={styles.emptyState}>
-              <p><MdCheckCircle style={{ marginRight: '8px', verticalAlign: 'middle' }} /> No pending designs to review</p>
-            </div>
+                <div className={styles.cardFooter}>
+                  <span className={styles.price}>₹{design.price?.toLocaleString()}</span>
+                  <span className={styles.badge}>{design.emb_files_count || design.file_names?.length || 0} Files</span>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}

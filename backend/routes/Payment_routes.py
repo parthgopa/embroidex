@@ -55,7 +55,7 @@ def get_payout_details():
 
 @payment_bp.route("/create-order", methods=["POST"])
 def create_order():
-    """Create Razorpay order for design purchase"""
+    """Create Razorpay order for single design or multi-item cart purchase"""
     token = request.headers.get("Authorization")
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
@@ -66,45 +66,54 @@ def create_order():
     except:
         return jsonify({"error": "Invalid token"}), 401
     
-    data = request.json
+    data = request.json or {}
     design_id = data.get("design_id")
+    design_ids = data.get("design_ids")
     
-    if not design_id:
-        return jsonify({"error": "Design ID is required"}), 400
+    if not design_id and not design_ids:
+        return jsonify({"error": "Design ID or Design IDs array is required"}), 400
     
+    if design_id and not design_ids:
+        design_ids = [design_id]
+
     try:
-        # Get design details
-        design = DESIGNS_COLLECTION.find_one({"_id": ObjectId(design_id)})
-        if not design:
-            return jsonify({"error": "Design not found"}), 404
-        
-        if design.get("status") != "approved":
-            return jsonify({"error": "Design is not available for purchase"}), 403
-        
-        # Check if user already purchased this design
-        # existing_purchase = PURCHASES_COLLECTION.find_one({
-        #     "user_id": user_id,
-        #     "design_id": ObjectId(design_id),
-        #     "status": "completed"
-        # })
-        
-        # if existing_purchase:
-        #     return jsonify({"error": "You have already purchased this design"}), 400
+        object_ids = []
+        for d_id in design_ids:
+            try:
+                object_ids.append(ObjectId(d_id))
+            except:
+                pass
+
+        if not object_ids:
+            return jsonify({"error": "Invalid Design IDs"}), 400
+
+        # Get design details for all requested designs
+        designs = list(DESIGNS_COLLECTION.find({
+            "_id": {"$in": object_ids},
+            "status": "approved"
+        }))
+
+        if not designs:
+            return jsonify({"error": "No valid approved designs found for purchase"}), 404
+
+        total_price = sum(float(d.get("price", 0)) for d in designs)
+        amount_paise = int(total_price * 100)
         
         import uuid
         receipt = f"RCPT-{uuid.uuid4().hex[:8].upper()}"
         
-        # Create Razorpay order
-        amount = int(design["price"] * 100)  # Convert to paise
+        titles = [d.get("title", "Design") for d in designs]
+        notes_title = ", ".join(titles)[:100]
+
         order_data = {
-            "amount": amount,
+            "amount": amount_paise,
             "currency": "INR",
             "receipt": receipt,
             "payment_capture": 1,
             "notes": {
-                "design_id": design_id,
                 "user_id": str(user_id),
-                "design_title": design["title"]
+                "design_ids": ",".join([str(d["_id"]) for d in designs]),
+                "design_titles": notes_title
             }
         }
         
@@ -113,11 +122,11 @@ def create_order():
         # Save transaction with pending status
         transaction = {
             "user_id": user_id,
-            "design_id": ObjectId(design_id),
-            "seller_id": design.get("seller_id"),
+            "design_ids": [d["_id"] for d in designs],
+            "design_id": designs[0]["_id"], # Backwards compatibility
             "order_id": razorpay_order["id"],
             "receipt": receipt,
-            "amount": design["price"],
+            "amount": total_price,
             "currency": "INR",
             "status": "pending",
             "payment_id": None,
@@ -131,7 +140,7 @@ def create_order():
         return jsonify({
             "order_id": razorpay_order["id"],
             "receipt": receipt,
-            "amount": amount,
+            "amount": amount_paise,
             "currency": "INR",
             "key": RAZORPAY_KEY_ID
         }), 200
@@ -143,7 +152,7 @@ def create_order():
 
 @payment_bp.route("/verify", methods=["POST"])
 def verify_payment():
-    """Verify Razorpay payment and complete purchase"""
+    """Verify Razorpay payment and complete purchase for all designs in order"""
     token = request.headers.get("Authorization")
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
@@ -154,13 +163,12 @@ def verify_payment():
     except:
         return jsonify({"error": "Invalid token"}), 401
     
-    data = request.json
+    data = request.json or {}
     razorpay_order_id = data.get("razorpay_order_id")
     razorpay_payment_id = data.get("razorpay_payment_id")
     razorpay_signature = data.get("razorpay_signature")
-    design_id = data.get("design_id")
     
-    if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature, design_id]):
+    if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature]):
         return jsonify({"error": "Missing payment details"}), 400
     
     try:
@@ -172,7 +180,6 @@ def verify_payment():
         ).hexdigest()
         
         if generated_signature != razorpay_signature:
-            # Update transaction as failed
             TRANSACTIONS_COLLECTION.update_one(
                 {"order_id": razorpay_order_id},
                 {
@@ -189,11 +196,6 @@ def verify_payment():
         transaction = TRANSACTIONS_COLLECTION.find_one({"order_id": razorpay_order_id})
         if not transaction:
             return jsonify({"error": "Transaction not found"}), 404
-        
-        # Get design details
-        design = DESIGNS_COLLECTION.find_one({"_id": ObjectId(design_id)})
-        if not design:
-            return jsonify({"error": "Design not found"}), 404
         
         receipt_number = transaction.get("receipt") or f"RCPT-{razorpay_order_id[-8:].upper()}"
         
@@ -221,34 +223,43 @@ def verify_payment():
         except Exception as fetch_err:
             print(f"Error fetching payment details from Razorpay: {fetch_err}")
 
-        # Ensure purchase record exists in case webhook was delayed
-        existing_purchase = PURCHASES_COLLECTION.find_one({
-            "order_id": razorpay_order_id,
-            "user_id": user_id
-        })
-        
-        if not existing_purchase:
-            purchase = {
-                "user_id": user_id,
-                "design_id": ObjectId(design_id),
-                "seller_id": design.get("seller_id"),
-                "transaction_id": transaction.get("_id"),
+        # Extract target design IDs
+        raw_design_ids = transaction.get("design_ids")
+        if not raw_design_ids and transaction.get("design_id"):
+            raw_design_ids = [transaction.get("design_id")]
+
+        target_design_ids = [ObjectId(d_id) for d_id in raw_design_ids if d_id]
+        designs = list(DESIGNS_COLLECTION.find({"_id": {"$in": target_design_ids}}))
+
+        # Insert purchase records for each design
+        for design in designs:
+            existing_purchase = PURCHASES_COLLECTION.find_one({
                 "order_id": razorpay_order_id,
-                "payment_id": razorpay_payment_id,
-                "receipt": receipt_number,
-                "payment_method": method,
-                "payment_detail": payment_detail,
-                "amount_paid": transaction.get("amount", design.get("price")),
-                "design_title": design.get("title"),
-                "design_thumbnail": design.get("thumbnail"),
-                "design_files": design.get("file_names", []),
-                "zip_path": design.get("zip_path"),
-                "status": "completed",
-                "purchased_at": datetime.utcnow()
-            }
-            PURCHASES_COLLECTION.insert_one(purchase)
+                "user_id": user_id,
+                "design_id": design["_id"]
+            })
+            if not existing_purchase:
+                purchase = {
+                    "user_id": user_id,
+                    "design_id": design["_id"],
+                    "seller_id": design.get("seller_id"),
+                    "transaction_id": transaction.get("_id"),
+                    "order_id": razorpay_order_id,
+                    "payment_id": razorpay_payment_id,
+                    "receipt": receipt_number,
+                    "payment_method": method,
+                    "payment_detail": payment_detail,
+                    "amount_paid": design.get("price", 0),
+                    "design_title": design.get("title"),
+                    "design_thumbnail": design.get("thumbnail"),
+                    "design_files": design.get("file_names", []),
+                    "zip_path": design.get("zip_path"),
+                    "status": "completed",
+                    "purchased_at": datetime.utcnow()
+                }
+                PURCHASES_COLLECTION.insert_one(purchase)
         
-        # Update transaction with payment details
+        # Update transaction with payment status
         TRANSACTIONS_COLLECTION.update_one(
             {"order_id": razorpay_order_id},
             {
@@ -264,14 +275,13 @@ def verify_payment():
         
         return jsonify({
             "success": True,
-            "message": "Payment verified successfully. Your purchase is available.",
+            "message": f"Payment verified successfully for {len(designs)} design(s).",
             "order_id": razorpay_order_id,
             "receipt": receipt_number
         }), 200
         
     except Exception as e:
         print(f"Error verifying payment: {str(e)}")
-        # Update transaction as failed
         TRANSACTIONS_COLLECTION.update_one(
             {"order_id": razorpay_order_id},
             {
@@ -307,19 +317,20 @@ def get_transaction(transaction_id):
         if not transaction:
             return jsonify({"error": "Transaction not found"}), 404
         
-        # Convert ObjectId to string
         transaction["_id"] = str(transaction["_id"])
         transaction["user_id"] = str(transaction["user_id"])
-        transaction["design_id"] = str(transaction["design_id"])
+        if transaction.get("design_id"):
+            transaction["design_id"] = str(transaction["design_id"])
+        if transaction.get("design_ids"):
+            transaction["design_ids"] = [str(d) for d in transaction["design_ids"]]
         if transaction.get("seller_id"):
             transaction["seller_id"] = str(transaction["seller_id"])
         
-        # Convert datetime to string
         if transaction.get("created_at"):
             transaction["created_at"] = transaction["created_at"].isoformat()
         if transaction.get("updated_at"):
             transaction["updated_at"] = transaction["updated_at"].isoformat()
-        
+            
         return jsonify({"transaction": transaction}), 200
         
     except Exception as e:
@@ -345,7 +356,10 @@ def get_my_transactions():
         for transaction in transactions:
             transaction["_id"] = str(transaction["_id"])
             transaction["user_id"] = str(transaction["user_id"])
-            transaction["design_id"] = str(transaction["design_id"])
+            if transaction.get("design_id"):
+                transaction["design_id"] = str(transaction["design_id"])
+            if transaction.get("design_ids"):
+                transaction["design_ids"] = [str(d) for d in transaction.get("design_ids", [])]
             if transaction.get("seller_id"):
                 transaction["seller_id"] = str(transaction["seller_id"])
             
