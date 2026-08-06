@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { 
   MdSearch, 
   MdFilterList, 
@@ -19,6 +19,7 @@ const FILE_FORMAT_OPTIONS = ["DST", "PES", "EMB", "JEF", "EXP", "VP3", "ART", "X
 
 const Explore = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [designs, setDesigns] = useState([]);
   const [filteredDesigns, setFilteredDesigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +27,11 @@ const Explore = () => {
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryTree, setCategoryTree] = useState({});
-  const [selectedCategories, setSelectedCategories] = useState([]);
+  // Pre-populate from URL ?category= param
+  const [selectedCategories, setSelectedCategories] = useState(() => {
+    const cat = searchParams.get("category");
+    return cat ? [cat] : [];
+  });
   const [selectedNeedles, setSelectedNeedles] = useState([]);
   const [selectedFileFormats, setSelectedFileFormats] = useState([]);
   const [selectedPriceRanges, setSelectedPriceRanges] = useState([]);

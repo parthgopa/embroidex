@@ -12,6 +12,8 @@ import {
   MdStorefront
 } from "react-icons/md";
 import API from "../../services/api";
+import AdminHomepageConfig from "./AdminHomepageConfig";
+import AdminPlatformCategories from "./AdminPlatformCategories";
 import styles from "./AdminDashboardV2.module.css";
 
 const AdminDashboardV2 = () => {
@@ -192,6 +194,22 @@ const AdminDashboardV2 = () => {
           >
             <MdPeople className={styles.navIcon} />
             Users
+          </button>
+
+          <button
+            className={`${styles.navItem} ${activeSection === "homepage" ? styles.navItemActive : ""}`}
+            onClick={() => setActiveSection("homepage")}
+          >
+            <MdDashboard className={styles.navIcon} />
+            Homepage Config
+          </button>
+
+          <button
+            className={`${styles.navItem} ${activeSection === "platform-categories" ? styles.navItemActive : ""}`}
+            onClick={() => setActiveSection("platform-categories")}
+          >
+            <MdDesignServices className={styles.navIcon} />
+            Platform Categories
           </button>
 
           <button className={styles.navItem} onClick={handleLogout}>
@@ -506,6 +524,12 @@ const AdminDashboardV2 = () => {
             </div>
           </div>
         )}
+
+        {/* Homepage Config Section */}
+        {activeSection === "homepage" && <AdminHomepageConfig />}
+
+        {/* Platform Categories Section */}
+        {activeSection === "platform-categories" && <AdminPlatformCategories />}
       </main>
     </div>
   );

@@ -62,6 +62,8 @@ function App() {
         <Route path="/admin/settings" element={<AdminDashboard />} />
         <Route path="/admin/withdrawals" element={<AdminDashboard />} />
         <Route path="/admin/withdrawal-history" element={<AdminDashboard />} />
+        <Route path="/admin/homepage-config" element={<AdminDashboard />} />
+        <Route path="/admin/platform-categories" element={<AdminDashboard />} />
 
       </Routes>
     </Router>

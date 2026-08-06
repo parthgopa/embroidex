@@ -3,6 +3,8 @@ from config import DESIGNS_COLLECTION, USERS_COLLECTION
 from utils.jwt_utils import decode_token
 from bson import ObjectId
 from datetime import datetime
+import os
+from werkzeug.utils import secure_filename
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -369,3 +371,179 @@ def delete_design_query(design_id, query_index):
     )
 
     return jsonify({"message": "Query deleted successfully"}), 200
+@admin_bp.route("/homepage-config", methods=["GET"])
+def get_homepage_config():
+    """Get the current homepage configuration"""
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        token = token.replace("Bearer ", "")
+        user_id = decode_token(token)
+    except:
+        return jsonify({"error": "Invalid token"}), 401
+    
+    if not is_admin(user_id):
+        return jsonify({"error": "Admin access required"}), 403
+    
+    from config import HOMEPAGE_CONFIG_COLLECTION
+    config = HOMEPAGE_CONFIG_COLLECTION.find_one({})
+    
+    if not config:
+        # Return default structure if nothing exists
+        return jsonify({
+            "topCategories": [],
+            "showcases": []
+        }), 200
+        
+    config["_id"] = str(config["_id"])
+    return jsonify(config), 200
+
+@admin_bp.route("/homepage-config", methods=["POST"])
+def update_homepage_config():
+    """Update homepage configuration"""
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        token = token.replace("Bearer ", "")
+        user_id = decode_token(token)
+    except:
+        return jsonify({"error": "Invalid token"}), 401
+    
+    if not is_admin(user_id):
+        return jsonify({"error": "Admin access required"}), 403
+    
+    from config import HOMEPAGE_CONFIG_COLLECTION
+    data = request.json
+    
+    top_categories = data.get("topCategories", [])
+    showcases = data.get("showcases", [])
+    
+    # Upsert the config
+    config = HOMEPAGE_CONFIG_COLLECTION.find_one({})
+    if config:
+        HOMEPAGE_CONFIG_COLLECTION.update_one(
+            {"_id": config["_id"]},
+            {"$set": {
+                "topCategories": top_categories,
+                "showcases": showcases,
+                "updated_at": datetime.utcnow()
+            }}
+        )
+    else:
+        HOMEPAGE_CONFIG_COLLECTION.insert_one({
+            "topCategories": top_categories,
+            "showcases": showcases,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        })
+        
+    return jsonify({"message": "Homepage configuration updated successfully"}), 200
+
+ALLOWED_IMAGE_EXTS = {"png", "jpg", "jpeg", "webp"}
+
+@admin_bp.route("/showcase-image-upload", methods=["POST"])
+def upload_showcase_image():
+    """Upload a single image for a showcase card"""
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        token = token.replace("Bearer ", "")
+        user_id = decode_token(token)
+    except:
+        return jsonify({"error": "Invalid token"}), 401
+    
+    if not is_admin(user_id):
+        return jsonify({"error": "Admin access required"}), 403
+    
+    if "image" not in request.files:
+        return jsonify({"error": "No image file provided"}), 400
+    
+    image_file = request.files["image"]
+    if not image_file.filename:
+        return jsonify({"error": "No file selected"}), 400
+
+    ext = image_file.filename.rsplit(".", 1)[-1].lower()
+    if ext not in ALLOWED_IMAGE_EXTS:
+        return jsonify({"error": "Only PNG, JPG, JPEG, or WEBP images are allowed"}), 400
+
+    safe_name = secure_filename(image_file.filename)
+    upload_dir = os.path.join(os.getcwd(), "uploads", "showcase")
+    os.makedirs(upload_dir, exist_ok=True)
+
+    save_path = os.path.join(upload_dir, safe_name)
+    image_file.save(save_path)
+
+    image_url = f"uploads/showcase/{safe_name}"
+    return jsonify({"url": image_url}), 200
+
+
+@admin_bp.route("/platform-categories", methods=["GET"])
+def get_platform_categories():
+    """Get all platform categories from the database"""
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        token = token.replace("Bearer ", "")
+        user_id = decode_token(token)
+    except:
+        return jsonify({"error": "Invalid token"}), 401
+    
+    if not is_admin(user_id):
+        return jsonify({"error": "Admin access required"}), 403
+    
+    from config import PLATFORM_CATEGORIES_COLLECTION
+    docs = PLATFORM_CATEGORIES_COLLECTION.find({})
+    
+    categories = []
+    for doc in docs:
+        categories.append({
+            "_id": str(doc["_id"]),
+            "category_name": doc["category_name"],
+            "subcategories": doc.get("subcategories", [])
+        })
+        
+    return jsonify({"categories": categories}), 200
+
+@admin_bp.route("/platform-categories", methods=["POST"])
+def update_platform_categories():
+    """Update platform categories in the database"""
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        token = token.replace("Bearer ", "")
+        user_id = decode_token(token)
+    except:
+        return jsonify({"error": "Invalid token"}), 401
+    
+    if not is_admin(user_id):
+        return jsonify({"error": "Admin access required"}), 403
+    
+    from config import PLATFORM_CATEGORIES_COLLECTION
+    data = request.json
+    categories = data.get("categories", [])
+    
+    # We will do a full replacement of the collection for simplicity
+    PLATFORM_CATEGORIES_COLLECTION.delete_many({})
+    
+    docs_to_insert = []
+    for cat in categories:
+        if "category_name" in cat and cat["category_name"].strip():
+            docs_to_insert.append({
+                "category_name": cat["category_name"].strip(),
+                "subcategories": [sub.strip() for sub in cat.get("subcategories", []) if sub.strip()]
+            })
+            
+    if docs_to_insert:
+        PLATFORM_CATEGORIES_COLLECTION.insert_many(docs_to_insert)
+        
+    return jsonify({"message": "Platform categories updated successfully"}), 200

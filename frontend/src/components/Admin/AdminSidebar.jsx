@@ -4,7 +4,9 @@ import {
   MdCheckCircle, 
   MdPeople,
   MdAccountBalanceWallet,
-  MdSettings
+  MdSettings,
+  MdHome,
+  MdCategory
 } from "react-icons/md";
 import { Link, useLocation } from "react-router-dom";
 import styles from "./AdminSidebar.module.css";
@@ -20,6 +22,8 @@ const AdminSidebar = ({ stats }) => {
     if (path === "/admin/users") return "users";
     if (path === "/admin/settings") return "settings";
     if (path === "/admin/withdrawals") return "withdrawals";
+    if (path === "/admin/homepage-config") return "homepage-config";
+    if (path === "/admin/platform-categories") return "platform-categories";
     return "dashboard";
   };
   
@@ -56,6 +60,18 @@ const AdminSidebar = ({ stats }) => {
       label: "Settings",
       icon: MdSettings,
       path: "/admin/settings",
+    },
+    {
+      id: "homepage-config",
+      label: "Homepage Config",
+      icon: MdHome,
+      path: "/admin/homepage-config",
+    },
+    {
+      id: "platform-categories",
+      label: "Platform Categories",
+      icon: MdCategory,
+      path: "/admin/platform-categories",
     },
   ];
 

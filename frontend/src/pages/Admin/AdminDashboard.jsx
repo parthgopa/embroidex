@@ -9,6 +9,8 @@ import AdminUsers from "../../components/Admin/AdminUsers";
 import AdminSettings from "../../components/Admin/AdminSettings";
 import AdminWithdrawals from "../../components/Admin/AdminWithdrawals";
 import AdminWithdrawalHistory from "../../components/Admin/AdminWithdrawalHistory";
+import AdminHomepageConfig from "./AdminHomepageConfig";
+import AdminPlatformCategories from "./AdminPlatformCategories";
 
 const AdminDashboard = () => {
   const BASE_URL = API.defaults.baseURL;
@@ -24,6 +26,8 @@ const AdminDashboard = () => {
     if (path === "/admin/settings") return "settings";
     if (path === "/admin/withdrawals") return "withdrawals";
     if (path === "/admin/withdrawal-history") return "withdrawal-history";
+    if (path === "/admin/homepage-config") return "homepage-config";
+    if (path === "/admin/platform-categories") return "platform-categories";
     return "dashboard";
   };
 
@@ -270,6 +274,10 @@ const AdminDashboard = () => {
       {activeSection === "withdrawal-history" && (
         <AdminWithdrawalHistory />
       )}
+
+      {activeSection === "homepage-config" && <AdminHomepageConfig />}
+
+      {activeSection === "platform-categories" && <AdminPlatformCategories />}
     </AdminLayout>
   );
 };

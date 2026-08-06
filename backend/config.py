@@ -20,6 +20,8 @@ SELLERS_COLLECTION = db["sellers"]
 TRANSACTIONS_COLLECTION = db["transactions"]
 WITHDRAWALS_COLLECTION = db["withdrawals"]
 SETTINGS_COLLECTION = db["settings"]
+HOMEPAGE_CONFIG_COLLECTION = db["homepage_config"]
+PLATFORM_CATEGORIES_COLLECTION = db["platform_categories"]
 
 UPLOAD_IMAGE_FOLDER = "uploads/images"
 UPLOAD_FILE_FOLDER = "uploads/files"

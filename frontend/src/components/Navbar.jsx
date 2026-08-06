@@ -9,7 +9,6 @@ import styles from "./Navbar.module.css";
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSeller, setIsSeller] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [userName, setUserName] = useState("");
   const [cartCount, setCartCount] = useState(0);
@@ -57,7 +56,6 @@ const Navbar = () => {
     setIsLoggedIn(false);
     setIsSeller(false);
     setUserName("");
-    setShowProfileMenu(false);
     setShowMobileMenu(false);
     navigate("/");
   };
@@ -115,36 +113,30 @@ const Navbar = () => {
                   </Link>
                 )}
 
-                {/* Profile Dropdown - Minimal (Profile + Logout only) */}
+                {/* Profile Dropdown - hover-based */}
                 <div className={styles.profileDropdown}>
-                  <button
-                    className={styles.profileBtn}
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  >
-                    <MdPerson size={20} />
+                  <button className={styles.profileBtn}>
+                    <MdPerson size={18} />
                     <span>{userName}</span>
                   </button>
 
-                  {showProfileMenu && (
-                    <div className={styles.dropdownMenu}>
-                      <Link
-                        to="/profile"
-                        className={styles.dropdownItem}
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        <MdPerson size={16} /> Profile
-                      </Link>
+                  <div className={styles.dropdownMenu}>
+                    <Link
+                      to="/profile"
+                      className={styles.dropdownItem}
+                    >
+                      <MdPerson size={16} /> Profile
+                    </Link>
 
-                      <div className={styles.divider}></div>
+                    <div className={styles.divider}></div>
 
-                      <button
-                        className={`${styles.dropdownItem} ${styles.logoutItem}`}
-                        onClick={handleLogout}
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  )}
+                    <button
+                      className={`${styles.dropdownItem} ${styles.logoutItem}`}
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </button>
+                  </div>
                 </div>
               </>
             )}

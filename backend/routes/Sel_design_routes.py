@@ -477,8 +477,9 @@ def final_upload():
 @sel_design_bp.route("/categories", methods=["GET"])
 def get_categories():
     """Get all available categories"""
-    from constants.categories import DESIGN_CATEGORIES
-    return jsonify({"categories": DESIGN_CATEGORIES}), 200
+    from constants.categories import _fetch_categories_from_db
+    categories_dict = _fetch_categories_from_db()
+    return jsonify({"categories": categories_dict}), 200
 
 
 @sel_design_bp.route("/my-designs", methods=["GET"])
