@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { 
-  MdSearch, 
-  MdFilterList, 
-  MdClose, 
-  MdTune, 
-  MdChevronRight, 
+import {
+  MdSearch,
+  MdFilterList,
+  MdClose,
+  MdTune,
+  MdChevronRight,
   MdOutlineSwapVert,
   MdLayers,
   MdCheck,
@@ -85,14 +85,14 @@ const Explore = () => {
   useEffect(() => {
     filterDesigns();
   }, [
-    searchQuery, 
-    selectedCategories, 
+    searchQuery,
+    selectedCategories,
     selectedMachineTypes,
     selectedAreas,
-    selectedNeedles, 
-    selectedFileFormats, 
-    selectedPriceRanges, 
-    sortBy, 
+    selectedNeedles,
+    selectedFileFormats,
+    selectedPriceRanges,
+    sortBy,
     designs
   ]);
 
@@ -300,40 +300,50 @@ const Explore = () => {
   }
 
   return (
-    <div className={styles.explorePage}>
-      {/* Top Search & Filter Bar */}
-      <section className={styles.topControlBar}>
-        <div className={styles.searchWrapper}>
-          <MdSearch className={styles.searchIcon} />
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder="Search by design name, category, machine type, area..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && (
-            <button className={styles.clearSearchBtn} onClick={() => setSearchQuery("")}>
-              <MdClose />
-            </button>
-          )}
-        </div>
+    <div className={styles.container}>
+      {/* Top Banner / Search Header */}
+      <div className={styles.heroBanner}>
+        <div className={styles.heroContent}>
+          <h1 className={styles.pageTitle}>Explore Embroidery Designs</h1>
+          <p className={styles.pageSubtitle}>
+            Discover verified high-quality embroidery patterns ready for instant download
+          </p>
 
-        {/* Mobile Filter Toggle Button */}
-        <button
-          className={styles.mobileFilterBtn}
-          onClick={() => setIsFilterDrawerOpen(true)}
-        >
-          <MdFilterList size={20} />
-          <span>Filters</span>
-          {activeFilterCount > 0 && (
-            <span className={styles.mobileFilterBadge}>{activeFilterCount}</span>
-          )}
-        </button>
-      </section>
+          {/* Search Input Bar */}
+          <div className={styles.searchBarWrapper}>
+            <MdSearch className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Search by design name, category, machine type, area..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
+            />
+            {searchQuery && (
+              <button className={styles.clearSearchBtn} onClick={() => setSearchQuery("")}>
+                <MdClose />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Main Layout Container */}
       <div className={styles.mainLayout}>
+        {/* Mobile Filter Toggle Header */}
+        <div className={styles.mobileFilterHeader}>
+          <button
+            className={`${styles.mobileFilterToggle} ${activeFilterCount > 0 ? styles.activeFilterBtn : ""}`}
+            onClick={() => setIsFilterDrawerOpen(true)}
+          >
+            <MdFilterList className={styles.tuneIcon} />
+            <span>Filters {activeFilterCount > 0 && `(${activeFilterCount})`}</span>
+          </button>
+
+          <div className={styles.resultsCountMobile}>
+            Showing <strong>{filteredDesigns.length}</strong> designs
+          </div>
+        </div>
         {/* Desktop Left Sidebar Filters */}
         <aside className={styles.desktopSidebar}>
           <div className={styles.sidebarHeader}>

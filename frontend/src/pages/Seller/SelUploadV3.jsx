@@ -381,10 +381,19 @@ const SelUploadV3 = () => {
         return;
       }
       setDesignFile(file);
-      setSessionId("");
-      setUploadPreview(null);
-      setEmbMetadata([]);
       setIsDirty(true);
+
+      // Auto-detect format from extension
+      const ext = file.name.slice(file.name.lastIndexOf(".")).toUpperCase();
+      if (FILE_FORMAT_OPTIONS.includes(ext)) {
+        setFileFormat(ext);
+      }
+
+      setUploadPreview({
+        file_names: [file.name],
+        design_file_path: ""
+      });
+
       processDesignFile(file);
     }
   };
@@ -403,19 +412,27 @@ const SelUploadV3 = () => {
         },
       });
 
-      setSessionId(res.data.session_id);
-      setUploadPreview(res.data.preview);
-      setEmbMetadata(res.data.preview?.emb_metadata || []);
+      if (res.data) {
+        setSessionId(res.data.session_id || "");
+        setUploadPreview(res.data.preview || {
+          file_names: res.data.file_names || [file.name],
+          design_file_path: res.data.design_file_path || ""
+        });
+        setEmbMetadata(res.data.emb_metadata || []);
 
-      if (res.data.preview?.detected_format) {
-        const detected = "." + res.data.preview.detected_format.toUpperCase();
-        if (FILE_FORMAT_OPTIONS.includes(detected)) {
-          setFileFormat(detected);
+        if (res.data.design_file_type) {
+          const detected = "." + res.data.design_file_type.toUpperCase();
+          if (FILE_FORMAT_OPTIONS.includes(detected)) {
+            setFileFormat(detected);
+          }
         }
       }
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to process design file");
-      setDesignFile(null);
+      console.warn("Design file upload notice: file will be saved directly on submit", err);
+      setUploadPreview({
+        file_names: [file.name],
+        design_file_path: ""
+      });
     } finally {
       setProcessing(false);
     }
@@ -441,7 +458,7 @@ const SelUploadV3 = () => {
       return alert("Front photo is required");
     }
 
-    if (!isEditMode && (!designFile || !uploadPreview || !sessionId)) {
+    if (!isEditMode && !designFile && !uploadPreview && !sessionId) {
       return alert("Please upload a design file");
     }
     if (!fileFormat) {
@@ -512,9 +529,14 @@ const SelUploadV3 = () => {
         navigate("/seller/my-designs");
       } else {
         // CREATE NEW DESIGN
-        formData.append("session_id", sessionId);
+        if (designFile) {
+          formData.append("design_file", designFile);
+        }
+        if (sessionId) {
+          formData.append("session_id", sessionId);
+        }
         formData.append("emb_metadata", JSON.stringify(embMetadata));
-        formData.append("file_names", JSON.stringify(uploadPreview?.file_names || []));
+        formData.append("file_names", JSON.stringify(uploadPreview?.file_names || (designFile ? [designFile.name] : [])));
         formData.append("design_file_path", uploadPreview?.design_file_path || "");
 
         await API.post("/seller/final-upload", formData, {

@@ -134,18 +134,19 @@
 }
 
 .label {
-  font-size: var(--font-xs);
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 750;
   color: var(--text-dark);
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
+  letter-spacing: -0.01em;
 }
 
 .labelSubText {
-  font-size: var(--font-2xs);
+  font-size: 0.8rem;
   color: var(--text-light);
-  font-weight: normal;
+  font-weight: 450;
 }
 
 .labelRow {

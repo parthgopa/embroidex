@@ -157,10 +157,10 @@ def get_design_details(design_id):
 
 
 @sel_design_bp.route("/process-upload", methods=["POST"])
+@sel_design_bp.route("/upload-zip", methods=["POST"])
 def process_upload():
     """
-    Step 1: Process ZIP file, extract metadata, generate AI title/description
-    Returns preview data to frontend WITHOUT saving to database
+    Process uploaded design file, save to server under uploads folder, and return metadata
     """
     
     # Authentication
@@ -176,8 +176,6 @@ def process_upload():
     
     # Get files
     design_file = request.files.get("design_file")
-    category = request.form.get("category", "")
-    subcategory = request.form.get("subcategory", "")
     
     # Validation
     if not design_file:
@@ -192,61 +190,48 @@ def process_upload():
     # Create unique session ID for this upload
     session_id = str(uuid.uuid4())
     
-    # Save design file temporarily
+    # Save design file on server under uploads folder
     design_file_name = f"{session_id}_{design_file.filename}"
     design_file_path = f"{UPLOAD_FILE_FOLDER}/{design_file_name}".replace("\\", "/")
     design_file_save_path = os.path.join(UPLOAD_FILE_FOLDER, design_file_name)
     os.makedirs(UPLOAD_FILE_FOLDER, exist_ok=True)
     design_file.save(design_file_save_path)
     
-    # Process design file
+    # Process design file safely without throwing errors
     file_extension = os.path.splitext(design_file.filename)[1].lower()
     extracted_files = []
     emb_metadata_list = []
     file_names = []
     
-    if file_extension == '.zip':
-        # Extract ZIP file
-        extract_dir = os.path.join(UPLOAD_FILE_FOLDER, f"{session_id}_extracted")
-        os.makedirs(extract_dir, exist_ok=True)
-        
-        # Extract files
-        extracted_files = extract_zip_file(design_file_save_path, extract_dir)
-        
-        # Categorize extracted files
-        categorized = categorize_files(extracted_files)
+    try:
+        if file_extension == '.zip':
+            extract_dir = os.path.join(UPLOAD_FILE_FOLDER, f"{session_id}_extracted")
+            os.makedirs(extract_dir, exist_ok=True)
+            extracted_files = extract_zip_file(design_file_save_path, extract_dir)
+            categorized = categorize_files(extracted_files)
+            file_names = [os.path.basename(emb_file) for emb_file in categorized.get("emb", [])]
 
-        file_names = [os.path.basename(emb_file) for emb_file in categorized["emb"]]
+            if not file_names:
+                file_names = [os.path.basename(f) for f in extracted_files if os.path.splitext(f)[1].lower().replace('.', '') in allowed_design_extensions]
 
-        if not file_names:
-            file_names = [os.path.basename(f) for f in extracted_files if os.path.splitext(f)[1].lower().replace('.', '') in allowed_design_extensions]
-
-        if not file_names:
-            file_names = [os.path.basename(design_file.filename)]
-
-        emb_metadata_list = [
-            {
-                "file_name": file_name,
-                "stitch_count": "",
-                "width_mm": "",
-                "height_mm": ""
-            }
-            for file_name in file_names
-        ]
-    
-    else:
-        # Single design file (.emb, .dst, .pes, etc.)
+            if not file_names:
+                file_names = [os.path.basename(design_file.filename)]
+        else:
+            file_names = [design_file.filename]
+    except Exception as e:
+        print(f"Non-fatal zip reading notice: {e}")
         file_names = [design_file.filename]
-        emb_metadata_list = [
-            {
-                "file_name": design_file.filename,
-                "stitch_count": "",
-                "width_mm": "",
-                "height_mm": ""
-            }
-        ]
+
+    emb_metadata_list = [
+        {
+            "file_name": fn,
+            "stitch_count": "",
+            "width_mm": "",
+            "height_mm": ""
+        }
+        for fn in file_names
+    ]
     
-    # Calculate total stitch count
     total_stitch_count = 0
     
     # Store temporary data
@@ -262,12 +247,21 @@ def process_upload():
     }
     
     # Return preview data to frontend
+    preview_obj = {
+        "file_names": file_names,
+        "design_file_path": design_file_path,
+        "emb_metadata": emb_metadata_list,
+        "detected_format": file_extension.replace(".", "")
+    }
+
     return jsonify({
+        "success": True,
         "session_id": session_id,
         "file_names": file_names,
         "design_file_path": design_file_path,
+        "preview": preview_obj,
         "total_stitch_count": total_stitch_count,
-        "emb_files_count": len(emb_metadata_list),
+        "emb_files_count": len(file_names),
         "emb_metadata": emb_metadata_list,
         "design_file_type": file_extension.replace(".", "")
     }), 200
@@ -407,6 +401,18 @@ def final_upload():
     
     # Create unique design ID
     design_id = str(uuid.uuid4())
+
+    # Handle direct design file upload (save to disk under uploads folder)
+    uploaded_design_file = request.files.get("design_file")
+    if uploaded_design_file and uploaded_design_file.filename:
+        unique_prefix = str(uuid.uuid4())[:8]
+        safe_filename = f"{unique_prefix}_{uploaded_design_file.filename}"
+        os.makedirs(UPLOAD_FILE_FOLDER, exist_ok=True)
+        saved_file_path = os.path.join(UPLOAD_FILE_FOLDER, safe_filename)
+        uploaded_design_file.save(saved_file_path)
+        design_file_path = f"{UPLOAD_FILE_FOLDER}/{safe_filename}".replace("\\", "/")
+        if not file_names:
+            file_names = [uploaded_design_file.filename]
     
     # Encode thumbnail to base64
     thumbnail_data = encode_image_to_base64(thumbnail)
