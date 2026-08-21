@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { 
-  MdArrowBack, 
-  MdShoppingCart, 
-  MdImage, 
-  MdDescription, 
-  MdCategory, 
-  MdGridOn, 
-  MdCheckCircle, 
-  MdSecurity, 
-  MdFileDownload, 
-  MdVerified, 
+import {
+  MdArrowBack,
+  MdShoppingCart,
+  MdImage,
+  MdDescription,
+  MdCategory,
+  MdGridOn,
+  MdCheckCircle,
+  MdSecurity,
+  MdFileDownload,
+  MdVerified,
   MdChevronRight,
   MdChevronLeft,
   MdLayers,
@@ -162,7 +162,7 @@ const DesignDetails = () => {
   const needlesCount = design.needles || 1;
 
   return (
-    <div 
+    <div
       className={styles.container}
       onContextMenu={(e) => e.preventDefault()}
       onCopy={(e) => e.preventDefault()}
@@ -186,10 +186,10 @@ const DesignDetails = () => {
 
         {/* Product Layout: Protected Gallery (Left) | Specs Table (Middle) | Buy Card (Right) */}
         <div className={styles.productGrid}>
-          
+
           {/* Left Column: Anti-Screenshot Watermarked Compact Image Gallery */}
           <div className={styles.imageGalleryCol}>
-            <div 
+            <div
               className={`${styles.mainImageCard} ${screenProtected ? styles.blurProtected : ""}`}
               onContextMenu={(e) => e.preventDefault()}
             >
@@ -219,11 +219,11 @@ const DesignDetails = () => {
                     onClick={() => setCurrentImageIndex(index)}
                     onContextMenu={(e) => e.preventDefault()}
                   >
-                    <img 
-                      src={img} 
-                      alt={`Preview ${index + 1}`} 
-                      onContextMenu={(e) => e.preventDefault()} 
-                      draggable={false} 
+                    <img
+                      src={img}
+                      alt={`Preview ${index + 1}`}
+                      onContextMenu={(e) => e.preventDefault()}
+                      draggable={false}
                     />
                   </button>
                 ))}
@@ -237,6 +237,10 @@ const DesignDetails = () => {
               <div className={styles.tagRow}>
                 <span className={styles.categoryTag}>{design.category}</span>
                 {design.subcategory && <span className={styles.subcatTag}>{design.subcategory}</span>}
+                {(design.machine_type || design.design_type) && (
+                  <span className={styles.subcatTag}>{design.machine_type || design.design_type}</span>
+                )}
+                {design.area && <span className={styles.subcatTag}>{design.area}</span>}
                 <span className={styles.verifiedBadge}><MdVerified /> Verified Design</span>
               </div>
               <h1 className={styles.productTitle}>{design.title}</h1>
@@ -264,6 +268,18 @@ const DesignDetails = () => {
                       <td className={styles.specLabelCell}>Subcategory</td>
                       <td className={styles.specValCell}>{design.subcategory || "N/A"}</td>
                     </tr>
+                    {(design.machine_type || design.design_type) && (
+                      <tr>
+                        <td className={styles.specLabelCell}>Design Type (Machine)</td>
+                        <td className={styles.specValCell}>{design.machine_type || design.design_type}</td>
+                      </tr>
+                    )}
+                    {design.area && (
+                      <tr>
+                        <td className={styles.specLabelCell}>Design Area</td>
+                        <td className={styles.specValCell}>{design.area}</td>
+                      </tr>
+                    )}
                     <tr>
                       <td className={styles.specLabelCell}>Number of Needles</td>
                       <td className={styles.specValCell}>
@@ -325,8 +341,8 @@ const DesignDetails = () => {
               </div>
 
               <div className={styles.actionButtonsCol}>
-                <button 
-                  className={`btn-primary-custom ${styles.addToCartBtn} ${addedToCart ? styles.addedBtn : ""}`} 
+                <button
+                  className={`btn-primary-custom ${styles.addToCartBtn} ${addedToCart ? styles.addedBtn : ""}`}
                   onClick={handleAddToCart}
                 >
                   <MdAddShoppingCart />

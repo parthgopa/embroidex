@@ -1,20 +1,22 @@
 /**
- * SelUploadV3 - Unified Upload & Edit Flow
- * Order: Images → Design Details (Name, Description, Category, Needles, Price) → File Format & Upload File
+ * SelUploadV3 - Unified Upload & Edit Flow (Meesho Style Image Uploader)
+ * Order: Images → File Format & Design File Upload → Design Details (Name, Description, Category, Needles, Price)
  * Features:
+ * - Single unified photo upload (Meesho theme)
+ * - First image is Front/Main Photo with change option
+ * - Extra images labeled as "Image 1", "Image 2", etc. with remove options
+ * - Design File & Format placed right under Design Photos
+ * - Clean standard inputs for Design Name and Description
  * - Supports both "Upload New Design" and "Edit Existing Design" (via ?editId=...)
- * - Prominent "✨ Write with AI" buttons for Title & Description
  * - Unsaved changes prompt on window close / tab navigation
  * - Responsive 70/30 layout with guidance cards
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   MdCheckCircle,
   MdUploadFile,
-  MdImage,
-  MdAutoAwesome,
   MdClose,
   MdCloudUpload,
   MdPhotoLibrary,
@@ -26,7 +28,9 @@ import {
   MdExpandLess,
   MdArrowBack,
   MdEdit,
-  MdWarning
+  MdWarning,
+  MdAddPhotoAlternate,
+  MdSync
 } from "react-icons/md";
 import API from "../../services/api";
 import styles from "./SelUploadV3.module.css";
@@ -35,6 +39,38 @@ import styles from "./SelUploadV3.module.css";
 const FILE_FORMAT_OPTIONS = [
   ".DST", ".PES", ".EMB", ".JEF", ".EXP", ".VP3",
   ".ART", ".XXX", ".HUS", ".VIP", ".SEW"
+];
+
+// Design Types (Machines Types) options
+const DESIGN_MACHINE_TYPE_OPTIONS = [
+  "Flat/Multi Designs",
+  "Only Cording Designs",
+  "Only Sequin Designs",
+  "Only Chain Stitch Designs",
+  "Multi+Cording Designs",
+  "Multi+Cording+Sequin Designs",
+  "Multi+Sequin Designs",
+  "Multi+Chain Stitch Designs",
+  "Dual & Sandwich Sequin",
+  "Cording + Sequin Designs",
+  "Beads and Sequin Designs",
+  "2/4/6 Sequin Design"
+];
+
+// Design Area options
+const DESIGN_AREA_OPTIONS = [
+  "100 mm",
+  "125 mm",
+  "150 mm",
+  "175 mm",
+  "200 mm",
+  "225 mm",
+  "250 mm",
+  "300 mm",
+  "330 mm",
+  "400 mm",
+  "500 mm",
+  "600 mm"
 ];
 
 // Brief, simple English guide sections
@@ -47,49 +83,25 @@ const GUIDE_SECTIONS = [
     description: "Upload clear photos of your embroidery design.",
     details: [
       {
-        subtitle: "First Photo *",
+        subtitle: "Front Photo (Main)",
         points: [
-          "Upload 1 main photo for design preview.",
-          "Use JPG or PNG photo (Max 10 MB)."
+          "The first photo is your main cover photo.",
+          "You can change the front photo anytime."
         ]
       },
       {
-        subtitle: "Extra Photos (Max 5)",
+        subtitle: "Extra Photos (Image 1 to 5)",
         points: [
           "Upload up to 5 extra photos.",
-          "Show close-up stitches and thread work."
-        ]
-      }
-    ]
-  },
-  {
-    id: "details",
-    stepNum: "2",
-    title: "2. Design Details & Needles",
-    icon: MdCategory,
-    description: "Type your design details, category, and needle count.",
-    details: [
-      {
-        subtitle: "Name & Description",
-        points: [
-          "Type design name and description.",
-          "Click '✨ Write with AI' to automatically write name & description!"
-        ]
-      },
-      {
-        subtitle: "Category & Needles",
-        points: [
-          "Select category and subcategory.",
-          "Choose number of needles (1 to 15).",
-          "Set selling price in Rupees (₹)."
+          "Show close-up stitches, fabric, and thread work."
         ]
       }
     ]
   },
   {
     id: "fileUpload",
-    stepNum: "3",
-    title: "3. File Format & Upload",
+    stepNum: "2",
+    title: "2. File Format & Upload",
     icon: MdUploadFile,
     description: "Select file format and upload your design file.",
     details: [
@@ -98,6 +110,30 @@ const GUIDE_SECTIONS = [
         points: [
           "Select format: .DST, .PES, .EMB, .JEF, etc.",
           "Upload .ZIP or single design file (Max 20 MB)."
+        ]
+      }
+    ]
+  },
+  {
+    id: "details",
+    stepNum: "3",
+    title: "3. Design Details & Pricing",
+    icon: MdCategory,
+    description: "Type your design details, category, and needle count.",
+    details: [
+      {
+        subtitle: "Name & Description",
+        points: [
+          "Type a clear design name (e.g. Saree Pallu Floral Design).",
+          "Add helpful details, dimensions, and stitch notes."
+        ]
+      },
+      {
+        subtitle: "Category & Needles",
+        points: [
+          "Select category and subcategory.",
+          "Choose number of needles (1 to 15).",
+          "Set selling price in Rupees (₹)."
         ]
       }
     ]
@@ -114,7 +150,7 @@ const SelUploadV3 = () => {
   const [loadingDesign, setLoadingDesign] = useState(isEditMode);
   const [isDirty, setIsDirty] = useState(false);
 
-  // Form state - Images
+  // Form state - Images (Meesho style)
   const [thumbnail, setThumbnail] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
   const [existingThumbnailUrl, setExistingThumbnailUrl] = useState(null);
@@ -122,21 +158,6 @@ const SelUploadV3 = () => {
   const [additionalImages, setAdditionalImages] = useState([]);
   const [imagesPreviews, setImagesPreviews] = useState([]);
   const [existingAdditionalImages, setExistingAdditionalImages] = useState([]); // [{ index: 0, src: '...' }]
-
-  // Form state - Details
-  const [form, setForm] = useState({
-    titleOriginal: "",
-    titleAi: "",
-    titleSource: "original",
-    descriptionOriginal: "",
-    descriptionAi: "",
-    descriptionSource: "original",
-  });
-  const [category, setCategory] = useState("");
-  const [subcategory, setSubcategory] = useState("");
-  const [needles, setNeedles] = useState("1");
-  const [price, setPrice] = useState("");
-  const [refiningField, setRefiningField] = useState("");
 
   // Form state - File Format & File Upload
   const [fileFormat, setFileFormat] = useState(".EMB");
@@ -147,6 +168,16 @@ const SelUploadV3 = () => {
   const [embMetadata, setEmbMetadata] = useState([]);
   const [existingFiles, setExistingFiles] = useState([]);
   const [showFileList, setShowFileList] = useState(false);
+
+  // Form state - Details
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [subcategory, setSubcategory] = useState("");
+  const [machineType, setMachineType] = useState("");
+  const [area, setArea] = useState("");
+  const [needles, setNeedles] = useState("1");
+  const [price, setPrice] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -191,17 +222,12 @@ const SelUploadV3 = () => {
       const d = res.data.design;
       if (!d) throw new Error("Design not found");
 
-      setForm({
-        titleOriginal: d.title_original || d.title || "",
-        titleAi: d.title_ai || "",
-        titleSource: d.title_source || "original",
-        descriptionOriginal: d.description_original || d.description || "",
-        descriptionAi: d.description_ai || "",
-        descriptionSource: d.description_source || "original",
-      });
-
+      setTitle(d.title_original || d.title || "");
+      setDescription(d.description_original || d.description || "");
       setCategory(d.category || "");
       setSubcategory(d.subcategory || "");
+      setMachineType(d.machine_type || d.design_type || "");
+      setArea(d.area || "");
       setNeedles(String(d.needles || "1"));
       setPrice(String(d.price || ""));
 
@@ -272,13 +298,57 @@ const SelUploadV3 = () => {
     img.src = objectUrl;
   });
 
-  // Image upload handlers
-  const handleThumbnailChange = async (e) => {
+  // Meesho Theme: Unified image upload handler
+  const handleUnifiedImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    e.target.value = "";
+    if (files.length === 0) return;
+
+    const oversized = files.find(f => f.size > 10 * 1024 * 1024);
+    if (oversized) {
+      alert(`"${oversized.name}" exceeds 10MB. Please use a smaller image.`);
+      return;
+    }
+
+    try {
+      const compressed = await Promise.all(files.map(compressImage));
+      let availableFiles = [...compressed];
+
+      // If no front photo exists, set the first file as front photo
+      if (!thumbnail && !thumbnailPreview && availableFiles.length > 0) {
+        const frontFile = availableFiles.shift();
+        setThumbnail(frontFile);
+        setThumbnailPreview(URL.createObjectURL(frontFile));
+      }
+
+      // Any remaining files go to additional extra images
+      if (availableFiles.length > 0) {
+        const totalExistingExtra = existingAdditionalImages.length + additionalImages.length;
+        const maxCanAdd = 5 - totalExistingExtra;
+        if (maxCanAdd <= 0) {
+          alert("Maximum 5 extra photos allowed (6 total photos).");
+        } else {
+          const toAdd = availableFiles.slice(0, maxCanAdd);
+          if (availableFiles.length > maxCanAdd) {
+            alert(`Only ${maxCanAdd} extra photo(s) added. Maximum limit is 5 extra photos.`);
+          }
+          setAdditionalImages(prev => [...prev, ...toAdd]);
+          setImagesPreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))]);
+        }
+      }
+      setIsDirty(true);
+    } catch (err) {
+      alert(err.message || "Failed to process images");
+    }
+  };
+
+  // Change only the Front Photo
+  const handleChangeFrontPhoto = async (e) => {
     const file = e.target.files[0];
+    e.target.value = "";
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       alert(`"${file.name}" exceeds 10MB. Please use a smaller image.`);
-      e.target.value = "";
       return;
     }
     try {
@@ -287,34 +357,7 @@ const SelUploadV3 = () => {
       setThumbnailPreview(URL.createObjectURL(compressed));
       setIsDirty(true);
     } catch (err) {
-      alert(err.message);
-      e.target.value = "";
-    }
-  };
-
-  const handleAdditionalImagesChange = async (e) => {
-    const newFiles = Array.from(e.target.files);
-    e.target.value = "";
-
-    const totalCurrent = existingAdditionalImages.length + additionalImages.length;
-    if (totalCurrent + newFiles.length > 5) {
-      alert(`You can have a maximum of 5 extra photos. You already have ${totalCurrent}.`);
-      return;
-    }
-
-    const oversized = newFiles.find(f => f.size > 10 * 1024 * 1024);
-    if (oversized) {
-      alert(`"${oversized.name}" exceeds 10MB. Please use a smaller image.`);
-      return;
-    }
-
-    try {
-      const compressed = await Promise.all(newFiles.map(compressImage));
-      setAdditionalImages(prev => [...prev, ...compressed]);
-      setImagesPreviews(prev => [...prev, ...compressed.map(f => URL.createObjectURL(f))]);
-      setIsDirty(true);
-    } catch (err) {
-      alert(err.message);
+      alert(err.message || "Failed to compress photo");
     }
   };
 
@@ -378,75 +421,6 @@ const SelUploadV3 = () => {
     }
   };
 
-  // Form value helpers
-  const handleFieldValueChange = (field, value) => {
-    setIsDirty(true);
-    if (field === "title") {
-      setForm(prev => ({
-        ...prev,
-        titleOriginal: form.titleSource === "original" ? value : prev.titleOriginal,
-        titleAi: form.titleSource === "ai" ? value : prev.titleAi,
-      }));
-    } else if (field === "description") {
-      setForm(prev => ({
-        ...prev,
-        descriptionOriginal: form.descriptionSource === "original" ? value : prev.descriptionOriginal,
-        descriptionAi: form.descriptionSource === "ai" ? value : prev.descriptionAi,
-      }));
-    }
-  };
-
-  const getFieldValue = (field) => {
-    if (field === "title") {
-      return form.titleSource === "ai" ? form.titleAi : form.titleOriginal;
-    }
-    if (field === "description") {
-      return form.descriptionSource === "ai" ? form.descriptionAi : form.descriptionOriginal;
-    }
-    return "";
-  };
-
-  const handleContentSourceChange = (field, source) => {
-    setIsDirty(true);
-    setForm(prev => ({
-      ...prev,
-      [`${field}Source`]: source
-    }));
-  };
-
-  // AI Generator
-  const handleWriteWithAi = async (fieldType) => {
-    setRefiningField(fieldType);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await API.post(
-        "/seller/refine-text",
-        {
-          field_type: fieldType,
-          original_text: fieldType === "title" ? (form.titleOriginal || form.titleAi) : (form.descriptionOriginal || form.descriptionAi),
-          category: category,
-          subcategory: subcategory,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      setForm((prev) => ({
-        ...prev,
-        [fieldType === "title" ? "titleAi" : "descriptionAi"]: res.data.refined_text,
-        [`${fieldType}Source`]: "ai",
-      }));
-      setIsDirty(true);
-    } catch (err) {
-      alert(err.response?.data?.error || `Failed to write ${fieldType} with AI`);
-    } finally {
-      setRefiningField("");
-    }
-  };
-
   // Cancel with unsaved check
   const handleCancel = () => {
     if (isDirty) {
@@ -461,17 +435,24 @@ const SelUploadV3 = () => {
     e.preventDefault();
 
     if (!isEditMode && !thumbnail) {
-      return alert("First photo is required");
+      return alert("Front photo is required");
     }
     if (isEditMode && !thumbnail && !thumbnailPreview) {
-      return alert("First photo is required");
+      return alert("Front photo is required");
     }
 
-    if (!form.titleOriginal && !form.titleAi) {
-      return alert("Please enter design name or use '✨ Write with AI'");
+    if (!isEditMode && (!designFile || !uploadPreview || !sessionId)) {
+      return alert("Please upload a design file");
     }
-    if (!form.descriptionOriginal && !form.descriptionAi) {
-      return alert("Please enter description or use '✨ Write with AI'");
+    if (!fileFormat) {
+      return alert("Please select a design file format");
+    }
+
+    if (!title.trim()) {
+      return alert("Please enter design name");
+    }
+    if (!description.trim()) {
+      return alert("Please enter description");
     }
     if (!category || !subcategory) {
       return alert("Please select category and subcategory");
@@ -479,29 +460,19 @@ const SelUploadV3 = () => {
     if (!price || parseFloat(price) <= 0) {
       return alert("Please enter a valid price");
     }
-    if (!fileFormat) {
-      return alert("Please select a design file format");
-    }
-    if (!isEditMode && (!designFile || !uploadPreview || !sessionId)) {
-      return alert("Please upload a design file");
-    }
-
-    const selectedTitle = form.titleSource === "ai" ? form.titleAi : (form.titleOriginal || form.titleAi);
-    const selectedDescription = form.descriptionSource === "ai" ? form.descriptionAi : (form.descriptionOriginal || form.descriptionAi);
 
     setSubmitting(true);
 
     const formData = new FormData();
-    formData.append("title", selectedTitle);
-    formData.append("description", selectedDescription);
-    formData.append("title_original", form.titleOriginal || selectedTitle);
-    formData.append("title_ai", form.titleAi);
-    formData.append("title_source", form.titleSource);
-    formData.append("description_original", form.descriptionOriginal || selectedDescription);
-    formData.append("description_ai", form.descriptionAi);
-    formData.append("description_source", form.descriptionSource);
+    formData.append("title", title.trim());
+    formData.append("description", description.trim());
+    formData.append("title_original", title.trim());
+    formData.append("description_original", description.trim());
     formData.append("category", category);
     formData.append("subcategory", subcategory);
+    formData.append("machine_type", machineType);
+    formData.append("design_type", machineType);
+    formData.append("area", area);
     formData.append("needles", needles);
     formData.append("file_format", fileFormat.replace(".", "").toUpperCase());
     formData.append("price", price);
@@ -567,6 +538,10 @@ const SelUploadV3 = () => {
   const subcategories = category ? categories[category] || [] : [];
   const fileNames = uploadPreview?.file_names || [];
 
+  // Total extra images count
+  const totalExtraImages = existingAdditionalImages.length + imagesPreviews.length;
+  const hasPhotos = Boolean(thumbnailPreview || existingAdditionalImages.length > 0 || imagesPreviews.length > 0);
+
   if (loadingDesign) {
     return (
       <div className={styles.fullWidthContainer}>
@@ -616,227 +591,133 @@ const SelUploadV3 = () => {
 
           <div className={styles.singleFormCard}>
 
-            {/* First Photo Upload */}
+            {/* ========================================================= */}
+            {/* 1. DESIGN PHOTOS (MEESHO THEME) */}
+            {/* ========================================================= */}
             <div className={styles.formGroup}>
-              <label className={styles.label}>
-                First Photo * <small className={styles.labelSubText}>(PNG, JPG - Max 10MB)</small>
-              </label>
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/jpg"
-                onChange={handleThumbnailChange}
-                className={styles.simpleFileInput}
-                id="thumbnail"
-              />
-              {thumbnailPreview && (
-                <div className={styles.simplePreviewWrapper}>
-                  <img src={thumbnailPreview} alt="First Photo Preview" className={styles.previewImageSimple} />
-                  <span className={styles.simpleFileName}>
-                    {thumbnail?.name || (isEditMode ? "Current First Photo (Click above to replace)" : "Selected photo")}
-                  </span>
-                </div>
-              )}
-            </div>
+              <div className={styles.labelRow}>
+                <label className={styles.label}>
+                  1. Design Photos * <small className={styles.labelSubText}>(PNG, JPG - Max 10MB each)</small>
+                </label>
+                <span className={styles.photoCountBadge}>
+                  {(thumbnailPreview ? 1 : 0) + totalExtraImages}/6 Photos
+                </span>
+              </div>
 
-            {/* Extra Photos Upload */}
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                Extra Photos <small className={styles.labelSubText}>(Max 5 extra photos)</small>
-              </label>
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/jpg"
-                multiple
-                onChange={handleAdditionalImagesChange}
-                className={styles.simpleFileInput}
-                id="additionalImages"
-              />
+              {/* Photos Gallery View */}
+              {hasPhotos ? (
+                <div className={styles.meeshoGallery}>
+                  
+                  {/* Slot 0: Front Photo / Main Photo */}
+                  {thumbnailPreview && (
+                    <div className={styles.meeshoCardWrapper}>
+                      <div className={`${styles.meeshoPhotoCard} ${styles.meeshoMainCard}`}>
+                        <img src={thumbnailPreview} alt="Front Photo" />
+                      </div>
+                      <span className={styles.meeshoPhotoLabelMain}>Front Photo</span>
+                      <label className={styles.meeshoChangeBtnBelow} title="Change Front Photo">
+                        <MdSync size={13} />
+                        <span>Change</span>
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/jpg"
+                          onChange={handleChangeFrontPhoto}
+                          style={{ display: "none" }}
+                        />
+                      </label>
+                    </div>
+                  )}
 
-              {/* Combined Previews: Existing + Newly Added */}
-              {(existingAdditionalImages.length > 0 || imagesPreviews.length > 0) && (
-                <div className={styles.additionalPreviewsCompact}>
-                  {/* Existing Images in Edit Mode */}
+                  {/* Slot 1..N: Existing Extra Photos (in edit mode) */}
                   {existingAdditionalImages.map((item, index) => (
-                    <div key={`existing-${index}`} className={styles.previewItemCompact}>
-                      <img src={item.src} alt={`Existing Photo ${index + 1}`} />
-                      <button
-                        type="button"
-                        onClick={() => removeExistingAdditionalImage(index)}
-                        className={styles.removeBtnCompact}
-                        title="Remove this extra photo"
-                      >
-                        <MdClose />
-                      </button>
+                    <div key={`existing-${index}`} className={styles.meeshoCardWrapper}>
+                      <div className={styles.meeshoPhotoCard}>
+                        <img src={item.src} alt={`Image ${index + 1}`} />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingAdditionalImage(index)}
+                          className={styles.meeshoRemoveBtn}
+                          title="Delete this image"
+                        >
+                          <MdClose size={13} />
+                        </button>
+                      </div>
+                      <span className={styles.meeshoPhotoLabel}>Image {index + 1}</span>
                     </div>
                   ))}
 
-                  {/* Newly selected images */}
-                  {imagesPreviews.map((preview, index) => (
-                    <div key={`new-${index}`} className={styles.previewItemCompact}>
-                      <img src={preview} alt={`New Extra Photo ${index + 1}`} />
-                      <button
-                        type="button"
-                        onClick={() => removeNewAdditionalImage(index)}
-                        className={styles.removeBtnCompact}
-                        title="Remove photo"
-                      >
-                        <MdClose />
-                      </button>
+                  {/* Slot N+1..M: Newly Added Extra Photos */}
+                  {imagesPreviews.map((preview, index) => {
+                    const displayIndex = existingAdditionalImages.length + index + 1;
+                    return (
+                      <div key={`new-${index}`} className={styles.meeshoCardWrapper}>
+                        <div className={styles.meeshoPhotoCard}>
+                          <img src={preview} alt={`Image ${displayIndex}`} />
+                          <button
+                            type="button"
+                            onClick={() => removeNewAdditionalImage(index)}
+                            className={styles.meeshoRemoveBtn}
+                            title="Delete this image"
+                          >
+                            <MdClose size={13} />
+                          </button>
+                        </div>
+                        <span className={styles.meeshoPhotoLabel}>Image {displayIndex}</span>
+                      </div>
+                    );
+                  })}
+
+                  {/* Add More Photos Slot (up to 6 total = 1 main + 5 extras) */}
+                  {(thumbnailPreview ? 1 : 0) + totalExtraImages < 6 && (
+                    <div className={styles.meeshoCardWrapper}>
+                      <label className={styles.meeshoAddTile} title="Add more photos">
+                        <MdAddPhotoAlternate className={styles.meeshoAddIcon} />
+                        <span className={styles.meeshoAddText}>+ Add Photo</span>
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/jpg"
+                          multiple
+                          onChange={handleUnifiedImageUpload}
+                          style={{ display: "none" }}
+                        />
+                      </label>
+                      <span className={styles.meeshoPhotoLabelPlaceholder}>Extra Photo</span>
                     </div>
-                  ))}
+                  )}
+
                 </div>
+              ) : (
+                /* Initial Empty Dropzone (Select 1 to 6 photos) */
+                <label className={styles.meeshoUploadDropzone}>
+                  <div className={styles.meeshoDropzoneContent}>
+                    <div className={styles.meeshoUploadIconCircle}>
+                      <MdCloudUpload size={28} />
+                    </div>
+                    <h4 className={styles.meeshoDropzoneTitle}>Click or Drag to Upload Photos</h4>
+                    <p className={styles.meeshoDropzoneSub}>
+                      Select 1 to 6 photos. First image will automatically be set as your <strong>Front Photo</strong>.
+                    </p>
+                    <span className={styles.meeshoBrowseBtn}>
+                      <MdAddPhotoAlternate size={16} /> Choose Images
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    multiple
+                    onChange={handleUnifiedImageUpload}
+                    style={{ display: "none" }}
+                    id="unifiedPhotos"
+                  />
+                </label>
               )}
             </div>
 
-            {/* Design Name / Title */}
+            {/* ========================================================= */}
+            {/* 2. DESIGN FILE FORMAT & DESIGN FILE / ZIP UPLOAD */}
+            {/* ========================================================= */}
             <div className={styles.formGroup}>
-              <div className={styles.labelRow}>
-                <label className={styles.label}>Design Name *</label>
-                <button
-                  type="button"
-                  className={styles.writeAiButton}
-                  onClick={() => handleWriteWithAi("title")}
-                  disabled={refiningField === "title" || processing}
-                  title="Click to automatically generate design name with AI"
-                >
-                  <MdAutoAwesome className={styles.sparkleIcon} />
-                  {refiningField === "title" ? "Writing..." : "Write with AI"}
-                </button>
-              </div>
-
-              <div className={styles.contentTabs}>
-                <button
-                  type="button"
-                  className={`${styles.contentTab} ${form.titleSource === "original" ? styles.contentTabActive : ""}`}
-                  onClick={() => handleContentSourceChange("title", "original")}
-                >
-                  Original
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.contentTab} ${form.titleSource === "ai" ? styles.contentTabActive : ""}`}
-                  onClick={() => handleContentSourceChange("title", "ai")}
-                >
-                  AI Generated
-                </button>
-              </div>
-
-              <input
-                type="text"
-                className="input-custom"
-                value={getFieldValue("title")}
-                onChange={(e) => handleFieldValueChange("title", e.target.value)}
-                placeholder={form.titleSource === "ai" ? "AI generated name will appear here" : "Enter your design name (or click ✨ Write with AI)"}
-              />
-            </div>
-
-            {/* Description */}
-            <div className={styles.formGroup}>
-              <div className={styles.labelRow}>
-                <label className={styles.label}>Description *</label>
-                <button
-                  type="button"
-                  className={styles.writeAiButton}
-                  onClick={() => handleWriteWithAi("description")}
-                  disabled={refiningField === "description" || processing}
-                  title="Click to automatically write design description with AI"
-                >
-                  <MdAutoAwesome className={styles.sparkleIcon} />
-                  {refiningField === "description" ? "Writing..." : "Write with AI"}
-                </button>
-              </div>
-
-              <div className={styles.contentTabs}>
-                <button
-                  type="button"
-                  className={`${styles.contentTab} ${form.descriptionSource === "original" ? styles.contentTabActive : ""}`}
-                  onClick={() => handleContentSourceChange("description", "original")}
-                >
-                  Original
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.contentTab} ${form.descriptionSource === "ai" ? styles.contentTabActive : ""}`}
-                  onClick={() => handleContentSourceChange("description", "ai")}
-                >
-                  AI Generated
-                </button>
-              </div>
-
-              <textarea
-                className={`input-custom ${styles.textarea}`}
-                value={getFieldValue("description")}
-                onChange={(e) => handleFieldValueChange("description", e.target.value)}
-                placeholder={form.descriptionSource === "ai" ? "AI generated description will appear here" : "Enter design description (or click ✨ Write with AI)"}
-                rows={4}
-              />
-            </div>
-
-            {/* Category */}
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Category *</label>
-              <select
-                className="input-custom"
-                value={category}
-                onChange={(e) => {
-                  setIsDirty(true);
-                  setCategory(e.target.value);
-                  setSubcategory("");
-                }}
-                required
-              >
-                <option value="">Select Category</option>
-                {Object.keys(categories).map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Subcategory */}
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Subcategory *</label>
-              <select
-                className="input-custom"
-                value={subcategory}
-                onChange={(e) => {
-                  setIsDirty(true);
-                  setSubcategory(e.target.value);
-                }}
-                required
-                disabled={!category}
-              >
-                <option value="">{category ? "Select Subcategory" : "Select category first"}</option>
-                {subcategories.map((subcat) => (
-                  <option key={subcat} value={subcat}>{subcat}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Number of Needles */}
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                <MdFormatListNumbered className={styles.fieldIcon} /> Number of Needles *
-              </label>
-              <select
-                className="input-custom"
-                value={needles}
-                onChange={(e) => {
-                  setIsDirty(true);
-                  setNeedles(e.target.value);
-                }}
-                required
-              >
-                {Array.from({ length: 15 }, (_, i) => i + 1).map((num) => (
-                  <option key={num} value={num.toString()}>
-                    {num} {num === 1 ? "Needle" : "Needles"}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Design File Type & File Upload */}
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Design File Type / Format *</label>
+              <label className={styles.label}>2. Design File Type / Format *</label>
               <div className={styles.formatPillsContainer}>
                 {FILE_FORMAT_OPTIONS.map((fmt) => (
                   <button
@@ -877,7 +758,7 @@ const SelUploadV3 = () => {
 
               {processing && (
                 <div className={styles.processingIndicator}>
-                  <MdAutoAwesome className={styles.spinIcon} />
+                  <MdCloudUpload className={styles.spinIcon} />
                   <span>Processing design file...</span>
                 </div>
               )}
@@ -926,6 +807,144 @@ const SelUploadV3 = () => {
                 )}
               </div>
             )}
+
+            {/* ========================================================= */}
+            {/* 3. DESIGN DETAILS (NAME, DESCRIPTION, CATEGORY, NEEDLES, PRICE) */}
+            {/* ========================================================= */}
+            {/* Design Name */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>3. Design Name *</label>
+              <input
+                type="text"
+                className="input-custom"
+                value={title}
+                onChange={(e) => {
+                  setIsDirty(true);
+                  setTitle(e.target.value);
+                }}
+                placeholder="Enter design name (e.g. Saree Pallu Floral Design)"
+                required
+              />
+            </div>
+
+            {/* Description */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Description *</label>
+              <textarea
+                className={`input-custom ${styles.textarea}`}
+                value={description}
+                onChange={(e) => {
+                  setIsDirty(true);
+                  setDescription(e.target.value);
+                }}
+                placeholder="Enter detailed description of your embroidery design"
+                rows={4}
+                required
+              />
+            </div>
+
+            {/* Category */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Category *</label>
+              <select
+                className="input-custom"
+                value={category}
+                onChange={(e) => {
+                  setIsDirty(true);
+                  setCategory(e.target.value);
+                  setSubcategory("");
+                }}
+                required
+              >
+                <option value="">Select Category</option>
+                {Object.keys(categories).map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Subcategory */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Subcategory *</label>
+              <select
+                className="input-custom"
+                value={subcategory}
+                onChange={(e) => {
+                  setIsDirty(true);
+                  setSubcategory(e.target.value);
+                }}
+                required
+                disabled={!category}
+              >
+                <option value="">{category ? "Select Subcategory" : "Select category first"}</option>
+                {subcategories.map((subcat) => (
+                  <option key={subcat} value={subcat}>{subcat}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Design Types (Machines Types) & Area - Displayed when Subcategory is selected */}
+            {subcategory && (
+              <>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Design Types (Machines Types) *</label>
+                  <select
+                    className="input-custom"
+                    value={machineType}
+                    onChange={(e) => {
+                      setIsDirty(true);
+                      setMachineType(e.target.value);
+                    }}
+                    required
+                  >
+                    <option value="">Choose Design Types (machines types)</option>
+                    {DESIGN_MACHINE_TYPE_OPTIONS.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Area *</label>
+                  <select
+                    className="input-custom"
+                    value={area}
+                    onChange={(e) => {
+                      setIsDirty(true);
+                      setArea(e.target.value);
+                    }}
+                    required
+                  >
+                    <option value="">Choose Area</option>
+                    {DESIGN_AREA_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {/* Number of Needles */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>
+                <MdFormatListNumbered className={styles.fieldIcon} /> Number of Needles *
+              </label>
+              <select
+                className="input-custom"
+                value={needles}
+                onChange={(e) => {
+                  setIsDirty(true);
+                  setNeedles(e.target.value);
+                }}
+                required
+              >
+                {Array.from({ length: 15 }, (_, i) => i + 1).map((num) => (
+                  <option key={num} value={num.toString()}>
+                    {num} {num === 1 ? "Needle" : "Needles"}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             {/* Selling Price (₹) */}
             <div className={styles.formGroup}>

@@ -54,6 +54,7 @@ def get_payout_details():
 
 
 @payment_bp.route("/create-order", methods=["POST"])
+@payment_bp.route("/cart/create-order", methods=["POST"])
 def create_order():
     """Create Razorpay order for single design or multi-item cart purchase"""
     token = request.headers.get("Authorization")
@@ -142,7 +143,8 @@ def create_order():
             "receipt": receipt,
             "amount": amount_paise,
             "currency": "INR",
-            "key": RAZORPAY_KEY_ID
+            "key": RAZORPAY_KEY_ID,
+            "key_id": RAZORPAY_KEY_ID
         }), 200
         
     except Exception as e:
@@ -151,6 +153,8 @@ def create_order():
 
 
 @payment_bp.route("/verify", methods=["POST"])
+@payment_bp.route("/cart/verify", methods=["POST"])
+@payment_bp.route("/verify-payment", methods=["POST"])
 def verify_payment():
     """Verify Razorpay payment and complete purchase for all designs in order"""
     token = request.headers.get("Authorization")

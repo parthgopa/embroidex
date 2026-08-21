@@ -334,6 +334,8 @@ def final_upload():
     description = request.form.get("description")
     category = request.form.get("category")
     subcategory = request.form.get("subcategory")
+    machine_type = (request.form.get("machine_type") or request.form.get("design_type") or "").strip()
+    area = (request.form.get("area") or "").strip()
     price = request.form.get("price")
     emb_metadata_raw = request.form.get("emb_metadata")
     title_original = (request.form.get("title_original") or "").strip()
@@ -441,6 +443,9 @@ def final_upload():
         "description_source": description_source,
         "category": category,
         "subcategory": subcategory,
+        "machine_type": machine_type,
+        "design_type": machine_type,
+        "area": area,
         "needles": needles,
         "file_format": file_format_raw,
         "design_file_type": file_format_raw.lower(),
@@ -531,7 +536,7 @@ def update_design(design_id):
     
     if request.is_json:
         data = request.json or {}
-        for field in ["title", "description", "category", "subcategory", "needles", "file_format", "title_original", "title_ai", "title_source", "description_original", "description_ai", "description_source"]:
+        for field in ["title", "description", "category", "subcategory", "machine_type", "design_type", "area", "needles", "file_format", "title_original", "title_ai", "title_source", "description_original", "description_ai", "description_source"]:
             if field in data:
                 update_data[field] = data[field]
         if "price" in data and data["price"]:
@@ -541,7 +546,7 @@ def update_design(design_id):
     else:
         # Multipart form data
         data = request.form
-        for field in ["title", "description", "category", "subcategory", "needles", "file_format", "title_original", "title_ai", "title_source", "description_original", "description_ai", "description_source"]:
+        for field in ["title", "description", "category", "subcategory", "machine_type", "design_type", "area", "needles", "file_format", "title_original", "title_ai", "title_source", "description_original", "description_ai", "description_source"]:
             if field in data:
                 update_data[field] = data[field]
         if "price" in data and data["price"]:

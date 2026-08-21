@@ -103,11 +103,11 @@ const Purchase = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      const { order_id, amount, currency, key_id } = orderRes.data;
+      const { order_id, amount, currency, key_id, key } = orderRes.data;
 
       // Step 2: Open Razorpay Checkout
       const options = {
-        key: key_id,
+        key: key_id || key,
         amount: amount,
         currency: currency,
         name: "Embroidex",

@@ -16,6 +16,41 @@ import styles from "./Explore.module.css";
 
 const NEEDLE_OPTIONS = ["1", "2", "3", "4", "5", "5+"];
 const FILE_FORMAT_OPTIONS = ["DST", "PES", "EMB", "JEF", "EXP", "VP3", "ART", "XXX", "HUS", "VIP", "SEW"];
+const DESIGN_MACHINE_TYPE_OPTIONS = [
+  "Flat/Multi Designs",
+  "Only Cording Designs",
+  "Only Sequin Designs",
+  "Only Chain Stitch Designs",
+  "Multi+Cording Designs",
+  "Multi+Cording+Sequin Designs",
+  "Multi+Sequin Designs",
+  "Multi+Chain Stitch Designs",
+  "Dual & Sandwich Sequin",
+  "Cording + Sequin Designs",
+  "Beads and Sequin Designs",
+  "2/4/6 Sequin Design"
+];
+const DESIGN_AREA_OPTIONS = [
+  "100 mm",
+  "125 mm",
+  "150 mm",
+  "175 mm",
+  "200 mm",
+  "225 mm",
+  "250 mm",
+  "300 mm",
+  "330 mm",
+  "400 mm",
+  "500 mm",
+  "600 mm"
+];
+const PRICE_RANGE_OPTIONS = [
+  { id: "all", label: "All" },
+  { id: "0-200", label: "₹0 - ₹200" },
+  { id: "200-500", label: "₹200 - ₹500" },
+  { id: "500-1000", label: "₹500 - ₹1,000" },
+  { id: "1000+", label: "₹1,000+" },
+];
 
 const Explore = () => {
   const navigate = useNavigate();
@@ -32,9 +67,11 @@ const Explore = () => {
     const cat = searchParams.get("category");
     return cat ? [cat] : [];
   });
+  const [selectedMachineTypes, setSelectedMachineTypes] = useState([]);
+  const [selectedAreas, setSelectedAreas] = useState([]);
   const [selectedNeedles, setSelectedNeedles] = useState([]);
   const [selectedFileFormats, setSelectedFileFormats] = useState([]);
-  const [selectedPriceRanges, setSelectedPriceRanges] = useState([]);
+  const [selectedPriceRanges, setSelectedPriceRanges] = useState(["all"]);
   const [sortBy, setSortBy] = useState("latest");
 
   // Mobile Drawer State
@@ -50,6 +87,8 @@ const Explore = () => {
   }, [
     searchQuery, 
     selectedCategories, 
+    selectedMachineTypes,
+    selectedAreas,
     selectedNeedles, 
     selectedFileFormats, 
     selectedPriceRanges, 
@@ -92,13 +131,30 @@ const Explore = () => {
           design.title?.toLowerCase().includes(q) ||
           design.description?.toLowerCase().includes(q) ||
           design.category?.toLowerCase().includes(q) ||
-          design.subcategory?.toLowerCase().includes(q)
+          design.subcategory?.toLowerCase().includes(q) ||
+          (design.machine_type || design.design_type || "").toLowerCase().includes(q) ||
+          (design.area || "").toLowerCase().includes(q)
       );
     }
 
     // Main Category filter (multi-select)
     if (selectedCategories.length > 0) {
       filtered = filtered.filter((design) => selectedCategories.includes(design.category));
+    }
+
+    // Machine Types filter (multi-select)
+    if (selectedMachineTypes.length > 0) {
+      filtered = filtered.filter((design) => {
+        const mType = design.machine_type || design.design_type || "";
+        return selectedMachineTypes.includes(mType);
+      });
+    }
+
+    // Area filter (multi-select)
+    if (selectedAreas.length > 0) {
+      filtered = filtered.filter((design) => {
+        return selectedAreas.includes(design.area);
+      });
     }
 
     // Needles filter (multi-select)
@@ -121,7 +177,7 @@ const Explore = () => {
     }
 
     // Price ranges filter (multi-select)
-    if (selectedPriceRanges.length > 0) {
+    if (selectedPriceRanges.length > 0 && !selectedPriceRanges.includes("all")) {
       filtered = filtered.filter((design) => {
         const price = design.price;
         return selectedPriceRanges.some((range) => {
@@ -154,6 +210,22 @@ const Explore = () => {
     }
   };
 
+  const toggleMachineType = (type) => {
+    if (selectedMachineTypes.includes(type)) {
+      setSelectedMachineTypes(selectedMachineTypes.filter((t) => t !== type));
+    } else {
+      setSelectedMachineTypes([...selectedMachineTypes, type]);
+    }
+  };
+
+  const toggleArea = (areaVal) => {
+    if (selectedAreas.includes(areaVal)) {
+      setSelectedAreas(selectedAreas.filter((a) => a !== areaVal));
+    } else {
+      setSelectedAreas([...selectedAreas, areaVal]);
+    }
+  };
+
   const toggleNeedle = (needle) => {
     if (selectedNeedles.includes(needle)) {
       setSelectedNeedles(selectedNeedles.filter((n) => n !== needle));
@@ -170,29 +242,46 @@ const Explore = () => {
     }
   };
 
-  const togglePriceRange = (range) => {
-    if (selectedPriceRanges.includes(range)) {
-      setSelectedPriceRanges(selectedPriceRanges.filter((r) => r !== range));
-    } else {
-      setSelectedPriceRanges([...selectedPriceRanges, range]);
+  const togglePriceRange = (rangeId) => {
+    if (rangeId === "all") {
+      setSelectedPriceRanges(["all"]);
+      return;
     }
+
+    let updated = selectedPriceRanges.filter((r) => r !== "all");
+
+    if (updated.includes(rangeId)) {
+      updated = updated.filter((r) => r !== rangeId);
+    } else {
+      updated = [...updated, rangeId];
+    }
+
+    if (updated.length === 0) {
+      updated = ["all"];
+    }
+
+    setSelectedPriceRanges(updated);
   };
 
   const resetAllFilters = () => {
     setSearchQuery("");
     setSelectedCategories([]);
+    setSelectedMachineTypes([]);
+    setSelectedAreas([]);
     setSelectedNeedles([]);
     setSelectedFileFormats([]);
-    setSelectedPriceRanges([]);
+    setSelectedPriceRanges(["all"]);
     setSortBy("latest");
   };
 
   const activeFilterCount =
     (searchQuery ? 1 : 0) +
     selectedCategories.length +
+    selectedMachineTypes.length +
+    selectedAreas.length +
     selectedNeedles.length +
     selectedFileFormats.length +
-    selectedPriceRanges.length;
+    (selectedPriceRanges.includes("all") ? 0 : selectedPriceRanges.length);
 
   const getMainCategories = () => {
     if (Object.keys(categoryTree).length > 0) {
@@ -205,58 +294,46 @@ const Explore = () => {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.spinner}></div>
-        <p>Loading embroidery designs...</p>
+        <p>Loading curated embroidery designs...</p>
       </div>
     );
   }
 
   return (
-    <div className={styles.container}>
-      {/* Top Banner / Search Header */}
-      <div className={styles.heroBanner}>
-        <div className={styles.heroContent}>
-          <h1 className={styles.pageTitle}>Explore Embroidery Designs</h1>
-          <p className={styles.pageSubtitle}>
-            Discover verified high-quality embroidery patterns ready for instant download
-          </p>
-
-          {/* Search Input Bar */}
-          <div className={styles.searchBarWrapper}>
-            <MdSearch className={styles.searchIcon} />
-            <input
-              type="text"
-              placeholder="Search by design name, category (e.g. Saree, Kurti)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={styles.searchInput}
-            />
-            {searchQuery && (
-              <button className={styles.clearSearchBtn} onClick={() => setSearchQuery("")}>
-                <MdClose />
-              </button>
-            )}
-          </div>
+    <div className={styles.explorePage}>
+      {/* Top Search & Filter Bar */}
+      <section className={styles.topControlBar}>
+        <div className={styles.searchWrapper}>
+          <MdSearch className={styles.searchIcon} />
+          <input
+            type="text"
+            className={styles.searchInput}
+            placeholder="Search by design name, category, machine type, area..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className={styles.clearSearchBtn} onClick={() => setSearchQuery("")}>
+              <MdClose />
+            </button>
+          )}
         </div>
-      </div>
 
-      {/* Main Content Layout: Left Sidebar Filters + Right Designs Grid */}
+        {/* Mobile Filter Toggle Button */}
+        <button
+          className={styles.mobileFilterBtn}
+          onClick={() => setIsFilterDrawerOpen(true)}
+        >
+          <MdFilterList size={20} />
+          <span>Filters</span>
+          {activeFilterCount > 0 && (
+            <span className={styles.mobileFilterBadge}>{activeFilterCount}</span>
+          )}
+        </button>
+      </section>
+
+      {/* Main Layout Container */}
       <div className={styles.mainLayout}>
-        
-        {/* Mobile Filter Toggle Header */}
-        <div className={styles.mobileFilterHeader}>
-          <button
-            className={styles.mobileFilterBtn}
-            onClick={() => setIsFilterDrawerOpen(true)}
-          >
-            <MdFilterList size={20} />
-            <span>Filters {activeFilterCount > 0 && `(${activeFilterCount})`}</span>
-          </button>
-
-          <div className={styles.resultsCountMobile}>
-            Showing <strong>{filteredDesigns.length}</strong> designs
-          </div>
-        </div>
-
         {/* Desktop Left Sidebar Filters */}
         <aside className={styles.desktopSidebar}>
           <div className={styles.sidebarHeader}>
@@ -306,6 +383,40 @@ const Explore = () => {
             </div>
           </div>
 
+          {/* Design Types (Machine Types) Filter */}
+          <div className={styles.sidebarGroup}>
+            <label className={styles.groupTitle}>Design / Machine Type</label>
+            <div className={styles.treeList}>
+              {DESIGN_MACHINE_TYPE_OPTIONS.map((type) => (
+                <label key={type} className={styles.checkboxRow}>
+                  <input
+                    type="checkbox"
+                    checked={selectedMachineTypes.includes(type)}
+                    onChange={() => toggleMachineType(type)}
+                  />
+                  <span>{type}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Design Area Filter */}
+          <div className={styles.sidebarGroup}>
+            <label className={styles.groupTitle}>Area Size</label>
+            <div className={styles.treeList}>
+              {DESIGN_AREA_OPTIONS.map((areaVal) => (
+                <label key={areaVal} className={styles.checkboxRow}>
+                  <input
+                    type="checkbox"
+                    checked={selectedAreas.includes(areaVal)}
+                    onChange={() => toggleArea(areaVal)}
+                  />
+                  <span>{areaVal}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           {/* Number of Needles Filter */}
           <div className={styles.sidebarGroup}>
             <label className={styles.groupTitle}>Number of Needles</label>
@@ -343,12 +454,7 @@ const Explore = () => {
           {/* Price Ranges */}
           <div className={styles.sidebarGroup}>
             <label className={styles.groupTitle}>Price Range</label>
-            {[
-              { id: "0-200", label: "₹0 - ₹200" },
-              { id: "200-500", label: "₹200 - ₹500" },
-              { id: "500-1000", label: "₹500 - ₹1,000" },
-              { id: "1000+", label: "₹1,000+" },
-            ].map((range) => (
+            {PRICE_RANGE_OPTIONS.map((range) => (
               <label key={range.id} className={styles.checkboxRow}>
                 <input
                   type="checkbox"
@@ -367,7 +473,7 @@ const Explore = () => {
             <div className={styles.emptyState}>
               <MdSearch className={styles.emptyIcon} />
               <h3>No designs match your filters</h3>
-              <p>Try clearing your search or expanding category/needle selection</p>
+              <p>Try clearing your search or expanding category/machine type selection</p>
               <button className="btn-outline-custom" onClick={resetAllFilters}>
                 Reset Filters
               </button>
@@ -393,6 +499,12 @@ const Explore = () => {
                       <h3 className={styles.cardTitle}>{design.title}</h3>
                       <div className={styles.cardBadges}>
                         <span className={styles.categoryBadge}>{design.category}</span>
+                        {(design.machine_type || design.design_type) && (
+                          <span className={styles.categoryBadge}>{design.machine_type || design.design_type}</span>
+                        )}
+                        {design.area && (
+                          <span className={styles.categoryBadge}>{design.area}</span>
+                        )}
                         <span className={styles.needleBadgeText}>
                           {design.needles || 1} Needle{design.needles !== 1 ? "s" : ""}
                         </span>
@@ -461,6 +573,36 @@ const Explore = () => {
                 ))}
               </div>
 
+              {/* Design Types (Machine Types) Section */}
+              <div className={styles.drawerSection}>
+                <h4>Design / Machine Type</h4>
+                {DESIGN_MACHINE_TYPE_OPTIONS.map((type) => (
+                  <label key={type} className={styles.drawerCheckboxRow}>
+                    <input
+                      type="checkbox"
+                      checked={selectedMachineTypes.includes(type)}
+                      onChange={() => toggleMachineType(type)}
+                    />
+                    <span>{type}</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Design Area Section */}
+              <div className={styles.drawerSection}>
+                <h4>Area Size</h4>
+                {DESIGN_AREA_OPTIONS.map((areaVal) => (
+                  <label key={areaVal} className={styles.drawerCheckboxRow}>
+                    <input
+                      type="checkbox"
+                      checked={selectedAreas.includes(areaVal)}
+                      onChange={() => toggleArea(areaVal)}
+                    />
+                    <span>{areaVal}</span>
+                  </label>
+                ))}
+              </div>
+
               {/* Needles Section */}
               <div className={styles.drawerSection}>
                 <h4>Number of Needles</h4>
@@ -494,12 +636,7 @@ const Explore = () => {
               {/* Price Range Section */}
               <div className={styles.drawerSection}>
                 <h4>Price Range</h4>
-                {[
-                  { id: "0-200", label: "Under ₹200" },
-                  { id: "200-500", label: "₹200 - ₹500" },
-                  { id: "500-1000", label: "₹500 - ₹1,000" },
-                  { id: "1000+", label: "Above ₹1,000" },
-                ].map((range) => (
+                {PRICE_RANGE_OPTIONS.map((range) => (
                   <label key={range.id} className={styles.drawerCheckboxRow}>
                     <input
                       type="checkbox"

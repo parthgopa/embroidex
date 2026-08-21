@@ -193,6 +193,14 @@ const AdminReviewQueue = ({
                         <td className={styles.tableValue}>{activeDesign?.subcategory || "N/A"}</td>
                       </tr>
                       <tr>
+                        <td className={styles.tableLabel}>Design Type (Machine)</td>
+                        <td className={styles.tableValue}>{activeDesign?.machine_type || activeDesign?.design_type || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td className={styles.tableLabel}>Design Area</td>
+                        <td className={styles.tableValue}>{activeDesign?.area || "N/A"}</td>
+                      </tr>
+                      <tr>
                         <td className={styles.tableLabel}>Number of Needles</td>
                         <td className={styles.tableValue}>
                           <span className={styles.needleBadge}>
