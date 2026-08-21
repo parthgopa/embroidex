@@ -133,17 +133,35 @@ def get_approved_designs():
  
 @sel_design_bp.route("/design/<design_id>", methods=["GET"])
 def get_design_details(design_id):
-    """Get single design details by ID (public route for approved designs)"""
+    """Get single design details by ID (public route for approved designs, or seller's own designs)"""
     try:
         from bson import ObjectId
         
-        design = DESIGNS_COLLECTION.find_one({"_id": ObjectId(design_id)})
+        query = {"_id": ObjectId(design_id)} if ObjectId.is_valid(design_id) else {"design_id": design_id}
+        design = DESIGNS_COLLECTION.find_one(query)
         
         if not design:
             return jsonify({"error": "Design not found"}), 404
         
-        # Only allow viewing approved designs publicly
-        if design.get("status") != "approved":
+        # Check authentication token if provided
+        token = request.headers.get("Authorization")
+        user_id = None
+        is_admin = False
+        if token:
+            try:
+                clean_token = token.replace("Bearer ", "").strip()
+                import jwt
+                from utils.jwt_utils import SECRET_KEY
+                payload = jwt.decode(clean_token, SECRET_KEY, algorithms=["HS256"])
+                user_id = str(payload.get("user_id", ""))
+                is_admin = bool(payload.get("admin", False))
+            except Exception:
+                pass
+        
+        is_owner = user_id and str(design.get("seller_id")) == user_id
+        
+        # If not the owner/admin and not approved, deny public viewing
+        if design.get("status") != "approved" and not is_owner and not is_admin:
             return jsonify({"error": "Design not available"}), 403
         
         # Convert ObjectId to string
@@ -525,17 +543,21 @@ def update_design(design_id):
         return jsonify({"error": "Unauthorized"}), 401
     
     try:
-        token = token.replace("Bearer ", "")
-        user_id = decode_token(token)
+        clean_token = token.replace("Bearer ", "").strip()
+        user_id = decode_token(clean_token)
     except:
         return jsonify({"error": "Invalid token"}), 401
     
     from bson import ObjectId
     
     # Check if design exists and belongs to user
-    design = DESIGNS_COLLECTION.find_one({"_id": ObjectId(design_id), "seller_id": user_id})
+    query = {"_id": ObjectId(design_id)} if ObjectId.is_valid(design_id) else {"design_id": design_id}
+    design = DESIGNS_COLLECTION.find_one(query)
     if not design:
-        return jsonify({"error": "Design not found or unauthorized"}), 404
+        return jsonify({"error": "Design not found"}), 404
+        
+    if str(design.get("seller_id")) != str(user_id):
+        return jsonify({"error": "Unauthorized to edit this design"}), 403
     
     design_file_updated = False
     update_data = {}
@@ -626,7 +648,7 @@ def update_design(design_id):
         return jsonify({"error": "No valid fields to update"}), 400
         
     DESIGNS_COLLECTION.update_one(
-        {"_id": ObjectId(design_id)},
+        query,
         {"$set": update_data}
     )
     
@@ -642,25 +664,23 @@ def delete_design(design_id):
         return jsonify({"error": "Unauthorized"}), 401
     
     try:
-        token = token.replace("Bearer ", "")
-        user_id = decode_token(token)
+        clean_token = token.replace("Bearer ", "").strip()
+        user_id = decode_token(clean_token)
     except:
         return jsonify({"error": "Invalid token"}), 401
     
     from bson import ObjectId
     
     # Check if design exists and belongs to user
-    design = DESIGNS_COLLECTION.find_one({"_id": ObjectId(design_id), "seller_id": user_id})
+    query = {"_id": ObjectId(design_id)} if ObjectId.is_valid(design_id) else {"design_id": design_id}
+    design = DESIGNS_COLLECTION.find_one(query)
     if not design:
-        return jsonify({"error": "Design not found or unauthorized"}), 404
+        return jsonify({"error": "Design not found"}), 404
+        
+    if str(design.get("seller_id")) != str(user_id):
+        return jsonify({"error": "Unauthorized to delete this design"}), 403
     
     # Delete design
-    DESIGNS_COLLECTION.delete_one({"_id": ObjectId(design_id)})
-    
-    # TODO: Delete associated files from filesystem
-    # os.remove(design["thumbnail_path"])
-    # os.remove(design["design_file_path"])
-    # for img_path in design.get("additional_images", []):
-    #     os.remove(img_path)
+    DESIGNS_COLLECTION.delete_one(query)
     
     return jsonify({"message": "Design deleted successfully"}), 200

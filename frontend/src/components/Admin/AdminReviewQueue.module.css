@@ -191,6 +191,127 @@
   white-space: pre-line;
 }
 
+.topDownloadBtn {
+  display: inline-flex;
+  align-items: center;
+  background: var(--primary);
+  color: #ffffff;
+  border: 1px solid var(--primary);
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+  transition: var(--transition);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.topDownloadBtn:hover {
+  background: #4338ca;
+  border-color: #4338ca;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+
+.embFilesContainer {
+  margin-top: 10px;
+}
+
+.embFilesSummaryCard {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.embSummaryTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.embPathLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.embPathValue {
+  font-size: 0.95rem;
+  color: var(--text-dark);
+  word-break: break-all;
+}
+
+.sectionDownloadBtn {
+  display: inline-flex;
+  align-items: center;
+  background: #eef2ff;
+  color: var(--primary);
+  border: 1.5px solid #c7d2fe;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 13.5px;
+}
+
+.sectionDownloadBtn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+}
+
+.filesListCompact {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-light);
+}
+
+.filesListHeading {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 8px;
+}
+
+.filesTagRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.fileTagItem {
+  display: inline-flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.fileMoreTag {
+  display: inline-flex;
+  align-items: center;
+  background: #e0e7ff;
+  color: #4338ca;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .embFilesGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

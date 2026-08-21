@@ -74,8 +74,15 @@
 }
 
 @keyframes pulseWarning {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.75; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.75;
+  }
 }
 
 .loadingBox {
@@ -99,7 +106,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ─── 70/30 Grid Layout ─────────────────────────────────────── */
@@ -131,6 +140,16 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  padding: 0.4rem 0.6rem 0.4rem 0.75rem;
+  border-left: 3.5px solid transparent;
+  border-radius: 4px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.formGroup:hover,
+.formGroup:focus-within {
+  border-left-color: var(--primary);
+  background: rgba(79, 70, 229, 0.025);
 }
 
 .label {
@@ -174,8 +193,8 @@
 .meeshoUploadDropzone {
   display: block;
   border: 2px dashed #cbd5e1;
-  border-radius: var(--radius-lg);
-  padding: 1.75rem 1.25rem;
+  border-radius: 16px;
+  padding: 0.75rem 1rem;
   background: #f8fafc;
   cursor: pointer;
   transition: var(--transition);
@@ -189,25 +208,27 @@
 
 .meeshoDropzoneContent {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
+  gap: 0.85rem;
 }
 
 .meeshoUploadIconCircle {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--primary-light);
   color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0;
+  flex-shrink: 0;
 }
 
 .meeshoDropzoneTitle {
-  font-size: var(--font-sm);
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-dark);
   margin: 0;
@@ -217,22 +238,22 @@
   font-size: var(--font-2xs);
   color: var(--text-light);
   margin: 0;
-  max-width: 320px;
 }
 
 .meeshoBrowseBtn {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  margin-top: 0.5rem;
-  font-size: var(--font-xs);
+  gap: 0.25rem;
+  margin-top: 0;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--primary);
   background: #ffffff;
   border: 1px solid #c7d2fe;
-  padding: 0.35rem 0.85rem;
-  border-radius: var(--radius);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-left: 0.5rem;
 }
 
 /* ─── Meesho Photo Gallery Grid ────────────────────────────── */
@@ -245,7 +266,7 @@
   padding: 0.75rem;
   background: #f8fafc;
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-lg);
+  border-radius: 16px;
 }
 
 .meeshoCardWrapper {

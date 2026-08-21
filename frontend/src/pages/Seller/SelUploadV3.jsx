@@ -77,22 +77,22 @@ const DESIGN_AREA_OPTIONS = [
 const GUIDE_SECTIONS = [
   {
     id: "images",
-    stepNum: "1",
-    title: "1. Design Photos",
+    stepNum: "•",
+    title: "Original & Design Photos",
     icon: MdPhotoLibrary,
     description: "Upload clear photos of your embroidery design.",
     details: [
       {
-        subtitle: "Front Photo (Main)",
+        subtitle: "Original Photo (Main)",
         points: [
-          "The first photo is your main cover photo.",
+          "The original photo is your main cover photo.",
           "You can change the front photo anytime."
         ]
       },
       {
-        subtitle: "Extra Photos (Image 1 to 5)",
+        subtitle: "Design Photos (Image 1 to 5)",
         points: [
-          "Upload up to 5 extra photos.",
+          "Upload up to 5 extra design photos.",
           "Show close-up stitches, fabric, and thread work."
         ]
       }
@@ -100,8 +100,8 @@ const GUIDE_SECTIONS = [
   },
   {
     id: "fileUpload",
-    stepNum: "2",
-    title: "2. File Format & Upload",
+    stepNum: "•",
+    title: "File Format & Upload",
     icon: MdUploadFile,
     description: "Select file format and upload your design file.",
     details: [
@@ -116,8 +116,8 @@ const GUIDE_SECTIONS = [
   },
   {
     id: "details",
-    stepNum: "3",
-    title: "3. Design Details & Pricing",
+    stepNum: "•",
+    title: "Design Details & Pricing",
     icon: MdCategory,
     description: "Type your design details, category, and needle count.",
     details: [
@@ -254,7 +254,7 @@ const SelUploadV3 = () => {
       setIsDirty(false);
     } catch (err) {
       console.error("Failed to load design for editing", err);
-      alert("Failed to load design details for editing.");
+      alert(err.response?.data?.error || "Failed to load design details for editing.");
       navigate("/seller/my-designs");
     } finally {
       setLoadingDesign(false);
@@ -298,52 +298,8 @@ const SelUploadV3 = () => {
     img.src = objectUrl;
   });
 
-  // Meesho Theme: Unified image upload handler
-  const handleUnifiedImageUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    e.target.value = "";
-    if (files.length === 0) return;
-
-    const oversized = files.find(f => f.size > 10 * 1024 * 1024);
-    if (oversized) {
-      alert(`"${oversized.name}" exceeds 10MB. Please use a smaller image.`);
-      return;
-    }
-
-    try {
-      const compressed = await Promise.all(files.map(compressImage));
-      let availableFiles = [...compressed];
-
-      // If no front photo exists, set the first file as front photo
-      if (!thumbnail && !thumbnailPreview && availableFiles.length > 0) {
-        const frontFile = availableFiles.shift();
-        setThumbnail(frontFile);
-        setThumbnailPreview(URL.createObjectURL(frontFile));
-      }
-
-      // Any remaining files go to additional extra images
-      if (availableFiles.length > 0) {
-        const totalExistingExtra = existingAdditionalImages.length + additionalImages.length;
-        const maxCanAdd = 5 - totalExistingExtra;
-        if (maxCanAdd <= 0) {
-          alert("Maximum 5 extra photos allowed (6 total photos).");
-        } else {
-          const toAdd = availableFiles.slice(0, maxCanAdd);
-          if (availableFiles.length > maxCanAdd) {
-            alert(`Only ${maxCanAdd} extra photo(s) added. Maximum limit is 5 extra photos.`);
-          }
-          setAdditionalImages(prev => [...prev, ...toAdd]);
-          setImagesPreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))]);
-        }
-      }
-      setIsDirty(true);
-    } catch (err) {
-      alert(err.message || "Failed to process images");
-    }
-  };
-
-  // Change only the Front Photo
-  const handleChangeFrontPhoto = async (e) => {
+  // Original Photo upload handler (Single main thumbnail)
+  const handleOriginalPhotoUpload = async (e) => {
     const file = e.target.files[0];
     e.target.value = "";
     if (!file) return;
@@ -358,6 +314,39 @@ const SelUploadV3 = () => {
       setIsDirty(true);
     } catch (err) {
       alert(err.message || "Failed to compress photo");
+    }
+  };
+
+  // Design Photos (Extra showcase photos) upload handler (up to 5 photos)
+  const handleDesignPhotosUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    e.target.value = "";
+    if (files.length === 0) return;
+
+    const oversized = files.find(f => f.size > 10 * 1024 * 1024);
+    if (oversized) {
+      alert(`"${oversized.name}" exceeds 10MB. Please use a smaller image.`);
+      return;
+    }
+
+    const totalExistingExtra = existingAdditionalImages.length + additionalImages.length;
+    const maxCanAdd = 5 - totalExistingExtra;
+    if (maxCanAdd <= 0) {
+      alert("Maximum 5 design photos allowed.");
+      return;
+    }
+
+    try {
+      const compressed = await Promise.all(files.map(compressImage));
+      const toAdd = compressed.slice(0, maxCanAdd);
+      if (compressed.length > maxCanAdd) {
+        alert(`Only ${maxCanAdd} design photo(s) added. Maximum limit is 5 photos.`);
+      }
+      setAdditionalImages(prev => [...prev, ...toAdd]);
+      setImagesPreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))]);
+      setIsDirty(true);
+    } catch (err) {
+      alert(err.message || "Failed to process images");
     }
   };
 
@@ -614,43 +603,78 @@ const SelUploadV3 = () => {
           <div className={styles.singleFormCard}>
 
             {/* ========================================================= */}
-            {/* 1. DESIGN PHOTOS (MEESHO THEME) */}
+            {/* ORIGINAL PHOTO (MAIN FRONT PHOTO) */}
             {/* ========================================================= */}
             <div className={styles.formGroup}>
               <div className={styles.labelRow}>
                 <label className={styles.label}>
-                  1. Design Photos * <small className={styles.labelSubText}>(PNG, JPG - Max 10MB each)</small>
+                  Original Photo * <small className={styles.labelSubText}>(Main showcase thumbnail - PNG, JPG Max 10MB)</small>
+                </label>
+                {thumbnailPreview && (
+                  <span className={styles.photoCountBadge}>Original Photo Selected</span>
+                )}
+              </div>
+
+              {thumbnailPreview ? (
+                <div className={styles.meeshoGallery}>
+                  <div className={styles.meeshoCardWrapper}>
+                    <div className={`${styles.meeshoPhotoCard} ${styles.meeshoMainCard}`}>
+                      <img src={thumbnailPreview} alt="Original Photo" />
+                    </div>
+                    <span className={styles.meeshoPhotoLabelMain}>Front Photo</span>
+                    <label className={styles.meeshoChangeBtnBelow} title="Change Original Photo">
+                      <MdSync size={13} />
+                      <span>Change</span>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg"
+                        onChange={handleOriginalPhotoUpload}
+                        style={{ display: "none" }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <label className={styles.meeshoUploadDropzone}>
+                  <div className={styles.meeshoDropzoneContent}>
+                    <div className={styles.meeshoUploadIconCircle}>
+                      <MdCloudUpload size={28} />
+                    </div>
+                    <h4 className={styles.meeshoDropzoneTitle}>Upload Original Photo</h4>
+                    <p className={styles.meeshoDropzoneSub}>
+                      Click or drag to upload front main photo
+                    </p>
+                    <span className={styles.meeshoBrowseBtn}>
+                      <MdAddPhotoAlternate size={16} /> Choose Photo
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    onChange={handleOriginalPhotoUpload}
+                    style={{ display: "none" }}
+                    id="originalPhoto"
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* ========================================================= */}
+            {/* DESIGN PHOTOS (EXTRA SHOWCASE IMAGES) */}
+            {/* ========================================================= */}
+            <div className={styles.formGroup}>
+              <div className={styles.labelRow}>
+                <label className={styles.label}>
+                  Design Photos <small className={styles.labelSubText}>(Extra photos, close-ups - Max 5 photos)</small>
                 </label>
                 <span className={styles.photoCountBadge}>
-                  {(thumbnailPreview ? 1 : 0) + totalExtraImages}/6 Photos
+                  {totalExtraImages}/5 Photos
                 </span>
               </div>
 
-              {/* Photos Gallery View */}
-              {hasPhotos ? (
+              {totalExtraImages > 0 ? (
                 <div className={styles.meeshoGallery}>
-                  
-                  {/* Slot 0: Front Photo / Main Photo */}
-                  {thumbnailPreview && (
-                    <div className={styles.meeshoCardWrapper}>
-                      <div className={`${styles.meeshoPhotoCard} ${styles.meeshoMainCard}`}>
-                        <img src={thumbnailPreview} alt="Front Photo" />
-                      </div>
-                      <span className={styles.meeshoPhotoLabelMain}>Front Photo</span>
-                      <label className={styles.meeshoChangeBtnBelow} title="Change Front Photo">
-                        <MdSync size={13} />
-                        <span>Change</span>
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/jpg"
-                          onChange={handleChangeFrontPhoto}
-                          style={{ display: "none" }}
-                        />
-                      </label>
-                    </div>
-                  )}
-
-                  {/* Slot 1..N: Existing Extra Photos (in edit mode) */}
+                  {/* Existing Extra Photos (in edit mode) */}
                   {existingAdditionalImages.map((item, index) => (
                     <div key={`existing-${index}`} className={styles.meeshoCardWrapper}>
                       <div className={styles.meeshoPhotoCard}>
@@ -668,7 +692,7 @@ const SelUploadV3 = () => {
                     </div>
                   ))}
 
-                  {/* Slot N+1..M: Newly Added Extra Photos */}
+                  {/* Newly Added Extra Photos */}
                   {imagesPreviews.map((preview, index) => {
                     const displayIndex = existingAdditionalImages.length + index + 1;
                     return (
@@ -689,35 +713,33 @@ const SelUploadV3 = () => {
                     );
                   })}
 
-                  {/* Add More Photos Slot (up to 6 total = 1 main + 5 extras) */}
-                  {(thumbnailPreview ? 1 : 0) + totalExtraImages < 6 && (
+                  {/* Add More Photos Slot (up to 5 extra photos max) */}
+                  {totalExtraImages < 5 && (
                     <div className={styles.meeshoCardWrapper}>
-                      <label className={styles.meeshoAddTile} title="Add more photos">
+                      <label className={styles.meeshoAddTile} title="Add more design photos">
                         <MdAddPhotoAlternate className={styles.meeshoAddIcon} />
                         <span className={styles.meeshoAddText}>+ Add Photo</span>
                         <input
                           type="file"
                           accept="image/png,image/jpeg,image/jpg"
                           multiple
-                          onChange={handleUnifiedImageUpload}
+                          onChange={handleDesignPhotosUpload}
                           style={{ display: "none" }}
                         />
                       </label>
-                      <span className={styles.meeshoPhotoLabelPlaceholder}>Extra Photo</span>
+                      <span className={styles.meeshoPhotoLabelPlaceholder}>Design Photo</span>
                     </div>
                   )}
-
                 </div>
               ) : (
-                /* Initial Empty Dropzone (Select 1 to 6 photos) */
                 <label className={styles.meeshoUploadDropzone}>
                   <div className={styles.meeshoDropzoneContent}>
                     <div className={styles.meeshoUploadIconCircle}>
                       <MdCloudUpload size={28} />
                     </div>
-                    <h4 className={styles.meeshoDropzoneTitle}>Click or Drag to Upload Photos</h4>
+                    <h4 className={styles.meeshoDropzoneTitle}>Upload Design Photos (Extra Images)</h4>
                     <p className={styles.meeshoDropzoneSub}>
-                      Select 1 to 6 photos. First image will automatically be set as your <strong>Front Photo</strong>.
+                      Select up to 5 photos showing angles and stitch work
                     </p>
                     <span className={styles.meeshoBrowseBtn}>
                       <MdAddPhotoAlternate size={16} /> Choose Images
@@ -727,19 +749,19 @@ const SelUploadV3 = () => {
                     type="file"
                     accept="image/png,image/jpeg,image/jpg"
                     multiple
-                    onChange={handleUnifiedImageUpload}
+                    onChange={handleDesignPhotosUpload}
                     style={{ display: "none" }}
-                    id="unifiedPhotos"
+                    id="designPhotos"
                   />
                 </label>
               )}
             </div>
 
             {/* ========================================================= */}
-            {/* 2. DESIGN FILE FORMAT & DESIGN FILE / ZIP UPLOAD */}
+            {/* DESIGN FILE FORMAT & DESIGN FILE / ZIP UPLOAD */}
             {/* ========================================================= */}
             <div className={styles.formGroup}>
-              <label className={styles.label}>2. Design File Type / Format *</label>
+              <label className={styles.label}>Design File Type / Format *</label>
               <div className={styles.formatPillsContainer}>
                 {FILE_FORMAT_OPTIONS.map((fmt) => (
                   <button
@@ -831,11 +853,11 @@ const SelUploadV3 = () => {
             )}
 
             {/* ========================================================= */}
-            {/* 3. DESIGN DETAILS (NAME, DESCRIPTION, CATEGORY, NEEDLES, PRICE) */}
+            {/* DESIGN DETAILS (NAME, DESCRIPTION, CATEGORY, NEEDLES, PRICE) */}
             {/* ========================================================= */}
             {/* Design Name */}
             <div className={styles.formGroup}>
-              <label className={styles.label}>3. Design Name *</label>
+              <label className={styles.label}>Design Name *</label>
               <input
                 type="text"
                 className="input-custom"

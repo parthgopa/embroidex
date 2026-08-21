@@ -158,7 +158,7 @@ const AdminReviewQueue = ({
                   {getStatusBadge(activeDesign?.status)}
                 </div>
                 <button
-                  className="btn-outline-custom"
+                  className={styles.topDownloadBtn}
                   onClick={handleDownloadZip}
                 >
                   <MdDownload style={{ marginRight: '8px' }} />
@@ -265,43 +265,57 @@ const AdminReviewQueue = ({
                 </div>
               </div>
 
-              {/* EMB Files Metadata */}
-              {activeDesign?.emb_metadata && activeDesign.emb_metadata.length > 0 && (
-                <div className={styles.infoSection}>
-                  <h3><MdGridOn style={{ marginRight: '8px', verticalAlign: 'middle' }} />EMB Files Details</h3>
-                  <div className={styles.embFilesGrid}>
-                    {activeDesign.emb_metadata.map((emb, idx) => (
-                      <div key={idx} className={styles.embCard}>
-                        <h4>{emb.file_name}</h4>
-                        <div className={styles.embDetails}>
-                          <div className={styles.embDetailItem}>
-                            <MdGridOn />
-                            <span>{emb.stitch_count?.toLocaleString()} stitches</span>
-                          </div>
-                          <div className={styles.embDetailItem}>
-                            <MdStraighten />
-                            <span>{emb.width_mm} × {emb.height_mm} mm</span>
-                          </div>
+              {/* EMB Files Details Section */}
+              <div className={styles.infoSection}>
+                <h3>
+                  <MdGridOn style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                  EMB Files Details
+                </h3>
+                <div className={styles.embFilesContainer}>
+                  <div className={styles.embFilesSummaryCard}>
+                    <div className={styles.embSummaryTop}>
+                      <div>
+                        <div className={styles.embPathLabel}>Design File / Package</div>
+                        <div className={styles.embPathValue}>
+                          <MdDescription style={{ marginRight: '6px', verticalAlign: 'middle', color: 'var(--primary)' }} />
+                          <strong>
+                            {activeDesign?.design_file_path?.split("/").pop() || (activeDesign?.file_names && activeDesign.file_names[0]) || "Design File"}
+                          </strong>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                  <div className={styles.totalStitches}>
-                    <strong>Total Stitches (All Files):</strong> {activeDesign.total_stitch_count?.toLocaleString()}
-                  </div>
-                </div>
-              )}
 
-              {/* File Names List */}
-              <div className={styles.infoSection}>
-                <h3>EMB Files ({activeDesign?.file_names?.length || 0})</h3>
-                <div className={styles.filesList}>
-                  {activeDesign?.file_names?.map((fileName, idx) => (
-                    <div key={idx} className={styles.fileName}>
-                      <MdDescription style={{ marginRight: '8px' }} />
-                      {fileName}
+                      <button
+                        type="button"
+                        className={styles.sectionDownloadBtn}
+                        onClick={handleDownloadZip}
+                      >
+                        <MdDownload style={{ marginRight: '6px' }} />
+                        Download Design File
+                      </button>
                     </div>
-                  ))}
+
+                    {/* Files inside (Show max 3) */}
+                    {activeDesign?.file_names && activeDesign.file_names.length > 0 && (
+                      <div className={styles.filesListCompact}>
+                        <div className={styles.filesListHeading}>
+                          Files included ({activeDesign.file_names.length}):
+                        </div>
+                        <div className={styles.filesTagRow}>
+                          {activeDesign.file_names.slice(0, 3).map((fileName, idx) => (
+                            <span key={idx} className={styles.fileTagItem}>
+                              <MdDescription style={{ marginRight: '4px', fontSize: '14px' }} />
+                              {fileName}
+                            </span>
+                          ))}
+                          {activeDesign.file_names.length > 3 && (
+                            <span className={styles.fileMoreTag}>
+                              +{activeDesign.file_names.length - 3} more files
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
