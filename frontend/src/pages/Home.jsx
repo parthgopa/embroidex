@@ -29,12 +29,12 @@ const Home = () => {
     <div className={styles.page}>
       {/* Professional Modular Components */}
       <HeroSection topCategories={homepageData.topCategories} />
-      
+
       {/* Dynamic Category Showcases (Replaces FeaturesSection) */}
       <ShowcaseSections showcases={homepageData.showcases} />
 
       <CategoriesSection />
-      <TestimonialsSection />
+      {/* <TestimonialsSection /> */}
       <CTASection />
     </div>
   );

@@ -1,0 +1,244 @@
+/* ==========================================================================
+   DashboardLayout Component Styles - Unified Responsive Dashboard
+   ========================================================================== */
+
+.layoutWrapper {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+  width: 100%;
+}
+
+/* ─── Right-Side Main Viewport Container ─────────────────────── */
+.mainViewport {
+  flex: 1;
+  margin-left: 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Top App Header Bar ────────────────────────────────────── */
+.topBar {
+  position: sticky;
+  top: 0;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 900;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.topBarLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.hamburgerBtn {
+  display: none;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.4rem;
+  color: #334155;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.hamburgerBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.mobileLogo {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.mobileLogoImg {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.mobileLogoText {
+  font-size: 1rem;
+  font-weight: 750;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.topBarRight {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-left: auto;
+}
+
+.topNavLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.topNavLink:hover {
+  background: #f1f5f9;
+  color: #6366f1;
+}
+
+.cartIconBtn {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #334155;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.cartIconBtn:hover {
+  background: #f8fafc;
+  color: #6366f1;
+  border-color: #cbd5e1;
+}
+
+.cartBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 17px;
+  height: 17px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 1.5px solid #ffffff;
+}
+
+.profileAvatarBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.profileAvatarBtn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.35);
+}
+
+.avatarInitials {
+  line-height: 1;
+}
+
+.topLoginBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  background: #6366f1;
+  color: #ffffff;
+  border: none;
+  font-size: 0.825rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
+}
+
+.topLoginBtn:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+/* ─── Dynamic Page Viewport ─────────────────────────────────── */
+.pageContent {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  position: relative;
+}
+
+/* ─── Mobile Backdrop ───────────────────────────────────────── */
+.mobileBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 999;
+  animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ─── Responsive Media Queries ──────────────────────────────── */
+@media (max-width: 1024px) {
+  .mainViewport {
+    margin-left: 0;
+  }
+
+  .hamburgerBtn {
+    display: flex;
+  }
+
+  .mobileLogo {
+    display: flex;
+  }
+
+  .topBar {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .quickExploreBtn span {
+    display: none;
+  }
+
+  .quickExploreBtn {
+    padding: 0.45rem;
+    border-radius: 50%;
+  }
+}

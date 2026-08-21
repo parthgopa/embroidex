@@ -1,8 +1,15 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { MdArrowForward, MdCheckCircle } from "react-icons/md";
+import { MdArrowForward, MdCheckCircle, MdExpandMore, MdExpandLess } from "react-icons/md";
 import styles from "./CTASection.module.css";
 
 const CTASection = () => {
+  const [openFaqIndex, setOpenFaqIndex] = useState(0);
+
+  const toggleFaq = (index) => {
+    setOpenFaqIndex(openFaqIndex === index ? null : index);
+  };
+
   const buyerFeatures = [
     "Browse 10,000+ designs",
     "Instant download access",
@@ -50,16 +57,16 @@ const CTASection = () => {
     <section className={styles.ctaSection}>
       <div className="container">
         {/* Main CTA */}
-        <div className={styles.ctaHero}>
+        {/* <div className={styles.ctaHero}>
           <span className={styles.ctaBadge}>Get Started Today</span>
           <h2 className={styles.ctaTitle}>Ready to Get Started?</h2>
           <p className={styles.ctaSubtitle}>
             Join thousands of embroidery enthusiasts and start your creative journey today
           </p>
-        </div>
+        </div> */}
 
         {/* Dual Cards */}
-        <div className={styles.ctaCards}>
+        {/* <div className={styles.ctaCards}>
           <div className={styles.ctaCard}>
             <div className={styles.cardHeader}>
               <div className={styles.cardIcon}>🛍️</div>
@@ -108,22 +115,42 @@ const CTASection = () => {
               <MdArrowForward />
             </Link>
           </div>
-        </div>
+        </div> */}
 
-        {/* FAQ Section */}
+        {/* FAQ Section - Vertical Accordion */}
         <div className={styles.faqSection}>
           <div className={styles.faqHeader}>
             <h3 className={styles.faqTitle}>Frequently Asked Questions</h3>
             <p className={styles.faqSubtitle}>Everything you need to know about Embroidex</p>
           </div>
 
-          <div className={styles.faqGrid}>
-            {faqs.map((faq, index) => (
-              <div key={index} className={styles.faqItem}>
-                <h4 className={styles.faqQuestion}>{faq.question}</h4>
-                <p className={styles.faqAnswer}>{faq.answer}</p>
-              </div>
-            ))}
+          <div className={styles.faqVerticalList}>
+            {faqs.map((faq, index) => {
+              const isOpen = openFaqIndex === index;
+              return (
+                <div
+                  key={index}
+                  className={`${styles.faqItemAccordion} ${isOpen ? styles.faqItemOpen : ""}`}
+                >
+                  <button
+                    type="button"
+                    className={styles.faqQuestionBtn}
+                    onClick={() => toggleFaq(index)}
+                    aria-expanded={isOpen}
+                  >
+                    <span className={styles.faqQuestionText}>{faq.question}</span>
+                    <span className={styles.faqChevron}>
+                      {isOpen ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div className={styles.faqAnswerBody}>
+                      <p className={styles.faqAnswerText}>{faq.answer}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className={styles.faqCta}>

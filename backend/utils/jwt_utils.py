@@ -12,7 +12,7 @@ def generate_token(user_id, is_admin=False):
     payload = {
         "user_id": str(user_id),
         "admin": is_admin,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1)
+        "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=180)
     }
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
@@ -24,6 +24,6 @@ def decode_token(token):
 def encode_token(is_admin=False):
     payload = {
         "admin": is_admin,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1)
+        "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=180)
     }
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")

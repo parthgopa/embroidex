@@ -26,7 +26,7 @@ const SellerRegister = () => {
         const res = await API.get("/auth/me", {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
+
         // If already a seller, redirect to My Designs
         if (res.data.is_seller) {
           navigate("/seller/my-designs");

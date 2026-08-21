@@ -1,26 +1,55 @@
 /* ========================= */
-/* 🎨 COLOR SYSTEM */
+/* 🎨 COLOR SYSTEM & DESIGN TOKENS */
 /* ========================= */
 
 :root {
+  /* ─── Brand & Theme Colors ─── */
   --primary: #4f46e5;
   --primary-dark: #4338ca;
+  --primary-light: #eef2ff;
   --secondary: #0ea5e9;
 
-  --success: #22c55e;
+  --success: #16a34a;
+  --success-bg: #ecfdf5;
   --danger: #ef4444;
+  --danger-bg: #fef2f2;
   --warning: #f59e0b;
+  --warning-bg: #fffbeb;
 
-  --bg-main: #f9fafb;
+  --bg-main: #f8fafc;
   --bg-card: #ffffff;
+  --bg-muted: #f1f5f9;
 
-  --text-dark: #111827;
-  --text-light: #6b7280;
+  --text-dark: #0f172a;
+  --text-primary: #1e293b;
+  --text-light: #64748b;
+  --text-muted: #94a3b8;
 
-  --border-color: #e5e7eb;
+  --border-color: #e2e8f0;
+  --border-light: #f1f5f9;
 
   --radius: 10px;
-  --transition: 0.2s ease-in-out;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 9999px;
+  --transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ─── TYPOGRAPHY SCALE (Standardized across full app) ─── */
+  --font-2xs: 0.6875rem; /* 11px - Micro badges, tiny metadata */
+  --font-xs: 0.75rem;    /* 12px - Badges, helper hints, small labels */
+  --font-sm: 0.8125rem;  /* 13px - Secondary meta, subtitle, subtle values */
+  --font-base: 0.875rem; /* 14px - Body text, standard inputs, buttons, menu items */
+  --font-md: 0.9375rem;  /* 15px - Emphasized body, card details */
+  --font-lg: 1.0625rem;  /* 17px - Card headers, subheadings */
+  --font-xl: 1.25rem;    /* 20px - Section titles, stat numbers */
+  --font-2xl: 1.45rem;   /* 23px - Page titles */
+  --font-3xl: 1.75rem;   /* 28px - Major hero titles */
+
+  /* ─── STANDARDIZED STAT CARDS ─── */
+  --stat-value-size: 1.35rem;
+  --stat-value-weight: 750;
+  --stat-label-size: 0.75rem;
+  --stat-label-weight: 600;
 }
 
 /* ========================= */
@@ -31,8 +60,12 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--bg-main);
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--text-dark);
+  font-size: var(--font-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ========================= */
@@ -43,7 +76,8 @@ body {
   background: var(--bg-card);
   border-radius: var(--radius);
   padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px -2px rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--border-color);
 }
 
 /* ========================= */
@@ -54,38 +88,60 @@ body {
   background-color: var(--primary);
   border: none;
   color: white;
-  padding: 10px 18px;
+  padding: 8px 18px;
   border-radius: var(--radius);
   transition: var(--transition);
-  font-weight: 500;
+  font-weight: 600;
+  font-size: var(--font-base);
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
 }
 
 .btn-primary-custom:hover {
   background-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
 }
 
 .btn-outline-custom {
-  border: 1px solid var(--primary);
-  color: var(--primary);
-  padding: 10px 18px;
+  border: 1px solid var(--border-color);
+  color: var(--text-dark);
+  padding: 8px 18px;
   border-radius: var(--radius);
-  background: transparent;
+  background: white;
   transition: var(--transition);
+  font-size: var(--font-base);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
 .btn-outline-custom:hover {
-  background-color: var(--primary);
-  color: white;
+  background-color: var(--bg-muted);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .btn-danger-custom {
   background-color: var(--danger);
   color: white;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: var(--font-base);
   border: none;
-  padding: 10px 18px;
+  padding: 8px 18px;
   border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-danger-custom:hover {
+  background-color: #dc2626;
 }
 
 /* ========================= */
@@ -93,30 +149,27 @@ body {
 /* ========================= */
 
 .input-custom {
-  width: 95%;
-  padding: 12px 12px;
-  border: 2px solid var(--border-color);
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
   border-radius: var(--radius);
   outline: none;
   transition: var(--transition);
-  margin-bottom: 16px;
-  font-size: 15px;
+  margin-bottom: 14px;
+  font-size: var(--font-base);
   font-family: inherit;
   background: var(--bg-card);
+  box-sizing: border-box;
 }
 
 .input-custom::placeholder {
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
 .input-custom:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
   background: white;
-}
-
-.input-custom:hover {
-  border-color: #d1d5db;
 }
 
 /* ========================= */
@@ -125,36 +178,16 @@ body {
 
 .card-custom {
   background: white;
-  border-radius: var(--radius);
-  padding: 15px;
+  border-radius: var(--radius-lg);
+  padding: 18px;
   border: 1px solid var(--border-color);
+  box-shadow: 0 2px 10px -2px rgba(15, 23, 42, 0.04);
   transition: var(--transition);
 }
 
 .card-custom:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-}
-
-/* ========================= */
-/* 🧭 NAVBAR */
-/* ========================= */
-
-.navbar-custom {
-  background: white;
-  border-bottom: 1px solid var(--border-color);
-  padding: 12px 20px;
-}
-
-.nav-link-custom {
-  color: var(--text-dark);
-  margin-right: 15px;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.nav-link-custom:hover {
-  color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -2px rgba(15, 23, 42, 0.08);
 }
 
 /* ========================= */
@@ -162,26 +195,30 @@ body {
 /* ========================= */
 
 .tag {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-xs);
+  font-weight: 600;
 }
 
 .tag-approved {
-  background: #dcfce7;
-  color: #166534;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 
 .tag-pending {
-  background: #fef3c7;
-  color: #92400e;
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
 }
 
 .tag-rejected {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
 /* ========================= */
@@ -189,9 +226,9 @@ body {
 /* ========================= */
 
 .form-box {
-  max-width: 450px;
+  max-width: 440px;
   margin: auto;
-  margin-top: 60px;
+  margin-top: 40px;
 }
 
 /* ========================= */
@@ -200,8 +237,8 @@ body {
 
 .grid-3 {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
 }
 
 /* ========================= */
@@ -214,44 +251,53 @@ body {
   text-align: center;
   border-radius: var(--radius);
   cursor: pointer;
+  transition: var(--transition);
 }
 
 .file-upload:hover {
   border-color: var(--primary);
+  background: var(--bg-muted);
 }
 
-/* ========================= */
-/* 🔒 PROTECTED BADGE */
-/* ========================= */
-
-.locked {
-  color: var(--danger);
-  font-size: 14px;
+/* Headings standard */
+h1 {
+  font-size: var(--font-2xl);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--text-dark);
+  margin: 0;
 }
 
-h1, h2, h3, h4, h5 {
+h2 {
+  font-size: var(--font-xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+h3 {
+  font-size: var(--font-lg);
+  font-weight: 650;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+h4, h5 {
+  font-size: var(--font-base);
   font-weight: 600;
+  color: var(--text-dark);
+  margin: 0;
 }
 
 button {
   cursor: pointer;
+  font-family: inherit;
 }
+
 .container {
-  max-width: 1400px;
+  max-width: 1200px;
 }
-
-/* Smooth buttons */
-button {
-  font-size: 14px;
-}
-
-/* Improve spacing */
-section {
-  margin-top: 0px;
-}
-/* ========================= */
-/* 📱 RESPONSIVE */
-/* ========================= */
 
 @media (max-width: 768px) {
   .form-box {

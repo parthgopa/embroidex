@@ -1,14 +1,15 @@
 /**
- * SelUploadV3 - Redesigned Upload Flow
+ * SelUploadV3 - Unified Upload & Edit Flow
  * Order: Images → Design Details (Name, Description, Category, Needles, Price) → File Format & Upload File
  * Features:
+ * - Supports both "Upload New Design" and "Edit Existing Design" (via ?editId=...)
  * - Prominent "✨ Write with AI" buttons for Title & Description
- * - Simple File Upload Status Card (no tedious 50-file manual stitch/height/width input boxes)
- * - 70/30 Split Layout with Brief Simple-English Guidance Card
+ * - Unsaved changes prompt on window close / tab navigation
+ * - Responsive 70/30 layout with guidance cards
  */
 
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   MdCheckCircle,
   MdUploadFile,
@@ -18,12 +19,14 @@ import {
   MdCloudUpload,
   MdPhotoLibrary,
   MdInfoOutline,
-  MdLightbulbOutline,
   MdCategory,
   MdFormatListNumbered,
   MdFolderZip,
   MdExpandMore,
-  MdExpandLess
+  MdExpandLess,
+  MdArrowBack,
+  MdEdit,
+  MdWarning
 } from "react-icons/md";
 import API from "../../services/api";
 import styles from "./SelUploadV3.module.css";
@@ -44,16 +47,16 @@ const GUIDE_SECTIONS = [
     description: "Upload clear photos of your embroidery design.",
     details: [
       {
-        subtitle: "Main Photo *",
+        subtitle: "First Photo *",
         points: [
           "Upload 1 main photo for design preview.",
           "Use JPG or PNG photo (Max 10 MB)."
         ]
       },
       {
-        subtitle: "Extra Photos (Max 7)",
+        subtitle: "Extra Photos (Max 5)",
         points: [
-          "Upload up to 7 extra photos.",
+          "Upload up to 5 extra photos.",
           "Show close-up stitches and thread work."
         ]
       }
@@ -103,13 +106,22 @@ const GUIDE_SECTIONS = [
 
 const SelUploadV3 = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("editId");
+  const isEditMode = Boolean(editId);
+
   const [categories, setCategories] = useState({});
+  const [loadingDesign, setLoadingDesign] = useState(isEditMode);
+  const [isDirty, setIsDirty] = useState(false);
 
   // Form state - Images
   const [thumbnail, setThumbnail] = useState(null);
-  const [additionalImages, setAdditionalImages] = useState([]);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
+  const [existingThumbnailUrl, setExistingThumbnailUrl] = useState(null);
+
+  const [additionalImages, setAdditionalImages] = useState([]);
   const [imagesPreviews, setImagesPreviews] = useState([]);
+  const [existingAdditionalImages, setExistingAdditionalImages] = useState([]); // [{ index: 0, src: '...' }]
 
   // Form state - Details
   const [form, setForm] = useState({
@@ -133,25 +145,97 @@ const SelUploadV3 = () => {
   const [sessionId, setSessionId] = useState("");
   const [uploadPreview, setUploadPreview] = useState(null);
   const [embMetadata, setEmbMetadata] = useState([]);
+  const [existingFiles, setExistingFiles] = useState([]);
   const [showFileList, setShowFileList] = useState(false);
 
-  const [uploading, setUploading] = useState(false);
-  const [activeSectionId, setActiveSectionId] = useState("images");
+  const [submitting, setSubmitting] = useState(false);
 
+  // Initial load
   useEffect(() => {
     fetchCategories();
-  }, []);
+    if (editId) {
+      fetchDesignForEdit(editId);
+    }
+  }, [editId]);
+
+  // Unsaved Changes: BeforeUnload browser warning
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty]);
 
   const fetchCategories = async () => {
     try {
       const res = await API.get("/seller/categories");
-      setCategories(res.data.categories);
+      setCategories(res.data.categories || {});
     } catch (err) {
       console.error("Failed to fetch categories", err);
     }
   };
 
-  // Compress image using canvas
+  const fetchDesignForEdit = async (id) => {
+    setLoadingDesign(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await API.get(`/seller/design/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const d = res.data.design;
+      if (!d) throw new Error("Design not found");
+
+      setForm({
+        titleOriginal: d.title_original || d.title || "",
+        titleAi: d.title_ai || "",
+        titleSource: d.title_source || "original",
+        descriptionOriginal: d.description_original || d.description || "",
+        descriptionAi: d.description_ai || "",
+        descriptionSource: d.description_source || "original",
+      });
+
+      setCategory(d.category || "");
+      setSubcategory(d.subcategory || "");
+      setNeedles(String(d.needles || "1"));
+      setPrice(String(d.price || ""));
+
+      if (d.file_format) {
+        const fmt = d.file_format.startsWith(".") ? d.file_format.toUpperCase() : "." + d.file_format.toUpperCase();
+        setFileFormat(fmt);
+      }
+
+      if (d.thumbnail) {
+        setThumbnailPreview(d.thumbnail);
+        setExistingThumbnailUrl(d.thumbnail);
+      }
+
+      if (d.additional_images && Array.isArray(d.additional_images)) {
+        setExistingAdditionalImages(
+          d.additional_images.map((img, idx) => ({ index: idx, src: img }))
+        );
+      }
+
+      if (d.file_names && Array.isArray(d.file_names)) {
+        setExistingFiles(d.file_names);
+      }
+
+      setIsDirty(false);
+    } catch (err) {
+      console.error("Failed to load design for editing", err);
+      alert("Failed to load design details for editing.");
+      navigate("/seller/my-designs");
+    } finally {
+      setLoadingDesign(false);
+    }
+  };
+
+  // Image compressor
   const compressImage = (file) => new Promise((resolve, reject) => {
     const MAX_SIDE = 1200;
     const QUALITY = 0.82;
@@ -201,6 +285,7 @@ const SelUploadV3 = () => {
       const compressed = await compressImage(file);
       setThumbnail(compressed);
       setThumbnailPreview(URL.createObjectURL(compressed));
+      setIsDirty(true);
     } catch (err) {
       alert(err.message);
       e.target.value = "";
@@ -211,8 +296,9 @@ const SelUploadV3 = () => {
     const newFiles = Array.from(e.target.files);
     e.target.value = "";
 
-    if (additionalImages.length + newFiles.length > 7) {
-      alert(`You can upload a maximum of 7 additional images. You already have ${additionalImages.length}.`);
+    const totalCurrent = existingAdditionalImages.length + additionalImages.length;
+    if (totalCurrent + newFiles.length > 5) {
+      alert(`You can have a maximum of 5 extra photos. You already have ${totalCurrent}.`);
       return;
     }
 
@@ -226,16 +312,21 @@ const SelUploadV3 = () => {
       const compressed = await Promise.all(newFiles.map(compressImage));
       setAdditionalImages(prev => [...prev, ...compressed]);
       setImagesPreviews(prev => [...prev, ...compressed.map(f => URL.createObjectURL(f))]);
+      setIsDirty(true);
     } catch (err) {
       alert(err.message);
     }
   };
 
-  const removeAdditionalImage = (index) => {
-    const newImages = additionalImages.filter((_, i) => i !== index);
-    const newPreviews = imagesPreviews.filter((_, i) => i !== index);
-    setAdditionalImages(newImages);
-    setImagesPreviews(newPreviews);
+  const removeExistingAdditionalImage = (indexToRemove) => {
+    setExistingAdditionalImages(prev => prev.filter((_, i) => i !== indexToRemove));
+    setIsDirty(true);
+  };
+
+  const removeNewAdditionalImage = (indexToRemove) => {
+    setAdditionalImages(prev => prev.filter((_, i) => i !== indexToRemove));
+    setImagesPreviews(prev => prev.filter((_, i) => i !== indexToRemove));
+    setIsDirty(true);
   };
 
   // Design file upload handler
@@ -250,20 +341,19 @@ const SelUploadV3 = () => {
       setSessionId("");
       setUploadPreview(null);
       setEmbMetadata([]);
+      setIsDirty(true);
       processDesignFile(file);
     }
   };
 
-  // Process design file with AI / scanner
   const processDesignFile = async (file) => {
     setProcessing(true);
-
     const formData = new FormData();
     formData.append("design_file", file);
 
     try {
       const token = localStorage.getItem("token");
-      const res = await API.post("/seller/process-upload", formData, {
+      const res = await API.post("/seller/upload-zip", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
@@ -271,58 +361,71 @@ const SelUploadV3 = () => {
       });
 
       setSessionId(res.data.session_id);
-      setUploadPreview(res.data);
-      setEmbMetadata(res.data.emb_metadata || []);
+      setUploadPreview(res.data.preview);
+      setEmbMetadata(res.data.preview?.emb_metadata || []);
+
+      if (res.data.preview?.detected_format) {
+        const detected = "." + res.data.preview.detected_format.toUpperCase();
+        if (FILE_FORMAT_OPTIONS.includes(detected)) {
+          setFileFormat(detected);
+        }
+      }
     } catch (err) {
-      alert(err.response?.data?.error || "Processing failed");
+      alert(err.response?.data?.error || "Failed to process design file");
       setDesignFile(null);
-      setSessionId("");
-      setUploadPreview(null);
-      setEmbMetadata([]);
     } finally {
       setProcessing(false);
     }
   };
 
-  const handleContentSourceChange = (fieldType, source) => {
-    setForm((prev) => ({
-      ...prev,
-      [`${fieldType}Source`]: source,
-    }));
-  };
-
-  const getFieldValue = (fieldType) => {
-    const source = form[`${fieldType}Source`];
-    return source === "ai" ? form[`${fieldType}Ai`] : form[`${fieldType}Original`];
-  };
-
-  const handleFieldValueChange = (fieldType, value) => {
-    const source = form[`${fieldType}Source`];
-    const targetKey = `${fieldType}${source === "ai" ? "Ai" : "Original"}`;
-
-    setForm((prev) => ({
-      ...prev,
-      [targetKey]: value,
-    }));
-  };
-
-  // "Write with AI" handler - works even if field is empty!
-  const handleWriteWithAi = async (fieldType) => {
-    let originalText = fieldType === "title" ? form.titleOriginal : form.descriptionOriginal;
-
-    if (!originalText.trim()) {
-      originalText = `${category || "Embroidery"} ${subcategory || "Design"} ${designFile ? designFile.name.replace(/\.[^/.]+$/, "") : "Neck Pattern"}`.trim();
+  // Form value helpers
+  const handleFieldValueChange = (field, value) => {
+    setIsDirty(true);
+    if (field === "title") {
+      setForm(prev => ({
+        ...prev,
+        titleOriginal: form.titleSource === "original" ? value : prev.titleOriginal,
+        titleAi: form.titleSource === "ai" ? value : prev.titleAi,
+      }));
+    } else if (field === "description") {
+      setForm(prev => ({
+        ...prev,
+        descriptionOriginal: form.descriptionSource === "original" ? value : prev.descriptionOriginal,
+        descriptionAi: form.descriptionSource === "ai" ? value : prev.descriptionAi,
+      }));
     }
+  };
 
+  const getFieldValue = (field) => {
+    if (field === "title") {
+      return form.titleSource === "ai" ? form.titleAi : form.titleOriginal;
+    }
+    if (field === "description") {
+      return form.descriptionSource === "ai" ? form.descriptionAi : form.descriptionOriginal;
+    }
+    return "";
+  };
+
+  const handleContentSourceChange = (field, source) => {
+    setIsDirty(true);
+    setForm(prev => ({
+      ...prev,
+      [`${field}Source`]: source
+    }));
+  };
+
+  // AI Generator
+  const handleWriteWithAi = async (fieldType) => {
     setRefiningField(fieldType);
-
     try {
       const token = localStorage.getItem("token");
       const res = await API.post(
-        "/seller/refine-metadata",
+        "/seller/refine-text",
         {
           field_type: fieldType,
-          original_text: originalText,
+          original_text: fieldType === "title" ? (form.titleOriginal || form.titleAi) : (form.descriptionOriginal || form.descriptionAi),
+          category: category,
+          subcategory: subcategory,
         },
         {
           headers: {
@@ -336,6 +439,7 @@ const SelUploadV3 = () => {
         [fieldType === "title" ? "titleAi" : "descriptionAi"]: res.data.refined_text,
         [`${fieldType}Source`]: "ai",
       }));
+      setIsDirty(true);
     } catch (err) {
       alert(err.response?.data?.error || `Failed to write ${fieldType} with AI`);
     } finally {
@@ -343,12 +447,26 @@ const SelUploadV3 = () => {
     }
   };
 
+  // Cancel with unsaved check
+  const handleCancel = () => {
+    if (isDirty) {
+      const confirmLeave = window.confirm("You have unsaved changes. Are you sure you want to leave without saving?");
+      if (!confirmLeave) return;
+    }
+    navigate("/seller/my-designs");
+  };
+
+  // Submission handler (handles both NEW and UPDATE)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!thumbnail) {
-      return alert("Thumbnail image is required");
+    if (!isEditMode && !thumbnail) {
+      return alert("First photo is required");
     }
+    if (isEditMode && !thumbnail && !thumbnailPreview) {
+      return alert("First photo is required");
+    }
+
     if (!form.titleOriginal && !form.titleAi) {
       return alert("Please enter design name or use '✨ Write with AI'");
     }
@@ -361,17 +479,19 @@ const SelUploadV3 = () => {
     if (!price || parseFloat(price) <= 0) {
       return alert("Please enter a valid price");
     }
-    if (!designFile || !uploadPreview || !sessionId) {
+    if (!fileFormat) {
+      return alert("Please select a design file format");
+    }
+    if (!isEditMode && (!designFile || !uploadPreview || !sessionId)) {
       return alert("Please upload a design file");
     }
 
     const selectedTitle = form.titleSource === "ai" ? form.titleAi : (form.titleOriginal || form.titleAi);
     const selectedDescription = form.descriptionSource === "ai" ? form.descriptionAi : (form.descriptionOriginal || form.descriptionAi);
 
-    setUploading(true);
+    setSubmitting(true);
 
     const formData = new FormData();
-    formData.append("session_id", sessionId);
     formData.append("title", selectedTitle);
     formData.append("description", selectedDescription);
     formData.append("title_original", form.titleOriginal || selectedTitle);
@@ -385,10 +505,16 @@ const SelUploadV3 = () => {
     formData.append("needles", needles);
     formData.append("file_format", fileFormat.replace(".", "").toUpperCase());
     formData.append("price", price);
-    formData.append("emb_metadata", JSON.stringify(embMetadata));
-    formData.append("file_names", JSON.stringify(uploadPreview?.file_names || []));
-    formData.append("design_file_path", uploadPreview?.design_file_path || "");
-    formData.append("thumbnail", thumbnail);
+
+    if (thumbnail) {
+      formData.append("thumbnail", thumbnail);
+    }
+
+    // Handle additional images
+    if (isEditMode) {
+      const keptIndices = existingAdditionalImages.map(img => img.index);
+      formData.append("kept_image_indices_json", JSON.stringify(keptIndices));
+    }
 
     additionalImages.forEach((img) => {
       formData.append("additional_images", img);
@@ -396,142 +522,170 @@ const SelUploadV3 = () => {
 
     try {
       const token = localStorage.getItem("token");
-      await API.post("/seller/final-upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
-      });
 
-      alert("✓ Design uploaded successfully!\n\nYour design is pending admin approval.");
-      navigate("/seller/my-designs");
+      if (isEditMode) {
+        // UPDATE EXISTING DESIGN
+        if (designFile) {
+          formData.append("design_file", designFile);
+        }
+
+        const res = await API.put(`/seller/design/${editId}`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setIsDirty(false);
+        alert(res.data?.message || "✓ Design updated successfully!");
+        navigate("/seller/my-designs");
+      } else {
+        // CREATE NEW DESIGN
+        formData.append("session_id", sessionId);
+        formData.append("emb_metadata", JSON.stringify(embMetadata));
+        formData.append("file_names", JSON.stringify(uploadPreview?.file_names || []));
+        formData.append("design_file_path", uploadPreview?.design_file_path || "");
+
+        await API.post("/seller/final-upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setIsDirty(false);
+        alert("✓ Design uploaded successfully!\n\nYour design is pending admin approval.");
+        navigate("/seller/my-designs");
+      }
     } catch (err) {
-      alert(err.response?.data?.error || "Upload failed");
+      alert(err.response?.data?.error || (isEditMode ? "Update failed" : "Upload failed"));
     } finally {
-      setUploading(false);
+      setSubmitting(false);
     }
   };
 
   const subcategories = category ? categories[category] || [] : [];
   const fileNames = uploadPreview?.file_names || [];
 
+  if (loadingDesign) {
+    return (
+      <div className={styles.fullWidthContainer}>
+        <div className={styles.loadingBox}>
+          <div className={styles.spinner}></div>
+          <p>Loading design details for editing...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.fullWidthContainer}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Upload New Design</h1>
-        <p className={styles.subtitle}>Follow the simple steps below to upload your embroidery design</p>
+        <div className={styles.headerTitleRow}>
+          <div>
+            <h1 className={styles.title}>
+              {isEditMode ? "Edit Embroidery Design" : "Upload New Design"}
+            </h1>
+            <p className={styles.subtitle}>
+              {isEditMode 
+                ? "Update your design photos, details, pricing, or embroidery files below" 
+                : "Follow the simple steps below to upload your embroidery design"}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCancel}
+            className={styles.backBtn}
+            title="Cancel and return to designs list"
+          >
+            <MdArrowBack size={16} /> Back to My Designs
+          </button>
+        </div>
+
+        {isDirty && (
+          <div className={styles.unsavedWarningPill}>
+            <MdWarning size={14} /> Unsaved changes
+          </div>
+        )}
       </div>
 
       <div className={styles.layoutGrid}>
         {/* LEFT COLUMN: FORM INPUTS (~70%) */}
         <form onSubmit={handleSubmit} className={styles.uploadForm} noValidate>
 
-          {/* STEP 1: Upload Design Images */}
-          <div
-            className={`${styles.section} ${activeSectionId === "images" ? styles.sectionActive : ""}`}
-            onMouseEnter={() => setActiveSectionId("images")}
-            onFocus={() => setActiveSectionId("images")}
-          >
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>
-                <MdPhotoLibrary className={styles.titleIcon} />
-                1. Upload Design Images
-              </h2>
-              <span className={styles.required}>Required</span>
+          <div className={styles.singleFormCard}>
+
+            {/* First Photo Upload */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>
+                First Photo * <small className={styles.labelSubText}>(PNG, JPG - Max 10MB)</small>
+              </label>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/jpg"
+                onChange={handleThumbnailChange}
+                className={styles.simpleFileInput}
+                id="thumbnail"
+              />
+              {thumbnailPreview && (
+                <div className={styles.simplePreviewWrapper}>
+                  <img src={thumbnailPreview} alt="First Photo Preview" className={styles.previewImageSimple} />
+                  <span className={styles.simpleFileName}>
+                    {thumbnail?.name || (isEditMode ? "Current First Photo (Click above to replace)" : "Selected photo")}
+                  </span>
+                </div>
+              )}
             </div>
 
-            <div className={styles.imagesUploadGrid}>
-              {/* Thumbnail Upload */}
-              <div
-                className={styles.thumbnailUpload}
-                onClick={() => setActiveSectionId("images")}
-              >
-                <label className={styles.uploadLabel}>Main Thumbnail *</label>
-                <div className={styles.uploadBox}>
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/jpg"
-                    onChange={handleThumbnailChange}
-                    className={styles.fileInput}
-                    id="thumbnail"
-                  />
-                  <label htmlFor="thumbnail" className={styles.uploadAreaCompact}>
-                    {thumbnailPreview ? (
-                      <div className={styles.compactPreviewWrapper}>
-                        <img src={thumbnailPreview} alt="Thumbnail" className={styles.previewImageCompact} />
-                        <span className={styles.changeBadge}>Change</span>
-                      </div>
-                    ) : (
-                      <div className={styles.uploadPlaceholderCompact}>
-                        <MdImage className={styles.uploadIconCompact} />
-                        <div>
-                          <p className={styles.uploadTextCompact}>Click to upload thumbnail</p>
-                          <small className={styles.uploadSubCompact}>PNG, JPG (Max 10MB)</small>
-                        </div>
-                      </div>
-                    )}
-                  </label>
-                </div>
-              </div>
+            {/* Extra Photos Upload */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>
+                Extra Photos <small className={styles.labelSubText}>(Max 5 extra photos)</small>
+              </label>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/jpg"
+                multiple
+                onChange={handleAdditionalImagesChange}
+                className={styles.simpleFileInput}
+                id="additionalImages"
+              />
 
-              {/* Additional Images Upload */}
-              <div
-                className={styles.additionalUpload}
-                onClick={() => setActiveSectionId("images")}
-              >
-                <label className={styles.uploadLabel}>Additional Images (Max 7)</label>
-                <div className={styles.uploadBox}>
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/jpg"
-                    multiple
-                    onChange={handleAdditionalImagesChange}
-                    className={styles.fileInput}
-                    id="additionalImages"
-                  />
-                  <label htmlFor="additionalImages" className={styles.uploadAreaCompact}>
-                    <div className={styles.uploadPlaceholderCompact}>
-                      <MdCloudUpload className={styles.uploadIconCompact} />
-                      <div>
-                        <p className={styles.uploadTextCompact}>Click to upload extra photos</p>
-                        <small className={styles.uploadSubCompact}>Showcase stitch details</small>
-                      </div>
+              {/* Combined Previews: Existing + Newly Added */}
+              {(existingAdditionalImages.length > 0 || imagesPreviews.length > 0) && (
+                <div className={styles.additionalPreviewsCompact}>
+                  {/* Existing Images in Edit Mode */}
+                  {existingAdditionalImages.map((item, index) => (
+                    <div key={`existing-${index}`} className={styles.previewItemCompact}>
+                      <img src={item.src} alt={`Existing Photo ${index + 1}`} />
+                      <button
+                        type="button"
+                        onClick={() => removeExistingAdditionalImage(index)}
+                        className={styles.removeBtnCompact}
+                        title="Remove this extra photo"
+                      >
+                        <MdClose />
+                      </button>
                     </div>
-                  </label>
+                  ))}
+
+                  {/* Newly selected images */}
+                  {imagesPreviews.map((preview, index) => (
+                    <div key={`new-${index}`} className={styles.previewItemCompact}>
+                      <img src={preview} alt={`New Extra Photo ${index + 1}`} />
+                      <button
+                        type="button"
+                        onClick={() => removeNewAdditionalImage(index)}
+                        className={styles.removeBtnCompact}
+                        title="Remove photo"
+                      >
+                        <MdClose />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-
-                {imagesPreviews.length > 0 && (
-                  <div className={styles.additionalPreviewsCompact}>
-                    {imagesPreviews.map((preview, index) => (
-                      <div key={index} className={styles.previewItemCompact}>
-                        <img src={preview} alt={`Preview ${index + 1}`} />
-                        <button
-                          type="button"
-                          onClick={() => removeAdditionalImage(index)}
-                          className={styles.removeBtnCompact}
-                        >
-                          <MdClose />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* STEP 2: Design Details (Name, Description, Category, Subcategory, Needles, Price) */}
-          <div
-            className={`${styles.section} ${activeSectionId === "details" ? styles.sectionActive : ""}`}
-            onMouseEnter={() => setActiveSectionId("details")}
-            onFocus={() => setActiveSectionId("details")}
-          >
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>
-                <MdCategory className={styles.titleIcon} />
-                2. Design Details & Classification
-              </h2>
-              <span className={styles.required}>Required</span>
+              )}
             </div>
 
             {/* Design Name / Title */}
@@ -618,93 +772,69 @@ const SelUploadV3 = () => {
               />
             </div>
 
-            {/* Category, Subcategory, Needles, Price Grid */}
-            <div className={styles.detailsGrid}>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Category *</label>
-                <select
-                  className="input-custom"
-                  value={category}
-                  onChange={(e) => {
-                    setCategory(e.target.value);
-                    setSubcategory("");
-                  }}
-                  required
-                >
-                  <option value="">Select Category</option>
-                  {Object.keys(categories).map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Subcategory *</label>
-                <select
-                  className="input-custom"
-                  value={subcategory}
-                  onChange={(e) => setSubcategory(e.target.value)}
-                  required
-                  disabled={!category}
-                >
-                  <option value="">{category ? "Select Subcategory" : "Select category first"}</option>
-                  {subcategories.map((subcat) => (
-                    <option key={subcat} value={subcat}>{subcat}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Number of Needles (1 to 15) */}
-              <div className={styles.formGroup}>
-                <label className={styles.label}>
-                  <MdFormatListNumbered className={styles.fieldIcon} /> Number of Needles *
-                </label>
-                <select
-                  className="input-custom"
-                  value={needles}
-                  onChange={(e) => setNeedles(e.target.value)}
-                  required
-                >
-                  {Array.from({ length: 15 }, (_, i) => i + 1).map((num) => (
-                    <option key={num} value={num.toString()}>
-                      {num} {num === 1 ? "Needle" : "Needles"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Selling Price */}
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Selling Price (₹) *</label>
-                <input
-                  type="number"
-                  className="input-custom"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="Price in rupees"
-                  min="1"
-                  step="1"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* STEP 3: Upload Design File & Format */}
-          <div
-            className={`${styles.section} ${activeSectionId === "fileUpload" ? styles.sectionActive : ""}`}
-            onMouseEnter={() => setActiveSectionId("fileUpload")}
-            onFocus={() => setActiveSectionId("fileUpload")}
-          >
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>
-                <MdUploadFile className={styles.titleIcon} />
-                3. Upload Design File & Format
-              </h2>
-              <span className={styles.required}>Required</span>
+            {/* Category */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Category *</label>
+              <select
+                className="input-custom"
+                value={category}
+                onChange={(e) => {
+                  setIsDirty(true);
+                  setCategory(e.target.value);
+                  setSubcategory("");
+                }}
+                required
+              >
+                <option value="">Select Category</option>
+                {Object.keys(categories).map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
             </div>
 
-            {/* Design File Format Selection (UPPERCASE) */}
+            {/* Subcategory */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Subcategory *</label>
+              <select
+                className="input-custom"
+                value={subcategory}
+                onChange={(e) => {
+                  setIsDirty(true);
+                  setSubcategory(e.target.value);
+                }}
+                required
+                disabled={!category}
+              >
+                <option value="">{category ? "Select Subcategory" : "Select category first"}</option>
+                {subcategories.map((subcat) => (
+                  <option key={subcat} value={subcat}>{subcat}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Number of Needles */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>
+                <MdFormatListNumbered className={styles.fieldIcon} /> Number of Needles *
+              </label>
+              <select
+                className="input-custom"
+                value={needles}
+                onChange={(e) => {
+                  setIsDirty(true);
+                  setNeedles(e.target.value);
+                }}
+                required
+              >
+                {Array.from({ length: 15 }, (_, i) => i + 1).map((num) => (
+                  <option key={num} value={num.toString()}>
+                    {num} {num === 1 ? "Needle" : "Needles"}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Design File Type & File Upload */}
             <div className={styles.formGroup}>
               <label className={styles.label}>Design File Type / Format *</label>
               <div className={styles.formatPillsContainer}>
@@ -713,7 +843,10 @@ const SelUploadV3 = () => {
                     key={fmt}
                     type="button"
                     className={`${styles.formatPill} ${fileFormat === fmt ? styles.formatPillActive : ""}`}
-                    onClick={() => setFileFormat(fmt)}
+                    onClick={() => {
+                      setIsDirty(true);
+                      setFileFormat(fmt);
+                    }}
                   >
                     {fmt}
                   </button>
@@ -721,35 +854,26 @@ const SelUploadV3 = () => {
               </div>
             </div>
 
-            {/* Design File Upload Box */}
-            <div className={styles.zipUploadBox}>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>
+                {isEditMode ? "Replace Design File / ZIP (Optional)" : "Upload Design File or ZIP *"} 
+                <small className={styles.labelSubText}> (Supports {fileFormat || "all formats"} & .ZIP - Max 20MB)</small>
+              </label>
               <input
                 type="file"
                 accept=".zip,.emb,.dst,.pes,.jef,.exp,.vp3,.art,.xxx,.hus,.vip,.sew"
                 onChange={handleDesignFileChange}
-                className={styles.fileInput}
+                className={styles.simpleFileInput}
                 id="designFile"
                 disabled={processing}
               />
-              <label htmlFor="designFile" className={styles.zipUploadLabelCompact}>
-                {designFile ? (
-                  <div className={styles.fileSelected}>
-                    <MdCheckCircle className={styles.successIcon} />
-                    <div>
-                      <p className={styles.fileName}>{designFile.name}</p>
-                      <small>Click to change file ({fileFormat})</small>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={styles.zipPlaceholderCompact}>
-                    <MdCloudUpload className={styles.zipIconCompact} />
-                    <div>
-                      <p className={styles.uploadTextCompact}>Click to upload design file or ZIP</p>
-                      <small className={styles.uploadSubCompact}>Supports {fileFormat} and .ZIP files (Max 20MB)</small>
-                    </div>
-                  </div>
-                )}
-              </label>
+
+              {isEditMode && !designFile && existingFiles.length > 0 && (
+                <div className={styles.existingFileNotice}>
+                  <MdFolderZip className={styles.existingFileIcon} />
+                  <span>Current design has <strong>{existingFiles.length} file(s)</strong> attached ({existingFiles.slice(0, 3).join(", ")}{existingFiles.length > 3 ? "..." : ""}). Upload a new file only if replacing.</span>
+                </div>
+              )}
 
               {processing && (
                 <div className={styles.processingIndicator}>
@@ -759,14 +883,14 @@ const SelUploadV3 = () => {
               )}
             </div>
 
-            {/* Clean File Uploaded Status Card (No tedious 50-file manual input boxes!) */}
+            {/* Clean File Uploaded Status Card */}
             {uploadPreview && (
               <div className={styles.fileSuccessCard}>
                 <div className={styles.fileSuccessHeader}>
                   <div className={styles.fileSuccessLeft}>
                     <MdFolderZip className={styles.fileSuccessIcon} />
                     <div>
-                      <h4 className={styles.fileSuccessTitle}>File Uploaded Successfully</h4>
+                      <h4 className={styles.fileSuccessTitle}>File Processed Successfully</h4>
                       <p className={styles.fileSuccessSubtitle}>
                         {designFile?.name} • <strong>{fileNames.length} file{fileNames.length !== 1 ? "s" : ""} included</strong>
                       </p>
@@ -802,19 +926,43 @@ const SelUploadV3 = () => {
                 )}
               </div>
             )}
+
+            {/* Selling Price (₹) */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Selling Price (₹) *</label>
+              <input
+                type="number"
+                className="input-custom"
+                value={price}
+                onChange={(e) => {
+                  setIsDirty(true);
+                  setPrice(e.target.value);
+                }}
+                placeholder="Price in rupees"
+                min="1"
+                step="1"
+                required
+              />
+            </div>
+
           </div>
 
-          {/* Submit Button */}
+          {/* Submit Button Section */}
           <div className={styles.submitSection}>
             <button
               type="submit"
               className={`btn-primary-custom ${styles.submitButton}`}
-              disabled={uploading || processing}
+              disabled={submitting || processing}
             >
-              {uploading ? (
+              {submitting ? (
                 <>
                   <MdCloudUpload className={styles.btnIcon} />
-                  Uploading...
+                  {isEditMode ? "Updating Design..." : "Uploading..."}
+                </>
+              ) : isEditMode ? (
+                <>
+                  <MdEdit className={styles.btnIcon} />
+                  Update Design
                 </>
               ) : (
                 <>
@@ -824,50 +972,46 @@ const SelUploadV3 = () => {
               )}
             </button>
             <p className={styles.submitNote}>
-              Your design will be reviewed by our team before being published live.
+              {isEditMode 
+                ? "Your design updates will be saved immediately." 
+                : "Your design will be reviewed by our team before being published live."}
             </p>
           </div>
         </form>
 
-        {/* RIGHT COLUMN: BRIEF SIMPLE-ENGLISH SCROLLING GUIDE CARD (~30%) */}
+        {/* RIGHT COLUMN: SCROLLING GUIDE CARD (~30%) */}
         <div className={styles.rightSidebar}>
           <div className={styles.fullGuideCard}>
             <div className={styles.mainGuideHeader}>
               <MdInfoOutline className={styles.mainGuideHeaderIcon} />
               <div>
-                <h3 className={styles.mainGuideTitle}>Simple Upload Help</h3>
-                <p className={styles.mainGuideSubtitle}>Easy instructions to upload your design</p>
+                <h3 className={styles.mainGuideTitle}>
+                  {isEditMode ? "Editing Instructions" : "Upload Instructions"}
+                </h3>
+                <p className={styles.mainGuideSubtitle}>Follow simple rules for quick approval</p>
               </div>
             </div>
 
             <div className={styles.guideBlocksContainer}>
-              {GUIDE_SECTIONS.map((sec) => {
-                const SecIcon = sec.icon;
-                const isActive = activeSectionId === sec.id;
+              {GUIDE_SECTIONS.map((section) => {
+                const IconComponent = section.icon;
                 return (
-                  <div
-                    key={sec.id}
-                    className={`${styles.guideBlock} ${isActive ? styles.guideBlockActive : ""}`}
-                    onClick={() => setActiveSectionId(sec.id)}
-                  >
+                  <div key={section.id} className={styles.guideBlock}>
                     <div className={styles.guideBlockHeader}>
-                      <span className={styles.stepBadge}>{sec.stepNum}</span>
-                      <SecIcon className={styles.guideBlockIcon} />
-                      <h4 className={styles.guideBlockTitle}>{sec.title}</h4>
+                      <span className={styles.stepBadge}>{section.stepNum}</span>
+                      <IconComponent className={styles.guideBlockIcon} />
+                      <h4 className={styles.guideBlockTitle}>{section.title}</h4>
                     </div>
 
-                    <p className={styles.guideBlockDesc}>{sec.description}</p>
+                    <p className={styles.guideBlockDesc}>{section.description}</p>
 
                     <div className={styles.guideBlockDetails}>
-                      {sec.details.map((det, idx) => (
-                        <div key={idx} className={styles.detailSubBlock}>
-                          <h5 className={styles.detailSubtitle}>
-                            <MdLightbulbOutline className={styles.detailBulb} />
-                            {det.subtitle}
-                          </h5>
-                          <ul className={styles.detailList}>
-                            {det.points.map((pt, pIdx) => (
-                              <li key={pIdx}>{pt}</li>
+                      {section.details.map((item, idx) => (
+                        <div key={idx} className={styles.guideSubSection}>
+                          <h5 className={styles.guideSubTitle}>{item.subtitle}</h5>
+                          <ul className={styles.guidePointsList}>
+                            {item.points.map((pt, pIdx) => (
+                              <li key={pIdx}>• {pt}</li>
                             ))}
                           </ul>
                         </div>

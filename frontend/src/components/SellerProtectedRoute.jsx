@@ -4,43 +4,11 @@
  * Ensures only sellers can access seller-specific routes
  */
 
-import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import API from "../services/api";
+import { useAuth } from "../context/authContext";
 
 const SellerProtectedRoute = ({ children }) => {
-  const [loading, setLoading] = useState(true);
-  const [isSeller, setIsSeller] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    checkSellerStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
-
-  const checkSellerStatus = async () => {
-    const token = localStorage.getItem("token");
-    
-    if (!token) {
-      setIsAuthenticated(false);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await API.get("/auth/me", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      setIsAuthenticated(true);
-      setIsSeller(res.data.is_seller);
-    } catch (err) {
-      console.error("Failed to verify seller status", err);
-      setIsAuthenticated(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { isSeller, isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
@@ -49,7 +17,7 @@ const SellerProtectedRoute = ({ children }) => {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '60vh',
-        color: 'var(--text-light)'
+        color: '#64748b'
       }}>
         <p>Verifying access...</p>
       </div>

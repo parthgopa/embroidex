@@ -1,116 +1,129 @@
-/* Withdrawal Request Component Styles */
+/* ==========================================================================
+   Withdrawal & Earnings Component Styles - Clean, Compact & Consistent Design System
+   ========================================================================== */
 
 .container {
-  max-width: 1000px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1.25rem 1rem 2.5rem;
 }
 
 .header {
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
 }
 
 .header h2 {
-  font-size: 1.75rem;
-  font-weight: 600;
+  font-size: var(--font-2xl);
+  font-weight: 750;
   color: var(--text-dark);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.2rem;
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
   color: var(--text-light);
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
+  font-weight: 450;
+  margin: 0;
 }
 
 .loading, .error {
   text-align: center;
-  padding: 3rem;
+  padding: 3rem 1rem;
   color: var(--text-light);
+  font-size: var(--font-base);
 }
 
 .error {
   color: var(--danger);
 }
 
-/* Balance Card */
+/* ─── Balance Card ─────────────────────────────────────────── */
 .balanceCard {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  border-radius: var(--radius);
-  padding: 2rem;
-  margin-bottom: 2rem;
+  background: linear-gradient(135deg, var(--primary) 0%, #4338ca 100%);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
   color: white;
-  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
 }
 
 .balanceGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
 }
 
 .balanceItem {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .balanceLabel {
-  font-size: 0.875rem;
-  opacity: 0.9;
-  font-weight: 500;
+  font-size: var(--font-xs);
+  opacity: 0.85;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .balanceAmount {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: var(--stat-value-size);
+  font-weight: var(--stat-value-weight);
+  letter-spacing: -0.02em;
 }
 
 .balanceValue {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .balancePending {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #fbbf24;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fde047;
 }
 
-/* Warning Box */
+/* ─── Warning / Setup Box ──────────────────────────────────── */
 .warningBox {
-  background: #fef3c7;
-  border: 2px solid var(--warning);
-  border-radius: var(--radius);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+  background: var(--warning-bg);
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: flex-start;
 }
 
 .warningIcon {
-  font-size: 2rem;
+  font-size: 1.5rem;
   flex-shrink: 0;
+  color: #d97706;
 }
 
 .warningContent h3 {
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: var(--font-md);
+  font-weight: 700;
   color: #92400e;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .warningContent p {
   color: #78350f;
-  margin-bottom: 1rem;
+  font-size: var(--font-xs);
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
 }
 
 .settingsButton {
   background: var(--warning);
   color: white;
   border: none;
-  padding: 0.625rem 1.25rem;
+  padding: 0.45rem 1rem;
   border-radius: var(--radius);
+  font-size: var(--font-xs);
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
@@ -121,45 +134,49 @@
   transform: translateY(-1px);
 }
 
-/* Withdrawal Card */
+/* ─── Withdrawal Card ──────────────────────────────────────── */
 .withdrawalCard {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
 .withdrawalCard h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: var(--font-lg);
+  font-weight: 700;
   color: var(--text-dark);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .form {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .formGroup {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .formGroup label {
   display: block;
+  font-size: var(--font-xs);
   font-weight: 600;
   color: var(--text-dark);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 .formGroup input {
   width: 100%;
-  padding: 0.875rem 1rem;
-  border: 2px solid var(--border-color);
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-color);
   border-radius: var(--radius);
-  font-size: 1.125rem;
+  font-size: var(--font-base);
   transition: var(--transition);
+  box-sizing: border-box;
 }
 
 .formGroup input:focus {
@@ -175,9 +192,9 @@
 
 .formGroup small {
   display: block;
-  margin-top: 0.5rem;
+  margin-top: 0.35rem;
   color: var(--text-light);
-  font-size: 0.875rem;
+  font-size: var(--font-2xs);
 }
 
 .submitButton {
@@ -185,9 +202,9 @@
   background: var(--primary);
   color: white;
   border: none;
-  padding: 1rem;
+  padding: 0.65rem 1.25rem;
   border-radius: var(--radius);
-  font-size: 1.125rem;
+  font-size: var(--font-base);
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
@@ -195,32 +212,32 @@
 
 .submitButton:hover:not(:disabled) {
   background: var(--primary-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
 .submitButton:disabled {
-  background: #9ca3af;
+  background: #cbd5e1;
   cursor: not-allowed;
   transform: none;
 }
 
 .infoMessage {
-  background: #dbeafe;
-  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
   border-radius: var(--radius);
-  padding: 1rem;
+  padding: 0.65rem 0.85rem;
   color: #1e40af;
-  font-size: 0.9rem;
-  margin-top: 1rem;
+  font-size: var(--font-xs);
+  margin-top: 0.75rem;
 }
 
 .processingNote {
   background: var(--bg-main);
   border-radius: var(--radius);
-  padding: 1rem;
-  margin-top: 1rem;
-  font-size: 0.9rem;
+  padding: 0.65rem 0.85rem;
+  margin-top: 0.75rem;
+  font-size: var(--font-xs);
   color: var(--text-light);
 }
 
@@ -228,51 +245,55 @@
   color: var(--text-dark);
 }
 
-/* History Section */
+/* ─── History / Sales Section ──────────────────────────────── */
 .historySection {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  padding: 2rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
 .historyHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .historyHeader h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: var(--font-lg);
+  font-weight: 700;
   color: var(--text-dark);
+  margin: 0;
 }
 
 .toggleButton {
   background: var(--bg-main);
   border: 1px solid var(--border-color);
-  padding: 0.5rem 1rem;
+  padding: 0.35rem 0.75rem;
   border-radius: var(--radius);
-  font-weight: 500;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--text-primary);
   cursor: pointer;
   transition: var(--transition);
 }
 
 .toggleButton:hover {
-  background: var(--border-color);
+  background: #e2e8f0;
 }
 
 .historyContent {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
 }
 
 .emptyState {
   text-align: center;
-  padding: 3rem;
+  padding: 2rem 1rem;
   color: var(--text-light);
+  font-size: var(--font-sm);
 }
 
 .historyTable {
@@ -286,26 +307,34 @@
 
 .historyTable th {
   background: var(--bg-main);
-  padding: 1rem;
+  padding: 0.65rem 0.85rem;
   text-align: left;
   font-weight: 600;
-  color: var(--text-dark);
-  border-bottom: 2px solid var(--border-color);
-}
-
-.historyTable td {
-  padding: 1rem;
+  color: var(--text-light);
+  font-size: var(--font-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   border-bottom: 1px solid var(--border-color);
 }
 
+.historyTable td {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--font-xs);
+  color: var(--text-dark);
+}
+
 .referenceId {
-  font-family: monospace;
-  font-size: 0.875rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: var(--font-2xs);
   color: var(--text-light);
+  background: var(--bg-muted);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
 }
 
 .amount {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-dark);
 }
 
@@ -315,54 +344,41 @@
 }
 
 .earning {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--success);
 }
 
 .statusBadge {
   display: inline-block;
-  padding: 0.375rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-2xs);
   font-weight: 600;
   text-transform: uppercase;
 }
 
 .statusPending {
-  background: #fef3c7;
-  color: #92400e;
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
 }
 
 .statusApproved {
-  background: #d1fae5;
-  color: #065f46;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 
 .statusRejected {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
-/* Responsive */
+/* ─── Responsive Media Queries ──────────────────────────────── */
 @media (max-width: 768px) {
-  .container {
-    padding: 1rem;
-  }
-
-  .header h2 {
-    font-size: 1.5rem;
-  }
-
   .balanceGrid {
     grid-template-columns: 1fr;
-  }
-
-  .balanceAmount {
-    font-size: 1.75rem;
-  }
-
-  .balanceValue {
-    font-size: 1.25rem;
   }
 
   .warningBox {
@@ -372,19 +388,15 @@
   .historyHeader {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 0.5rem;
   }
 
   .toggleButton {
     width: 100%;
   }
 
-  .historyTable {
-    font-size: 0.875rem;
-  }
-
   .historyTable th,
   .historyTable td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem 0.4rem;
   }
 }

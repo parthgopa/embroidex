@@ -1,0 +1,462 @@
+/* ==========================================================================
+   Sidebar Component Styles - Modern, Role-Based Dashboard Navigation
+   ========================================================================== */
+
+.sidebar {
+  width: 260px;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 2px 0 12px rgba(15, 23, 42, 0.03);
+}
+
+/* ─── Brand Header ──────────────────────────────────────────── */
+.brandHeader {
+  height: 64px;
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+
+.brandLink {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+}
+
+.brandLogo {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+}
+
+.brandTitle {
+  font-size: 1.1rem;
+  font-weight: 750;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.brandSubtitle {
+  font-size: 0.675rem;
+  font-weight: 600;
+  color: #6366f1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mobileCloseBtn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobileCloseBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* ─── User Mini Card ────────────────────────────────────────── */
+.userCard {
+  padding: 0.85rem 1.15rem;
+  margin: 0.85rem 1rem 0.25rem;
+  background: #f8fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.userAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 0.825rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+.userMeta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.userName {
+  font-size: 0.85rem;
+  font-weight: 650;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.sellerPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 0.05rem 0.45rem;
+  border-radius: 9999px;
+  width: fit-content;
+}
+
+.buyerPill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 0.05rem 0.45rem;
+  border-radius: 9999px;
+  width: fit-content;
+}
+
+/* ─── Navigation Scrollable Container ───────────────────────── */
+.navContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.navContainer::-webkit-scrollbar {
+  width: 4px;
+}
+
+.navContainer::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.navSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.5rem 0.25rem;
+}
+
+.sectionLabel {
+  font-size: 0.675rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0 0.5rem;
+}
+
+.sellerSectionBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #6366f1;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.navLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  color: #475569;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 550;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.navItem:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.navItemActive {
+  background: #eef2ff;
+  color: #4f46e5;
+  font-weight: 650;
+}
+
+.navItemActive .navIcon {
+  color: #4f46e5;
+}
+
+.navIcon {
+  color: #64748b;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.cartIconWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cartBadge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 1.5px solid #ffffff;
+}
+
+/* ─── Seller CTA Box (For Buyers) ───────────────────────────── */
+.sellerCtaBox {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  border: 1px solid #ddd6fe;
+  border-radius: 12px;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.sellerCtaIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #8b5cf6;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sellerCtaText h4 {
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin: 0 0 0.15rem 0;
+}
+
+.sellerCtaText p {
+  font-size: 0.725rem;
+  color: #5b21b6;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.sellerCtaBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #7c3aed;
+  color: #ffffff;
+  padding: 0.4rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.775rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.sellerCtaBtn:hover {
+  background: #6d28d9;
+  transform: translateY(-1px);
+}
+
+/* ─── Sidebar Footer ────────────────────────────────────────── */
+.sidebarFooter {
+  padding: 0.85rem 1rem;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.footerActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.footerItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  color: #475569;
+  text-decoration: none;
+  font-size: 0.825rem;
+  font-weight: 550;
+  transition: all 0.15s ease;
+}
+
+.footerItem:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.footerItemActive {
+  background: #eef2ff;
+  color: #4f46e5;
+  font-weight: 650;
+}
+
+.footerIcon {
+  color: #64748b;
+}
+
+.footerItemActive .footerIcon {
+  color: #4f46e5;
+}
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  color: #dc2626;
+  background: transparent;
+  border: none;
+  font-size: 0.825rem;
+  font-weight: 550;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.logoutBtn:hover {
+  background: #fef2f2;
+}
+
+/* Guest Actions */
+.guestAuthActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.loginBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.825rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.loginBtn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.signupBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem;
+  border-radius: 8px;
+  border: none;
+  background: #6366f1;
+  color: #ffffff;
+  font-size: 0.825rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
+}
+
+.signupBtn:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+}
+
+/* ─── Responsive Media Queries ──────────────────────────────── */
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .mobileCloseBtn {
+    display: flex;
+  }
+}

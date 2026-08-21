@@ -210,7 +210,7 @@ const MyPurchases = () => {
             </div>
             <div className={styles.statCard}>
               <span className={styles.statValue}>
-                ₹{purchases.reduce((sum, p) => sum + p.amount_paid, 0)}
+                ₹{Number(purchases.reduce((sum, p) => sum + (p.amount_paid || 0), 0)).toLocaleString("en-IN")}
               </span>
               <span className={styles.statLabel}>Total Spent</span>
             </div>

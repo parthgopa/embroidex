@@ -16,18 +16,24 @@ from routes.Homepage_routes import homepage_bp
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB max payload size
 
+# Enable CORS for all routes, supporting localhost, production, and ngrok tunnel origins
 CORS(app, resources={
     r"/*": {
-        "origins": [
-            "http://localhost:5173",
-            "https://embroidex.merishiksha.com",
-            "https://www.embroidex.merishiksha.com",
-        ],
+        "origins": "*",
         "supports_credentials": True,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-        "allow_headers": ["Content-Type", "Authorization"],
+        "allow_headers": ["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
     }
 })
+
+def is_allowed_origin(origin):
+    if not origin:
+        return False
+    if origin in ["http://localhost:5173", "http://127.0.0.1:5173", "https://embroidex.merishiksha.com", "https://www.embroidex.merishiksha.com"]:
+        return True
+    if "ngrok" in origin or "localhost" in origin or "127.0.0.1" in origin:
+        return True
+    return True
 
 # Explicit preflight handler for all routes
 @app.before_request
@@ -35,12 +41,9 @@ def handle_preflight():
     if request.method == "OPTIONS":
         origin = request.headers.get("Origin", "")
         response = make_response()
-        if origin in ["http://localhost:5173", "https://embroidex.merishiksha.com", "https://www.embroidex.merishiksha.com"]:
-            response.headers["Access-Control-Allow-Origin"] = origin
-        else:
-            response.headers["Access-Control-Allow-Origin"] = "https://embroidex.merishiksha.com"
+        response.headers["Access-Control-Allow-Origin"] = origin if origin else "*"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, ngrok-skip-browser-warning"
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Max-Age"] = "3600"
         response.status_code = 204
@@ -50,12 +53,9 @@ def handle_preflight():
 @app.after_request
 def add_cors_headers(response):
     origin = request.headers.get("Origin", "")
-    if origin in ["http://localhost:5173", "https://embroidex.merishiksha.com", "https://www.embroidex.merishiksha.com"]:
-        response.headers["Access-Control-Allow-Origin"] = origin
-    else:
-        response.headers["Access-Control-Allow-Origin"] = "https://embroidex.merishiksha.com"
+    response.headers["Access-Control-Allow-Origin"] = origin if origin else "*"
     response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, ngrok-skip-browser-warning"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
     return response
 

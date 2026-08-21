@@ -1,25 +1,137 @@
 from flask import Blueprint, request, jsonify
-from config import USERS_COLLECTION, ADMIN_KEY, PURCHASES_COLLECTION, DESIGNS_COLLECTION, SETTINGS_COLLECTION
+import random
+import datetime
+import re
+from config import USERS_COLLECTION, ADMIN_KEY, PURCHASES_COLLECTION, DESIGNS_COLLECTION, SETTINGS_COLLECTION, SIGNUP_OTPS_COLLECTION
 from utils.jwt_utils import encode_token, decode_token, generate_token
 from utils.hash_utils import hash_password, verify_password
+from utils.email_utils import send_otp_email
 import os
 
 auth_bp = Blueprint("auth", __name__)
 
 
+@auth_bp.route("/send-signup-otp", methods=["POST"])
+def send_signup_otp():
+    data = request.json or {}
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+
+    if not name or not email or not password:
+        return jsonify({"error": "Full name, email, and password are required"}), 400
+
+    # Basic email validation
+    email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+    if not re.match(email_regex, email):
+        return jsonify({"error": "Please enter a valid email address"}), 400
+
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
+
+    # Check if user already exists
+    if USERS_COLLECTION.find_one({"email": email}):
+        return jsonify({"error": "An account with this email already exists. Please login."}), 400
+
+    # Generate 6-digit OTP
+    otp_code = f"{random.randint(100000, 999999)}"
+    now = datetime.datetime.utcnow()
+    expires_at = now + datetime.timedelta(minutes=10)
+
+    # Save OTP to database
+    SIGNUP_OTPS_COLLECTION.update_one(
+        {"email": email},
+        {
+            "$set": {
+                "otp": otp_code,
+                "created_at": now,
+                "expires_at": expires_at
+            }
+        },
+        upsert=True
+    )
+
+    # Send email
+    success, msg = send_otp_email(email, otp_code, user_name=name)
+    if not success:
+        return jsonify({"error": f"Failed to send OTP email: {msg}"}), 500
+
+    return jsonify({"message": f"Verification code sent to {email}"}), 200
+
+
+@auth_bp.route("/verify-signup-otp", methods=["POST"])
+def verify_signup_otp():
+    data = request.json or {}
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+    otp_entered = data.get("otp", "").strip()
+
+    if not name or not email or not password or not otp_entered:
+        return jsonify({"error": "All fields including OTP are required"}), 400
+
+    # Find OTP in database
+    otp_record = SIGNUP_OTPS_COLLECTION.find_one({"email": email})
+    if not otp_record:
+        return jsonify({"error": "No OTP found for this email. Please request a new code."}), 400
+
+    now = datetime.datetime.utcnow()
+    if otp_record.get("expires_at") and otp_record["expires_at"] < now:
+        return jsonify({"error": "OTP has expired. Please request a new code."}), 400
+
+    if str(otp_record.get("otp")).strip() != str(otp_entered).strip():
+        return jsonify({"error": "Invalid verification code. Please check and try again."}), 400
+
+    # Check if user already exists
+    if USERS_COLLECTION.find_one({"email": email}):
+        return jsonify({"error": "User already exists. Please login."}), 400
+
+    # Create verified user
+    user = {
+        "name": name,
+        "email": email,
+        "password": hash_password(password),
+        "role": "buyer",
+        "is_seller": False,
+        "is_verified": True,
+        "created_at": now
+    }
+    
+    result = USERS_COLLECTION.insert_one(user)
+
+    # Delete OTP record after successful registration
+    SIGNUP_OTPS_COLLECTION.delete_one({"email": email})
+
+    # Generate token so user is automatically logged in
+    token = generate_token(result.inserted_id)
+
+    return jsonify({
+        "message": "Account created successfully!",
+        "token": token,
+        "user": {
+            "name": name,
+            "email": email,
+            "role": "buyer",
+            "is_seller": False
+        }
+    }), 201
+
+
 @auth_bp.route("/signup", methods=["POST"])
 def signup():
     data = request.json
+    email = data.get("email", "").strip().lower()
 
-    if USERS_COLLECTION.find_one({"email": data["email"]}):
+    if USERS_COLLECTION.find_one({"email": email}):
         return jsonify({"error": "User already exists"}), 400
 
     user = {
         "name": data["name"],
-        "email": data["email"],
+        "email": email,
         "password": hash_password(data["password"]),
         "role": "buyer",
-        "is_seller": False
+        "is_seller": False,
+        "created_at": datetime.datetime.utcnow()
     }
     
     USERS_COLLECTION.insert_one(user)

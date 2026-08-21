@@ -1,61 +1,26 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { MdPerson, MdMenu, MdClose, MdShoppingCart } from "react-icons/md";
-import API from "../services/api";
+import { useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { MdMenu, MdClose, MdDashboard, MdLogin, MdPersonAdd } from "react-icons/md";
+import { useAuth } from "../context/authContext";
 import BecomeSellerModal from "./BecomeSellerModal";
-import { getCartCount } from "../utils/cartUtils";
 import styles from "./Navbar.module.css";
 
 const Navbar = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isSeller, setIsSeller] = useState(false);
+  const { isSeller, isAuthenticated, logout } = useAuth();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [userName, setUserName] = useState("");
-  const [cartCount, setCartCount] = useState(0);
   const navigate = useNavigate();
 
-  const updateCartBadge = () => {
-    const userId = localStorage.getItem("user_id");
-    setCartCount(getCartCount(userId));
-  };
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setIsLoggedIn(true);
-      fetchUserInfo(token);
+  const handleDashboardClick = () => {
+    setShowMobileMenu(false);
+    if (isSeller) {
+      navigate("/seller/my-designs");
     } else {
-      setIsLoggedIn(false);
-      setIsSeller(false);
-    }
-    updateCartBadge();
-
-    window.addEventListener("embroidex_cart_updated", updateCartBadge);
-    return () => {
-      window.removeEventListener("embroidex_cart_updated", updateCartBadge);
-    };
-  }, []);
-
-  const fetchUserInfo = async (token) => {
-    try {
-      const res = await API.get("/auth/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      // console.log(res);
-      setIsSeller(res.data.is_seller);
-      setUserName(res.data.name || "User");
-    } catch (err) {
-      console.error("Failed to fetch user info", err);
+      navigate("/profile");
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsLoggedIn(false);
-    setIsSeller(false);
-    setUserName("");
+    logout();
     setShowMobileMenu(false);
     navigate("/");
   };
@@ -63,103 +28,79 @@ const Navbar = () => {
   return (
     <>
       {/* Become Seller Modal - Shows once for first-time buyers */}
-      <BecomeSellerModal isLoggedIn={isLoggedIn} isSeller={isSeller} />
+      <BecomeSellerModal isLoggedIn={isAuthenticated} isSeller={isSeller} />
 
       <nav className={`navbar-custom ${styles.nav}`}>
         <div className={`container ${styles.navContainer}`}>
-          {/* Logo Image below*/}
-
+          {/* Logo */}
           <Link to="/" className={styles.logo}>
             <img src="/Embroidex.png" alt="Embroidex" className={styles.logoImage} />
-            Embroidex
+            <span>Embroidex</span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className={styles.navLinks}>
-            <Link to="/" className="nav-link-custom">Home</Link>
-            <Link to="/explore" className="nav-link-custom">Buy Design</Link>
+            <NavLink 
+              to="/" 
+              end
+              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
+            >
+              Home
+            </NavLink>
 
-            <Link to="/cart" className={styles.cartNavLink}>
-              <MdShoppingCart className={styles.cartIconNav} />
-              <span>Cart</span>
-              {cartCount > 0 && <span className={styles.navCartBadge}>{cartCount}</span>}
-            </Link>
+            <NavLink 
+              to="/explore" 
+              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
+            >
+              Buy Design
+            </NavLink>
 
-            {!isLoggedIn ? (
-              <>
-                <Link to="/login" className="nav-link-custom">Login</Link>
-                <button onClick={() => navigate("/signup")} className="btn-primary-custom">
-                  Get Started
-                </button>
-              </>
+            {isAuthenticated ? (
+              <button
+                type="button"
+                onClick={handleDashboardClick}
+                className={styles.dashboardBtn}
+              >
+                <MdDashboard size={18} />
+                <span>Dashboard</span>
+              </button>
             ) : (
-              <>
-                {/* My Purchases - Visible for all logged-in users */}
-                <Link to="/my-purchases" className="nav-link-custom">My Purchases</Link>
-
-                {/* Seller Tabs - Visible for sellers */}
-                {isSeller && (
-                  <>
-                    <Link to="/seller/my-designs" className="nav-link-custom">My Designs</Link>
-                    <Link to="/seller/upload" className="nav-link-custom">Upload Design</Link>
-                    <Link to="/seller/earnings" className="nav-link-custom">My Earnings</Link>
-                  </>
-                )}
-
-                {/* Become a Seller Button - Only for buyers */}
-                {!isSeller && (
-                  <Link to="/seller/register" className={styles.becomeSellerBtn}>
-                    Become a Seller
-                  </Link>
-                )}
-
-                {/* Profile Dropdown - hover-based */}
-                <div className={styles.profileDropdown}>
-                  <button className={styles.profileBtn}>
-                    <MdPerson size={18} />
-                    <span>{userName}</span>
-                  </button>
-
-                  <div className={styles.dropdownMenu}>
-                    <Link
-                      to="/profile"
-                      className={styles.dropdownItem}
-                    >
-                      <MdPerson size={16} /> Profile
-                    </Link>
-
-                    <div className={styles.divider}></div>
-
-                    <button
-                      className={`${styles.dropdownItem} ${styles.logoutItem}`}
-                      onClick={handleLogout}
-                    >
-                      Logout
-                    </button>
-                  </div>
-                </div>
-              </>
+              <div className={styles.authGroup}>
+                <Link to="/login" className={styles.loginLink}>
+                  Login
+                </Link>
+                <Link to="/signup" className={styles.signupBtn}>
+                  Sign Up
+                </Link>
+              </div>
             )}
           </div>
 
           {/* Mobile Menu Toggle */}
           <button
+            type="button"
             className={styles.mobileToggle}
             onClick={() => setShowMobileMenu(!showMobileMenu)}
+            aria-label="Toggle navigation menu"
           >
             {showMobileMenu ? <MdClose size={24} /> : <MdMenu size={24} />}
           </button>
         </div>
       </nav>
 
-      {/* Mobile Menu - Right Side Drawer (OUTSIDE nav to avoid stacking context issues) */}
+      {/* Mobile Menu Drawer */}
       {showMobileMenu && (
         <>
           <div className={styles.mobileOverlay} onClick={() => setShowMobileMenu(false)}></div>
           <div className={styles.mobileMenu}>
             <div className={styles.mobileMenuHeader}>
               <span className={styles.mobileMenuTitle}>Menu</span>
-              <button className={styles.mobileCloseBtn} onClick={() => setShowMobileMenu(false)}>
+              <button 
+                type="button" 
+                className={styles.mobileCloseBtn} 
+                onClick={() => setShowMobileMenu(false)}
+                aria-label="Close menu"
+              >
                 <MdClose size={24} />
               </button>
             </div>
@@ -172,52 +113,43 @@ const Navbar = () => {
                 Buy Design
               </Link>
 
-              {!isLoggedIn ? (
+              {isAuthenticated ? (
                 <>
-                  <div className={styles.mobileDivider}></div>
-                  <Link to="/login" className={styles.mobileMenuItem} onClick={() => setShowMobileMenu(false)}>
-                    Login
-                  </Link>
-                  <Link to="/signup" className={styles.mobileMenuItem} onClick={() => setShowMobileMenu(false)}>
-                    Sign Up
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <div className={styles.mobileDivider}></div>
-                  <Link to="/profile" className={styles.mobileMenuItem} onClick={() => setShowMobileMenu(false)}>
-                    Profile & Settings
-                  </Link>
-                  <Link to="/my-purchases" className={styles.mobileMenuItem} onClick={() => setShowMobileMenu(false)}>
-                    My Purchases
-                  </Link>
-
-                  {isSeller && (
-                    <>
-                      <div className={styles.mobileDivider}></div>
-                      <Link to="/seller/my-designs" className={styles.mobileMenuItem} onClick={() => setShowMobileMenu(false)}>
-                        My Designs
-                      </Link>
-                      <Link to="/seller/upload" className={styles.mobileMenuItem} onClick={() => setShowMobileMenu(false)}>
-                        Upload Design
-                      </Link>
-                      <Link to="/seller/earnings" className={styles.mobileMenuItem} onClick={() => setShowMobileMenu(false)}>
-                        My Earnings
-                      </Link>
-                    </>
-                  )}
-
-                  {!isSeller && (
-                    <Link to="/seller/register" className={styles.mobileMenuItem} onClick={() => setShowMobileMenu(false)}>
-                      Become a Seller
-                    </Link>
-                  )}
-
-                  <div className={styles.mobileDivider}></div>
-                  <button className={`${styles.mobileMenuItem} ${styles.logoutBtn}`} onClick={handleLogout}>
-                    Logout
+                  <button 
+                    type="button" 
+                    className={`${styles.mobileMenuItem} ${styles.mobileDashboardBtn}`} 
+                    onClick={handleDashboardClick}
+                  >
+                    <MdDashboard size={18} />
+                    <span>Dashboard</span>
+                  </button>
+                  <button 
+                    type="button" 
+                    className={`${styles.mobileMenuItem} ${styles.mobileLogoutBtn}`} 
+                    onClick={handleLogout}
+                  >
+                    <span>Sign Out</span>
                   </button>
                 </>
+              ) : (
+                <div className={styles.mobileAuthGroup}>
+                  <Link 
+                    to="/login" 
+                    className={`${styles.mobileMenuItem} ${styles.mobileLoginBtn}`}
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <MdLogin size={18} />
+                    <span>Login</span>
+                  </Link>
+                  <Link 
+                    to="/signup" 
+                    className={`${styles.mobileMenuItem} ${styles.mobileSignupBtn}`}
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <MdPersonAdd size={18} />
+                    <span>Sign Up</span>
+                  </Link>
+                </div>
               )}
             </div>
           </div>

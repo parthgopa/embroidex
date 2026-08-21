@@ -6,7 +6,6 @@ import {
   MdArrowBack, 
   MdCheckCircle, 
   MdShield, 
-  MdVerified, 
   MdFormatListNumbered, 
   MdGridOn,
   MdLayers
@@ -75,13 +74,13 @@ const Cart = () => {
               Shopping Cart
             </h1>
             <p className={styles.pageSubtitle}>
-              {cartItems.length} design{cartItems.length !== 1 ? "s" : ""} selected
+              {cartItems.length} design{cartItems.length !== 1 ? "s" : ""} in your bag
             </p>
           </div>
 
           {cartItems.length > 0 && (
             <button className={styles.clearBtn} onClick={handleClear}>
-              <MdDeleteOutline /> Clear Cart
+              <MdDeleteOutline size={16} /> Clear Cart
             </button>
           )}
         </div>
@@ -125,34 +124,34 @@ const Cart = () => {
 
                     <div className={styles.specBadgesRow}>
                       <span className={styles.specPill}>
-                        <MdFormatListNumbered /> {item.needles} Needle{item.needles !== 1 ? "s" : ""}
+                        <MdFormatListNumbered size={13} /> {item.needles} Needle{item.needles !== 1 ? "s" : ""}
                       </span>
                       <span className={styles.specPillFormat}>
-                        <MdLayers /> {(item.file_format || "EMB").toUpperCase()}
+                        <MdLayers size={13} /> {(item.file_format || "EMB").toUpperCase()}
                       </span>
                       {item.total_stitch_count > 0 && (
                         <span className={styles.specPillStitches}>
-                          <MdGridOn /> {item.total_stitch_count.toLocaleString()} Stitches
+                          <MdGridOn size={13} /> {Number(item.total_stitch_count).toLocaleString("en-IN")} Stitches
                         </span>
                       )}
                     </div>
                   </div>
 
                   <div className={styles.itemPriceCol}>
-                    <div className={styles.priceText}>₹{item.price}</div>
+                    <div className={styles.priceText}>₹{Number(item.price || 0).toLocaleString("en-IN")}</div>
                     <button
                       className={styles.removeBtn}
                       onClick={() => handleRemove(item._id)}
                       title="Remove design"
                     >
-                      <MdDeleteOutline /> Remove
+                      <MdDeleteOutline size={15} /> Remove
                     </button>
                   </div>
                 </div>
               ))}
 
               <Link to="/explore" className={styles.continueShoppingLink}>
-                <MdArrowBack /> Continue Shopping for Designs
+                <MdArrowBack size={16} /> Continue Shopping for Designs
               </Link>
             </div>
 
@@ -162,12 +161,12 @@ const Cart = () => {
                 <h3 className={styles.summaryTitle}>Order Summary</h3>
 
                 <div className={styles.summaryRow}>
-                  <span>Subtotal ({cartItems.length} items)</span>
-                  <strong>₹{cartTotal.toLocaleString()}</strong>
+                  <span>Subtotal ({cartItems.length} item{cartItems.length !== 1 ? "s" : ""})</span>
+                  <strong>₹{Number(cartTotal).toLocaleString("en-IN")}</strong>
                 </div>
 
                 <div className={styles.summaryRow}>
-                  <span>Convenience Fee</span>
+                  <span>Platform Fee</span>
                   <span className={styles.freeBadge}>FREE</span>
                 </div>
 
@@ -175,24 +174,24 @@ const Cart = () => {
 
                 <div className={`${styles.summaryRow} ${styles.totalRow}`}>
                   <span>Total Amount</span>
-                  <span className={styles.totalPrice}>₹{cartTotal.toLocaleString()}</span>
+                  <span className={styles.totalPrice}>₹{Number(cartTotal).toLocaleString("en-IN")}</span>
                 </div>
 
                 <button 
                   className={`btn-primary-custom ${styles.checkoutBtn}`}
                   onClick={handleCheckout}
                 >
-                  <MdCheckCircle /> Proceed to Checkout
+                  <MdCheckCircle size={17} /> Proceed to Checkout
                 </button>
 
                 <div className={styles.guaranteeBox}>
                   <div className={styles.guaranteeItem}>
-                    <MdCheckCircle className={styles.gIcon} />
+                    <MdCheckCircle className={styles.gIcon} size={15} />
                     <span>Instant EMB & Machine Files Download</span>
                   </div>
                   <div className={styles.guaranteeItem}>
-                    <MdShield className={styles.gIcon} />
-                    <span>100% Safe & Secure Payment</span>
+                    <MdShield className={styles.gIcon} size={15} />
+                    <span>100% Safe & Encrypted Payment</span>
                   </div>
                 </div>
               </div>

@@ -67,8 +67,13 @@
   flex-direction: column;
 }
 
-.ctaCard:nth-child(1) { animation-delay: 0.1s; }
-.ctaCard:nth-child(2) { animation-delay: 0.2s; }
+.ctaCard:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.ctaCard:nth-child(2) {
+  animation-delay: 0.2s;
+}
 
 .ctaCard::before {
   content: '';
@@ -211,40 +216,73 @@
   line-height: 1.6;
 }
 
-.faqGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 32px;
-  margin-bottom: 48px;
+.faqVerticalList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 860px;
+  margin: 0 auto 48px auto;
 }
 
-.faqItem {
-  background: white;
-  border: 2px solid var(--border-color);
-  border-radius: 16px;
-  padding: 28px;
-  transition: all 0.3s ease;
+.faqItemAccordion {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.25s ease-in-out;
 }
 
-.faqItem:hover {
+.faqItemAccordion:hover {
   border-color: var(--primary);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.08);
 }
 
-.faqQuestion {
-  font-size: 18px;
+.faqItemOpen {
+  border-color: var(--primary);
+  box-shadow: 0 4px 18px rgba(79, 70, 229, 0.1);
+}
+
+.faqQuestionBtn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+
+.faqQuestionText {
+  font-size: 17px;
   font-weight: 700;
   color: var(--text-dark);
-  margin: 0 0 12px 0;
   line-height: 1.4;
 }
 
-.faqAnswer {
+.faqChevron {
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+.faqAnswerBody {
+  padding: 0 24px 20px 24px;
+  border-top: 1px solid #f1f5f9;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.faqAnswerText {
   font-size: 15px;
   color: var(--text-light);
   line-height: 1.7;
-  margin: 0;
+  margin: 12px 0 0 0;
 }
 
 .faqCta {
@@ -276,6 +314,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -382,6 +421,7 @@
   .ctaSection {
     padding: 40px 15px;
   }
+
   .ctaBadge {
     font-size: 12px;
     padding: 6px 16px;

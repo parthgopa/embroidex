@@ -4,13 +4,11 @@ import {
   MdArrowBack, 
   MdCheckCircle, 
   MdError,
-  MdShoppingCart,
-  MdSecurity,
-  MdVerified,
-  MdFileDownload,
-  MdHighQuality,
-  MdFormatListNumbered,
-  MdLayers
+  MdShoppingCart, 
+  MdSecurity, 
+  MdVerified, 
+  MdFileDownload, 
+  MdFormatListNumbered
 } from "react-icons/md";
 import API from "../services/api";
 import { getCartItems, getCartTotal, clearCart } from "../utils/cartUtils";
@@ -99,54 +97,57 @@ const Purchase = () => {
         payload = { design_id: designId };
       }
 
-      const orderRes = await API.post("/payment/create-order", payload, {
-        headers: { Authorization: `Bearer ${token}` },
+      // Step 1: Create Order
+      const endpoint = isCartCheckout ? "/payment/cart/create-order" : "/payment/create-order";
+      const orderRes = await API.post(endpoint, payload, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
-      const { order_id, amount, currency } = orderRes.data;
+      const { order_id, amount, currency, key_id } = orderRes.data;
 
+      // Step 2: Open Razorpay Checkout
       const options = {
-        key: "rzp_test_STud3pKjWPTcMu",
+        key: key_id,
         amount: amount,
         currency: currency,
         name: "Embroidex",
         description: isCartCheckout 
-          ? `Purchase ${cartItems.length} Embroidery Design(s)`
-          : design?.title,
+          ? `Purchase of ${cartItems.length} embroidery design${cartItems.length > 1 ? 's' : ''}`
+          : `Purchase of ${design?.title || "Design"}`,
         order_id: order_id,
         handler: async function (response) {
           try {
-            const verifyRes = await API.post(
-              "/payment/verify",
-              {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              },
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
+            // Step 3: Verify Payment
+            const verifyEndpoint = isCartCheckout ? "/payment/cart/verify" : "/payment/verify";
+            const verifyPayload = {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              ...(isCartCheckout ? { design_ids: cartItems.map((item) => item._id) } : { design_id: designId })
+            };
+
+            const verifyRes = await API.post(verifyEndpoint, verifyPayload, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
 
             if (verifyRes.data.success) {
+              setPaymentStatus("success");
+              setReceiptNumber(verifyRes.data.receipt || `RCPT-${order_id.slice(-8).toUpperCase()}`);
+              
               if (isCartCheckout) {
                 clearCart(userId);
               }
-              if (verifyRes.data.receipt) {
-                setReceiptNumber(verifyRes.data.receipt);
-              }
-              setPaymentStatus("success");
+
               setTimeout(() => {
                 navigate("/my-purchases");
-              }, 4000);
+              }, 3000);
+            } else {
+              setPaymentStatus("failed");
             }
           } catch (err) {
             console.error("Payment verification failed", err);
             setPaymentStatus("failed");
           }
-        },
-        prefill: {
-          name: "",
-          email: "",
-          contact: ""
         },
         theme: {
           color: "#4f46e5"
@@ -239,11 +240,11 @@ const Purchase = () => {
                   className={styles.backBtn} 
                   onClick={() => navigate(isCartCheckout ? "/cart" : `/design/${designId}`)}
                 >
-                  <MdArrowBack /> {isCartCheckout ? "Back to Cart" : "Back to Design"}
+                  <MdArrowBack size={15} /> {isCartCheckout ? "Back to Cart" : "Back to Design"}
                 </button>
                 <h1 className={styles.title}>Checkout & Payment</h1>
               </div>
-              <span className={styles.secureTag}><MdSecurity /> 256-bit Encrypted</span>
+              <span className={styles.secureTag}><MdSecurity size={14} /> 256-bit Encrypted</span>
             </div>
 
             <div className={styles.contentGrid}>
@@ -261,13 +262,15 @@ const Purchase = () => {
                         />
                         <div className={styles.cartItemMeta}>
                           <h4>{item.title}</h4>
-                          <span className={styles.catBadge}>{item.category}</span>
-                          <span className={styles.specPill}>
-                            <MdFormatListNumbered /> {item.needles || 1} Needles • {(item.file_format || "EMB").toUpperCase()}
-                          </span>
+                          <div className={styles.cartMetaRow}>
+                            <span className={styles.catBadge}>{item.category}</span>
+                            <span className={styles.specPill}>
+                              <MdFormatListNumbered size={12} /> {item.needles || 1} Needles • {(item.file_format || "EMB").toUpperCase()}
+                            </span>
+                          </div>
                         </div>
                         <div className={styles.cartItemPrice}>
-                          ₹{item.price}
+                          ₹{Number(item.price || 0).toLocaleString("en-IN")}
                         </div>
                       </div>
                     ))}
@@ -289,19 +292,19 @@ const Purchase = () => {
                         {design.subcategory && <span className={styles.subcatBadge}>• {design.subcategory}</span>}
                       </div>
                       <p className={styles.filesCount}>
-                        <MdFileDownload /> {design.file_names?.length || 0} EMB Embroidery Files
+                        <MdFileDownload size={15} /> {design.file_names?.length || 0} EMB Embroidery Files Included
                       </p>
                     </div>
                   </div>
                 )}
 
                 <div className={styles.benefits}>
-                  <h4><MdVerified className={styles.benefitHeaderIcon} /> What's included in your purchase:</h4>
+                  <h4><MdVerified className={styles.benefitHeaderIcon} size={16} /> What's included in your purchase:</h4>
                   <ul>
-                    <li><MdCheckCircle className={styles.checkIcon} /> Instant ZIP download after payment</li>
-                    <li><MdCheckCircle className={styles.checkIcon} /> All production-ready machine EMB files</li>
-                    <li><MdCheckCircle className={styles.checkIcon} /> Full commercial use authorization</li>
-                    <li><MdCheckCircle className={styles.checkIcon} /> Lifetime download access from your account</li>
+                    <li><MdCheckCircle className={styles.checkIcon} size={15} /> Instant ZIP download after payment</li>
+                    <li><MdCheckCircle className={styles.checkIcon} size={15} /> All production-ready machine EMB files</li>
+                    <li><MdCheckCircle className={styles.checkIcon} size={15} /> Full commercial use authorization</li>
+                    <li><MdCheckCircle className={styles.checkIcon} size={15} /> Lifetime download access from your account</li>
                   </ul>
                 </div>
               </div>
@@ -312,21 +315,21 @@ const Purchase = () => {
                   <h3>Order Summary</h3>
                   <div className={styles.priceRow}>
                     <span>Subtotal ({isCartCheckout ? cartItems.length : 1} item{isCartCheckout && cartItems.length !== 1 ? "s" : ""})</span>
-                    <span>₹{totalPrice.toLocaleString()}</span>
+                    <strong>₹{Number(totalPrice).toLocaleString("en-IN")}</strong>
                   </div>
                   <div className={styles.priceRow}>
-                    <span>Platform Convenience Fee</span>
+                    <span>Platform Fee</span>
                     <span className={styles.freeTag}>FREE</span>
                   </div>
                   <div className={styles.divider}></div>
                   <div className={`${styles.priceRow} ${styles.totalRow}`}>
                     <span>Total Amount</span>
-                    <span className={styles.totalPrice}>₹{totalPrice.toLocaleString()}</span>
+                    <span className={styles.totalPrice}>₹{Number(totalPrice).toLocaleString("en-IN")}</span>
                   </div>
                 </div>
 
                 <div className={styles.securityBadgeBox}>
-                  <MdSecurity className={styles.securityIcon} />
+                  <MdSecurity className={styles.securityIcon} size={22} />
                   <div>
                     <strong>100% Guaranteed Safe Checkout</strong>
                     <p>Secured by Razorpay • UPI, Cards, NetBanking, Wallets</p>
@@ -345,8 +348,8 @@ const Purchase = () => {
                     </>
                   ) : (
                     <>
-                      <MdShoppingCart />
-                      Pay ₹{totalPrice.toLocaleString()} Now
+                      <MdShoppingCart size={17} />
+                      Pay ₹{Number(totalPrice).toLocaleString("en-IN")} Now
                     </>
                   )}
                 </button>
@@ -355,23 +358,6 @@ const Purchase = () => {
           </div>
         )}
       </div>
-
-      {/* Sticky Mobile Bottom Pay Bar (Mobile Only) */}
-      {!paymentStatus && (
-        <div className={styles.stickyMobilePayBar}>
-          <div className={styles.stickyMobileInfo}>
-            <span className={styles.stickyLabel}>Total Amount</span>
-            <span className={styles.stickyPrice}>₹{totalPrice.toLocaleString()}</span>
-          </div>
-          <button
-            className={`btn-primary-custom ${styles.stickyPayBtn}`}
-            onClick={handlePayment}
-            disabled={processing}
-          >
-            {processing ? "Processing..." : `Pay ₹${totalPrice.toLocaleString()}`}
-          </button>
-        </div>
-      )}
     </div>
   );
 };

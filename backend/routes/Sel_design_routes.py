@@ -531,31 +531,21 @@ def update_design(design_id):
     
     if request.is_json:
         data = request.json or {}
-        if "title" in data:
-            update_data["title"] = data["title"]
-        if "description" in data:
-            update_data["description"] = data["description"]
-        if "price" in data:
+        for field in ["title", "description", "category", "subcategory", "needles", "file_format", "title_original", "title_ai", "title_source", "description_original", "description_ai", "description_source"]:
+            if field in data:
+                update_data[field] = data[field]
+        if "price" in data and data["price"]:
             update_data["price"] = float(data["price"])
-        if "category" in data:
-            update_data["category"] = data["category"]
-        if "subcategory" in data:
-            update_data["subcategory"] = data["subcategory"]
         if "existing_additional_images" in data:
             update_data["additional_images"] = data["existing_additional_images"]
     else:
         # Multipart form data
         data = request.form
-        if "title" in data:
-            update_data["title"] = data["title"]
-        if "description" in data:
-            update_data["description"] = data["description"]
-        if "price" in data:
+        for field in ["title", "description", "category", "subcategory", "needles", "file_format", "title_original", "title_ai", "title_source", "description_original", "description_ai", "description_source"]:
+            if field in data:
+                update_data[field] = data[field]
+        if "price" in data and data["price"]:
             update_data["price"] = float(data["price"])
-        if "category" in data:
-            update_data["category"] = data["category"]
-        if "subcategory" in data:
-            update_data["subcategory"] = data["subcategory"]
             
         # Handle kept additional images by index list
         existing_imgs = None
