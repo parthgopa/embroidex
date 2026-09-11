@@ -35,7 +35,11 @@ const Navbar = () => {
           {/* Logo */}
           <Link to="/" className={styles.logo}>
             <img src="/Embroidex.png" alt="Embroidex" className={styles.logoImage} />
-            <span>Embroidex</span>
+            <div className={styles.brandWrapper}>
+              <span className={styles.brandName}>
+                Embroid<span className={styles.brandAccent}>ex</span>
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
@@ -55,14 +59,23 @@ const Navbar = () => {
               Buy Design
             </NavLink>
 
+            {!isSeller && (
+              <NavLink 
+                to="/seller/register" 
+                className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
+              >
+                Start Selling
+              </NavLink>
+            )}
+
             {isAuthenticated ? (
               <button
                 type="button"
                 onClick={handleDashboardClick}
                 className={styles.dashboardBtn}
               >
-                <MdDashboard size={18} />
-                <span>Dashboard</span>
+                <MdDashboard size={20} />
+                <span>My Account</span>
               </button>
             ) : (
               <div className={styles.authGroup}>
@@ -83,7 +96,7 @@ const Navbar = () => {
             onClick={() => setShowMobileMenu(!showMobileMenu)}
             aria-label="Toggle navigation menu"
           >
-            {showMobileMenu ? <MdClose size={24} /> : <MdMenu size={24} />}
+            {showMobileMenu ? <MdClose size={26} /> : <MdMenu size={26} />}
           </button>
         </div>
       </nav>
@@ -112,6 +125,11 @@ const Navbar = () => {
               <Link to="/explore" className={styles.mobileMenuItem} onClick={() => setShowMobileMenu(false)}>
                 Buy Design
               </Link>
+              {!isSeller && (
+                <Link to="/seller/register" className={styles.mobileMenuItem} onClick={() => setShowMobileMenu(false)}>
+                  Start Selling
+                </Link>
+              )}
 
               {isAuthenticated ? (
                 <>
@@ -121,7 +139,7 @@ const Navbar = () => {
                     onClick={handleDashboardClick}
                   >
                     <MdDashboard size={18} />
-                    <span>Dashboard</span>
+                    <span>My Account</span>
                   </button>
                   <button 
                     type="button" 

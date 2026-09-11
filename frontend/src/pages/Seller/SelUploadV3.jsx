@@ -14,6 +14,8 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css";
 import {
   MdCheckCircle,
   MdUploadFile,
@@ -34,6 +36,28 @@ import {
 } from "react-icons/md";
 import API from "../../services/api";
 import styles from "./SelUploadV3.module.css";
+
+// Rich text editor toolbar modules & formats
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ color: [] }, { background: [] }],
+    [{ list: "ordered" }, { list: "bullet" }],
+    [{ align: [] }],
+    ["link", "clean"]
+  ]
+};
+
+const quillFormats = [
+  "header",
+  "bold", "italic", "underline", "strike",
+  "color", "background",
+  "list",
+  "align",
+  "link",
+  "clean"
+];
 
 // Available file formats in UPPERCASE
 const FILE_FORMAT_OPTIONS = [
@@ -73,69 +97,38 @@ const DESIGN_AREA_OPTIONS = [
   "600 mm"
 ];
 
-// Brief, simple English guide sections
-const GUIDE_SECTIONS = [
+// Simple, easy-to-understand upload instructions for sellers
+const UPLOAD_INSTRUCTIONS = [
   {
-    id: "images",
-    stepNum: "•",
-    title: "Original & Design Photos",
-    icon: MdPhotoLibrary,
-    description: "Upload clear photos of your embroidery design.",
-    details: [
-      {
-        subtitle: "Original Photo (Main)",
-        points: [
-          "The original photo is your main cover photo.",
-          "You can change the front photo anytime."
-        ]
-      },
-      {
-        subtitle: "Design Photos (Image 1 to 5)",
-        points: [
-          "Upload up to 5 extra design photos.",
-          "Show close-up stitches, fabric, and thread work."
-        ]
-      }
+    title: "1. Photos (Original & Design)",
+    points: [
+      "Upload 1 clear front photo of your embroidery work (Max 10MB).",
+      "You can add up to 5 extra photos showing close stitches and work.",
+      "Clear, real photos help buyers choose and buy your design."
     ]
   },
   {
-    id: "fileUpload",
-    stepNum: "•",
-    title: "File Format & Upload",
-    icon: MdUploadFile,
-    description: "Select file format and upload your design file.",
-    details: [
-      {
-        subtitle: "File Format & File",
-        points: [
-          "Select format: .DST, .PES, .EMB, .JEF, etc.",
-          "Upload .ZIP or single design file (Max 20 MB)."
-        ]
-      }
+    title: "2. Design File & Format",
+    points: [
+      "Select your file format (such as .EMB, .DST, .PES, etc.).",
+      "Upload a single design file or all files in one .ZIP folder (Max 20MB).",
+      "Make sure files open properly and are not damaged."
     ]
   },
   {
-    id: "details",
-    stepNum: "•",
-    title: "Design Details & Pricing",
-    icon: MdCategory,
-    description: "Type your design details, category, and needle count.",
-    details: [
-      {
-        subtitle: "Name & Description",
-        points: [
-          "Type a clear design name (e.g. Saree Pallu Floral Design).",
-          "Add helpful details, dimensions, and stitch notes."
-        ]
-      },
-      {
-        subtitle: "Category & Needles",
-        points: [
-          "Select category and subcategory.",
-          "Choose number of needles (1 to 15).",
-          "Set selling price in Rupees (₹)."
-        ]
-      }
+    title: "3. Design Details & Pricing",
+    points: [
+      "Enter a simple, clear design name and helpful description.",
+      "Select the correct category, design machine type, and needles.",
+      "Set your selling price in Rupees (₹)."
+    ]
+  },
+  {
+    title: "4. Review & Approval",
+    points: [
+      "Click 'Submit Design for Approval' after filling the details.",
+      "Our team will check and approve your design within 24 hours.",
+      "Once approved, your design will be live for buyers to purchase."
     ]
   }
 ];
@@ -457,7 +450,8 @@ const SelUploadV3 = () => {
     if (!title.trim()) {
       return alert("Please enter design name");
     }
-    if (!description.trim()) {
+    const isDescriptionEmpty = !description || description.trim() === "" || description.trim() === "<p><br></p>";
+    if (isDescriptionEmpty) {
       return alert("Please enter description");
     }
     if (!category || !subcategory) {
@@ -603,51 +597,19 @@ const SelUploadV3 = () => {
           <div className={styles.singleFormCard}>
 
             {/* ========================================================= */}
-            {/* ORIGINAL PHOTO (MAIN FRONT PHOTO) */}
+            {/* ORIGINAL PHOTO */}
             {/* ========================================================= */}
             <div className={styles.formGroup}>
               <div className={styles.labelRow}>
                 <label className={styles.label}>
-                  Original Photo * <small className={styles.labelSubText}>(Main showcase thumbnail - PNG, JPG Max 10MB)</small>
+                  Original Photo * <small className={styles.labelSubText}>(Max 10MB)</small>
                 </label>
-                {thumbnailPreview && (
-                  <span className={styles.photoCountBadge}>Original Photo Selected</span>
-                )}
               </div>
 
-              {thumbnailPreview ? (
-                <div className={styles.meeshoGallery}>
-                  <div className={styles.meeshoCardWrapper}>
-                    <div className={`${styles.meeshoPhotoCard} ${styles.meeshoMainCard}`}>
-                      <img src={thumbnailPreview} alt="Original Photo" />
-                    </div>
-                    <span className={styles.meeshoPhotoLabelMain}>Front Photo</span>
-                    <label className={styles.meeshoChangeBtnBelow} title="Change Original Photo">
-                      <MdSync size={13} />
-                      <span>Change</span>
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/jpg"
-                        onChange={handleOriginalPhotoUpload}
-                        style={{ display: "none" }}
-                      />
-                    </label>
-                  </div>
-                </div>
-              ) : (
-                <label className={styles.meeshoUploadDropzone}>
-                  <div className={styles.meeshoDropzoneContent}>
-                    <div className={styles.meeshoUploadIconCircle}>
-                      <MdCloudUpload size={28} />
-                    </div>
-                    <h4 className={styles.meeshoDropzoneTitle}>Upload Original Photo</h4>
-                    <p className={styles.meeshoDropzoneSub}>
-                      Click or drag to upload front main photo
-                    </p>
-                    <span className={styles.meeshoBrowseBtn}>
-                      <MdAddPhotoAlternate size={16} /> Choose Photo
-                    </span>
-                  </div>
+              <div className={styles.traditionalPickerRow}>
+                <label className={styles.highlightedChooseBtn}>
+                  <MdCloudUpload size={16} />
+                  <span>Choose File</span>
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/jpg"
@@ -656,95 +618,49 @@ const SelUploadV3 = () => {
                     id="originalPhoto"
                   />
                 </label>
-              )}
+                <span className={`${styles.fileNameText} ${!thumbnail && !thumbnailPreview ? styles.noFileChosen : ""}`}>
+                  {thumbnail?.name || (thumbnailPreview ? (isEditMode ? "Current photo loaded" : "Photo selected") : "No file chosen")}
+                </span>
+
+                {thumbnailPreview && (
+                  <div className={styles.previewInlineWrap}>
+                    <img src={thumbnailPreview} alt="Original Photo" className={styles.simplePhotoThumb} />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setThumbnail(null);
+                        setThumbnailPreview(null);
+                        setIsDirty(true);
+                      }}
+                      className={styles.simpleRemoveBtn}
+                      title="Remove"
+                    >
+                      <MdClose size={13} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* ========================================================= */}
-            {/* DESIGN PHOTOS (EXTRA SHOWCASE IMAGES) */}
+            {/* DESIGN PHOTOS */}
             {/* ========================================================= */}
             <div className={styles.formGroup}>
               <div className={styles.labelRow}>
                 <label className={styles.label}>
-                  Design Photos <small className={styles.labelSubText}>(Extra photos, close-ups - Max 5 photos)</small>
+                  Design Photos <small className={styles.labelSubText}>(Optional • Max 5 photos, 10MB each)</small>
                 </label>
-                <span className={styles.photoCountBadge}>
-                  {totalExtraImages}/5 Photos
-                </span>
+                {totalExtraImages > 0 && (
+                  <span className={styles.photoCountBadge}>
+                    {totalExtraImages}/5 Photos
+                  </span>
+                )}
               </div>
 
-              {totalExtraImages > 0 ? (
-                <div className={styles.meeshoGallery}>
-                  {/* Existing Extra Photos (in edit mode) */}
-                  {existingAdditionalImages.map((item, index) => (
-                    <div key={`existing-${index}`} className={styles.meeshoCardWrapper}>
-                      <div className={styles.meeshoPhotoCard}>
-                        <img src={item.src} alt={`Image ${index + 1}`} />
-                        <button
-                          type="button"
-                          onClick={() => removeExistingAdditionalImage(index)}
-                          className={styles.meeshoRemoveBtn}
-                          title="Delete this image"
-                        >
-                          <MdClose size={13} />
-                        </button>
-                      </div>
-                      <span className={styles.meeshoPhotoLabel}>Image {index + 1}</span>
-                    </div>
-                  ))}
-
-                  {/* Newly Added Extra Photos */}
-                  {imagesPreviews.map((preview, index) => {
-                    const displayIndex = existingAdditionalImages.length + index + 1;
-                    return (
-                      <div key={`new-${index}`} className={styles.meeshoCardWrapper}>
-                        <div className={styles.meeshoPhotoCard}>
-                          <img src={preview} alt={`Image ${displayIndex}`} />
-                          <button
-                            type="button"
-                            onClick={() => removeNewAdditionalImage(index)}
-                            className={styles.meeshoRemoveBtn}
-                            title="Delete this image"
-                          >
-                            <MdClose size={13} />
-                          </button>
-                        </div>
-                        <span className={styles.meeshoPhotoLabel}>Image {displayIndex}</span>
-                      </div>
-                    );
-                  })}
-
-                  {/* Add More Photos Slot (up to 5 extra photos max) */}
-                  {totalExtraImages < 5 && (
-                    <div className={styles.meeshoCardWrapper}>
-                      <label className={styles.meeshoAddTile} title="Add more design photos">
-                        <MdAddPhotoAlternate className={styles.meeshoAddIcon} />
-                        <span className={styles.meeshoAddText}>+ Add Photo</span>
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/jpg"
-                          multiple
-                          onChange={handleDesignPhotosUpload}
-                          style={{ display: "none" }}
-                        />
-                      </label>
-                      <span className={styles.meeshoPhotoLabelPlaceholder}>Design Photo</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <label className={styles.meeshoUploadDropzone}>
-                  <div className={styles.meeshoDropzoneContent}>
-                    <div className={styles.meeshoUploadIconCircle}>
-                      <MdCloudUpload size={28} />
-                    </div>
-                    <h4 className={styles.meeshoDropzoneTitle}>Upload Design Photos (Extra Images)</h4>
-                    <p className={styles.meeshoDropzoneSub}>
-                      Select up to 5 photos showing angles and stitch work
-                    </p>
-                    <span className={styles.meeshoBrowseBtn}>
-                      <MdAddPhotoAlternate size={16} /> Choose Images
-                    </span>
-                  </div>
+              <div className={styles.traditionalPickerRow}>
+                <label className={`${styles.highlightedChooseBtn} ${totalExtraImages >= 5 ? styles.disabledBtn : ""}`}>
+                  <MdAddPhotoAlternate size={16} />
+                  <span>Choose Files</span>
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/jpg"
@@ -752,13 +668,133 @@ const SelUploadV3 = () => {
                     onChange={handleDesignPhotosUpload}
                     style={{ display: "none" }}
                     id="designPhotos"
+                    disabled={totalExtraImages >= 5}
                   />
                 </label>
+                <span className={`${styles.fileNameText} ${totalExtraImages === 0 ? styles.noFileChosen : ""}`}>
+                  {totalExtraImages > 0 ? `${totalExtraImages} photo${totalExtraImages > 1 ? "s" : ""} selected` : "No file chosen"}
+                </span>
+              </div>
+
+              {totalExtraImages > 0 && (
+                <div className={styles.simpleGalleryGrid}>
+                  {/* Existing Extra Photos (in edit mode) */}
+                  {existingAdditionalImages.map((item, index) => (
+                    <div key={`existing-${index}`} className={styles.simplePhotoThumbWrap}>
+                      <img src={item.src} alt={`Design Photo ${index + 1}`} className={styles.simplePhotoThumb} />
+                      <button
+                        type="button"
+                        onClick={() => removeExistingAdditionalImage(index)}
+                        className={styles.simpleRemoveBtn}
+                        title="Remove"
+                      >
+                        <MdClose size={13} />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Newly Added Extra Photos */}
+                  {imagesPreviews.map((preview, index) => {
+                    const displayIndex = existingAdditionalImages.length + index + 1;
+                    return (
+                      <div key={`new-${index}`} className={styles.simplePhotoThumbWrap}>
+                        <img src={preview} alt={`Design Photo ${displayIndex}`} className={styles.simplePhotoThumb} />
+                        <button
+                          type="button"
+                          onClick={() => removeNewAdditionalImage(index)}
+                          className={styles.simpleRemoveBtn}
+                          title="Remove"
+                        >
+                          <MdClose size={13} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
 
             {/* ========================================================= */}
-            {/* DESIGN FILE FORMAT & DESIGN FILE / ZIP UPLOAD */}
+            {/* DESIGN FILE / ZIP UPLOAD */}
+            {/* ========================================================= */}
+            <div className={styles.formGroup}>
+              <div className={styles.labelRow}>
+                <label className={styles.label}>
+                  {isEditMode ? "Design File / ZIP (Optional)" : "Upload Design File or ZIP *"} 
+                  <small className={styles.labelSubText}> (Max 20MB)</small>
+                </label>
+              </div>
+
+              <div className={styles.traditionalPickerRow}>
+                <label className={`${styles.highlightedChooseBtn} ${processing ? styles.disabledBtn : ""}`}>
+                  <MdFolderZip size={16} />
+                  <span>Choose File</span>
+                  <input
+                    type="file"
+                    accept=".zip,.emb,.dst,.pes,.jef,.exp,.vp3,.art,.xxx,.hus,.vip,.sew"
+                    onChange={handleDesignFileChange}
+                    style={{ display: "none" }}
+                    id="designFile"
+                    disabled={processing}
+                  />
+                </label>
+                <span className={`${styles.fileNameText} ${!designFile && (!isEditMode || existingFiles.length === 0) ? styles.noFileChosen : ""}`}>
+                  {designFile ? designFile.name : (isEditMode && existingFiles.length > 0 ? `Current: ${existingFiles.slice(0, 2).join(", ")}${existingFiles.length > 2 ? "..." : ""}` : "No file chosen")}
+                </span>
+              </div>
+
+              {processing && (
+                <div className={styles.processingIndicator}>
+                  <MdCloudUpload className={styles.spinIcon} />
+                  <span>Processing file...</span>
+                </div>
+              )}
+            </div>
+
+            {/* Clean File Uploaded Status Card */}
+            {uploadPreview && (
+              <div className={styles.fileSuccessCard}>
+                <div className={styles.fileSuccessHeader}>
+                  <div className={styles.fileSuccessLeft}>
+                    <MdCheckCircle className={styles.fileSuccessIcon} size={18} />
+                    <div>
+                      <span className={styles.fileSuccessTitle}>
+                        {designFile?.name || "Design file ready"} ({fileNames.length} file{fileNames.length !== 1 ? "s" : ""})
+                      </span>
+                    </div>
+                  </div>
+
+                  {fileNames.length > 1 && (
+                    <button
+                      type="button"
+                      className={styles.toggleFilesBtn}
+                      onClick={() => setShowFileList(!showFileList)}
+                    >
+                      {showFileList ? (
+                        <>Hide <MdExpandLess /></>
+                      ) : (
+                        <>View ({fileNames.length}) <MdExpandMore /></>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {showFileList && fileNames.length > 0 && (
+                  <div className={styles.fileNamesListContainer}>
+                    <ul className={styles.fileNamesList}>
+                      {fileNames.map((fn, idx) => (
+                        <li key={idx}>
+                          <span className={styles.fileDot}>•</span> {fn}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ========================================================= */}
+            {/* DESIGN FILE FORMAT (BELOW ZIP/FILE UPLOAD) */}
             {/* ========================================================= */}
             <div className={styles.formGroup}>
               <label className={styles.label}>Design File Type / Format *</label>
@@ -779,79 +815,6 @@ const SelUploadV3 = () => {
               </div>
             </div>
 
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                {isEditMode ? "Replace Design File / ZIP (Optional)" : "Upload Design File or ZIP *"} 
-                <small className={styles.labelSubText}> (Supports {fileFormat || "all formats"} & .ZIP - Max 20MB)</small>
-              </label>
-              <input
-                type="file"
-                accept=".zip,.emb,.dst,.pes,.jef,.exp,.vp3,.art,.xxx,.hus,.vip,.sew"
-                onChange={handleDesignFileChange}
-                className={styles.simpleFileInput}
-                id="designFile"
-                disabled={processing}
-              />
-
-              {isEditMode && !designFile && existingFiles.length > 0 && (
-                <div className={styles.existingFileNotice}>
-                  <MdFolderZip className={styles.existingFileIcon} />
-                  <span>Current design has <strong>{existingFiles.length} file(s)</strong> attached ({existingFiles.slice(0, 3).join(", ")}{existingFiles.length > 3 ? "..." : ""}). Upload a new file only if replacing.</span>
-                </div>
-              )}
-
-              {processing && (
-                <div className={styles.processingIndicator}>
-                  <MdCloudUpload className={styles.spinIcon} />
-                  <span>Processing design file...</span>
-                </div>
-              )}
-            </div>
-
-            {/* Clean File Uploaded Status Card */}
-            {uploadPreview && (
-              <div className={styles.fileSuccessCard}>
-                <div className={styles.fileSuccessHeader}>
-                  <div className={styles.fileSuccessLeft}>
-                    <MdFolderZip className={styles.fileSuccessIcon} />
-                    <div>
-                      <h4 className={styles.fileSuccessTitle}>File Processed Successfully</h4>
-                      <p className={styles.fileSuccessSubtitle}>
-                        {designFile?.name} • <strong>{fileNames.length} file{fileNames.length !== 1 ? "s" : ""} included</strong>
-                      </p>
-                    </div>
-                  </div>
-
-                  {fileNames.length > 1 && (
-                    <button
-                      type="button"
-                      className={styles.toggleFilesBtn}
-                      onClick={() => setShowFileList(!showFileList)}
-                    >
-                      {showFileList ? (
-                        <>Hide file list <MdExpandLess /></>
-                      ) : (
-                        <>View files ({fileNames.length}) <MdExpandMore /></>
-                      )}
-                    </button>
-                  )}
-                </div>
-
-                {showFileList && fileNames.length > 0 && (
-                  <div className={styles.fileNamesListContainer}>
-                    <h5 className={styles.fileListHeading}>Extracted Design Files:</h5>
-                    <ul className={styles.fileNamesList}>
-                      {fileNames.map((fn, idx) => (
-                        <li key={idx}>
-                          <span className={styles.fileDot}>•</span> {fn}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* ========================================================= */}
             {/* DESIGN DETAILS (NAME, DESCRIPTION, CATEGORY, NEEDLES, PRICE) */}
             {/* ========================================================= */}
@@ -867,22 +830,6 @@ const SelUploadV3 = () => {
                   setTitle(e.target.value);
                 }}
                 placeholder="Enter design name (e.g. Saree Pallu Floral Design)"
-                required
-              />
-            </div>
-
-            {/* Description */}
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Description *</label>
-              <textarea
-                className={`input-custom ${styles.textarea}`}
-                value={description}
-                onChange={(e) => {
-                  setIsDirty(true);
-                  setDescription(e.target.value);
-                }}
-                placeholder="Enter detailed description of your embroidery design"
-                rows={4}
                 required
               />
             </div>
@@ -990,6 +937,27 @@ const SelUploadV3 = () => {
               </select>
             </div>
 
+            {/* Description (Rich Text Editor - Above Selling Price) */}
+            <div className={styles.formGroup}>
+              <div className={styles.labelRow}>
+                <label className={styles.label}>Description *</label>
+                <small className={styles.labelSubText}>(Bold, italic, color, highlight, lists)</small>
+              </div>
+              <div className={styles.quillEditorWrapper}>
+                <ReactQuill
+                  theme="snow"
+                  value={description}
+                  onChange={(val) => {
+                    setIsDirty(true);
+                    setDescription(val);
+                  }}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  placeholder="Enter detailed description with styling, stitch notes, and highlights..."
+                />
+              </div>
+            </div>
+
             {/* Selling Price (₹) */}
             <div className={styles.formGroup}>
               <label className={styles.label}>Selling Price (₹) *</label>
@@ -1042,47 +1010,27 @@ const SelUploadV3 = () => {
           </div>
         </form>
 
-        {/* RIGHT COLUMN: SCROLLING GUIDE CARD (~30%) */}
+        {/* RIGHT COLUMN: SIMPLE INSTRUCTIONS CARD (~30%) */}
         <div className={styles.rightSidebar}>
-          <div className={styles.fullGuideCard}>
+          <div className={styles.simpleGuideCard}>
             <div className={styles.mainGuideHeader}>
-              <MdInfoOutline className={styles.mainGuideHeaderIcon} />
-              <div>
-                <h3 className={styles.mainGuideTitle}>
-                  {isEditMode ? "Editing Instructions" : "Upload Instructions"}
-                </h3>
-                <p className={styles.mainGuideSubtitle}>Follow simple rules for quick approval</p>
-              </div>
+              <MdInfoOutline className={styles.mainGuideHeaderIcon} size={20} />
+              <h3 className={styles.mainGuideTitle}>
+                {isEditMode ? "Editing Instructions" : "Upload Instructions"}
+              </h3>
             </div>
 
-            <div className={styles.guideBlocksContainer}>
-              {GUIDE_SECTIONS.map((section) => {
-                const IconComponent = section.icon;
-                return (
-                  <div key={section.id} className={styles.guideBlock}>
-                    <div className={styles.guideBlockHeader}>
-                      <span className={styles.stepBadge}>{section.stepNum}</span>
-                      <IconComponent className={styles.guideBlockIcon} />
-                      <h4 className={styles.guideBlockTitle}>{section.title}</h4>
-                    </div>
-
-                    <p className={styles.guideBlockDesc}>{section.description}</p>
-
-                    <div className={styles.guideBlockDetails}>
-                      {section.details.map((item, idx) => (
-                        <div key={idx} className={styles.guideSubSection}>
-                          <h5 className={styles.guideSubTitle}>{item.subtitle}</h5>
-                          <ul className={styles.guidePointsList}>
-                            {item.points.map((pt, pIdx) => (
-                              <li key={pIdx}>• {pt}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+            <div className={styles.instructionSectionsContainer}>
+              {UPLOAD_INSTRUCTIONS.map((sec, idx) => (
+                <div key={idx} className={styles.instructionSection}>
+                  <h4 className={styles.instructionHeading}>{sec.title}</h4>
+                  <ul className={styles.instructionPoints}>
+                    {sec.points.map((pt, pIdx) => (
+                      <li key={pIdx}>{pt}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
           </div>
         </div>

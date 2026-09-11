@@ -1,18 +1,11 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   MdArrowBack,
   MdShoppingCart,
-  MdImage,
-  MdDescription,
-  MdCategory,
   MdGridOn,
   MdCheckCircle,
-  MdSecurity,
-  MdFileDownload,
   MdVerified,
-  MdChevronRight,
-  MdChevronLeft,
   MdLayers,
   MdFormatListBulleted,
   MdShield,
@@ -169,20 +162,18 @@ const DesignDetails = () => {
       onCut={(e) => e.preventDefault()}
     >
       <div className={styles.wrapper}>
-        {/* Breadcrumb Navigation */}
-        <nav className={styles.breadcrumbNav}>
-          <Link to="/explore">Explore</Link>
-          <MdChevronRight />
-          <span>{design.category}</span>
-          {design.subcategory && (
-            <>
-              <MdChevronRight />
-              <span>{design.subcategory}</span>
-            </>
-          )}
-          <MdChevronRight />
-          <span className={styles.breadcrumbCurrent}>{design.title}</span>
-        </nav>
+        {/* Top Navigation Row: Back Button */}
+        <div className={styles.topNavRow}>
+          <button
+            type="button"
+            className={styles.backBtn}
+            onClick={() => navigate(-1)}
+            title="Go back"
+          >
+            <MdArrowBack size={18} />
+            <span>Back</span>
+          </button>
+        </div>
 
         {/* Product Layout: Protected Gallery (Left) | Specs Table (Middle) | Buy Card (Right) */}
         <div className={styles.productGrid}>
@@ -320,7 +311,10 @@ const DesignDetails = () => {
             {/* Description Box */}
             <div className={styles.aboutSection}>
               <h3>Product Description</h3>
-              <p className={styles.descriptionText}>{design.description}</p>
+              <div
+                className={styles.descriptionText}
+                dangerouslySetInnerHTML={{ __html: design.description || "No description provided." }}
+              />
             </div>
           </div>
 

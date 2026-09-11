@@ -3,7 +3,7 @@
    ========================================================================== */
 
 .sidebar {
-  width: 260px;
+  width: 280px;
   height: 100vh;
   position: fixed;
   top: 0;
@@ -20,7 +20,7 @@
 
 /* ─── Brand Header ──────────────────────────────────────────── */
 .brandHeader {
-  height: 64px;
+  height: 76px;
   padding: 0 1.25rem;
   display: flex;
   align-items: center;
@@ -32,14 +32,25 @@
 .brandLink {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
   text-decoration: none;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.brandLink:hover {
+  transform: scale(1.02);
 }
 
 .brandLogo {
-  width: 34px;
-  height: 34px;
+  width: 46px;
+  height: 46px;
   object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(99, 102, 241, 0.18));
+  transition: transform 0.25s ease;
+}
+
+.brandLink:hover .brandLogo {
+  transform: rotate(-3deg) scale(1.05);
 }
 
 .brandText {
@@ -48,19 +59,34 @@
 }
 
 .brandTitle {
-  font-size: 1.1rem;
-  font-weight: 750;
+  font-size: 1.55rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
   color: #0f172a;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 55%, #312e81 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.brandAccent {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-style: italic;
+  font-weight: 950;
+  margin-left: 1px;
 }
 
 .brandSubtitle {
-  font-size: 0.675rem;
-  font-weight: 600;
-  color: #6366f1;
+  font-size: 0.72rem;
+  font-weight: 750;
+  color: var(--primary, #6366f1);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  margin-top: 1px;
 }
 
 .mobileCloseBtn {
@@ -82,27 +108,27 @@
 
 /* ─── User Mini Card ────────────────────────────────────────── */
 .userCard {
-  padding: 0.85rem 1.15rem;
+  padding: 0.9rem 1.15rem;
   margin: 0.85rem 1rem 0.25rem;
   background: #f8fafc;
   border: 1px solid #edf2f7;
   border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
   flex-shrink: 0;
 }
 
 .userAvatar {
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  font-size: 0.825rem;
+  font-size: 0.95rem;
   font-weight: 700;
   flex-shrink: 0;
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
@@ -113,11 +139,11 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.2rem;
 }
 
 .userName {
-  font-size: 0.85rem;
+  font-size: 0.96rem;
   font-weight: 650;
   color: #0f172a;
   white-space: nowrap;
@@ -130,12 +156,12 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: #047857;
   background: #ecfdf5;
   border: 1px solid #a7f3d0;
-  padding: 0.05rem 0.45rem;
+  padding: 0.12rem 0.55rem;
   border-radius: 9999px;
   width: fit-content;
 }
@@ -143,12 +169,12 @@
 .buyerPill {
   display: inline-flex;
   align-items: center;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: #475569;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
-  padding: 0.05rem 0.45rem;
+  padding: 0.12rem 0.55rem;
   border-radius: 9999px;
   width: fit-content;
 }
@@ -186,8 +212,8 @@
 }
 
 .sectionLabel {
-  font-size: 0.675rem;
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 750;
   color: #94a3b8;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -195,12 +221,12 @@
 }
 
 .sellerSectionBadge {
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: #6366f1;
   background: #eef2ff;
   border: 1px solid #c7d2fe;
-  padding: 0.05rem 0.4rem;
+  padding: 0.08rem 0.45rem;
   border-radius: 4px;
   text-transform: uppercase;
 }
@@ -208,20 +234,20 @@
 .navLinks {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
 }
 
 .navItem {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.75rem;
+  gap: 0.85rem;
+  padding: 0.65rem 0.85rem;
   border-radius: 10px;
   color: #475569;
   text-decoration: none;
-  font-size: 0.85rem;
+  font-size: 0.96rem;
   font-weight: 550;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
   position: relative;
 }
 
@@ -243,6 +269,7 @@
 .navIcon {
   color: #64748b;
   flex-shrink: 0;
+  font-size: 1.25rem;
   transition: color 0.15s ease;
 }
 
@@ -258,10 +285,10 @@
   right: -8px;
   background: #ef4444;
   color: #ffffff;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  min-width: 16px;
-  height: 16px;
+  min-width: 18px;
+  height: 18px;
   border-radius: 9999px;
   display: flex;
   align-items: center;
@@ -275,16 +302,16 @@
   background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
   border: 1px solid #ddd6fe;
   border-radius: 12px;
-  padding: 0.85rem;
+  padding: 0.95rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.55rem;
   margin-top: 0.25rem;
 }
 
 .sellerCtaIcon {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   background: #8b5cf6;
   color: #ffffff;
@@ -294,17 +321,17 @@
 }
 
 .sellerCtaText h4 {
-  font-size: 0.825rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: #1e1b4b;
   margin: 0 0 0.15rem 0;
 }
 
 .sellerCtaText p {
-  font-size: 0.725rem;
+  font-size: 0.8rem;
   color: #5b21b6;
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .sellerCtaBtn {
@@ -313,12 +340,12 @@
   justify-content: space-between;
   background: #7c3aed;
   color: #ffffff;
-  padding: 0.4rem 0.65rem;
+  padding: 0.45rem 0.75rem;
   border-radius: 8px;
-  font-size: 0.775rem;
+  font-size: 0.85rem;
   font-weight: 600;
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, transform 0.15s ease;
 }
 
 .sellerCtaBtn:hover {
@@ -343,14 +370,14 @@
 .footerItem {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.55rem 0.75rem;
+  gap: 0.85rem;
+  padding: 0.65rem 0.85rem;
   border-radius: 10px;
   color: #475569;
   text-decoration: none;
-  font-size: 0.825rem;
+  font-size: 0.92rem;
   font-weight: 550;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .footerItem:hover {
@@ -366,6 +393,7 @@
 
 .footerIcon {
   color: #64748b;
+  font-size: 1.25rem;
 }
 
 .footerItemActive .footerIcon {
@@ -375,16 +403,16 @@
 .logoutBtn {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.55rem 0.75rem;
+  gap: 0.85rem;
+  padding: 0.65rem 0.85rem;
   border-radius: 10px;
   color: #dc2626;
   background: transparent;
   border: none;
-  font-size: 0.825rem;
+  font-size: 0.92rem;
   font-weight: 550;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
   width: 100%;
   text-align: left;
 }
@@ -405,12 +433,12 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.55rem;
+  padding: 0.65rem;
   border-radius: 8px;
   border: 1px solid #cbd5e1;
   background: #ffffff;
   color: #334155;
-  font-size: 0.825rem;
+  font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
   transition: all 0.15s ease;
@@ -427,12 +455,12 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.55rem;
+  padding: 0.65rem;
   border-radius: 8px;
   border: none;
   background: #6366f1;
   color: #ffffff;
-  font-size: 0.825rem;
+  font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
   transition: all 0.15s ease;

@@ -5,9 +5,9 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { 
-  MdPerson, 
-  MdPayment, 
+import {
+  MdPerson,
+  MdPayment,
   MdAccountBalanceWallet,
   MdShoppingBag,
   MdSettings,
@@ -123,7 +123,7 @@ const Profile = () => {
 
   const isSeller = user?.is_seller || false;
   const hasPayoutSetup = Boolean(payoutDetails?.type);
-  const initials = user?.name 
+  const initials = user?.name
     ? user.name.split(" ").map(n => n[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
     : "U";
 
@@ -142,10 +142,10 @@ const Profile = () => {
                 <span className={isSeller ? styles.sellerBadge : styles.buyerBadge}>
                   {isSeller ? (
                     <>
-                      <MdCheckCircle size={14} /> Seller Account
+                      <MdCheckCircle size={14} /> Seller
                     </>
                   ) : (
-                    "Buyer Account"
+                    "Buyer"
                   )}
                 </span>
               </div>
@@ -186,7 +186,7 @@ const Profile = () => {
                 </span>
               )}
             </div>
-            
+
             {hasPayoutSetup ? (
               <div className={styles.cardBody}>
                 <div className={styles.keyValueList}>
@@ -220,9 +220,9 @@ const Profile = () => {
                       <span className={styles.kvLabel}>UPI ID</span>
                       <span className={styles.kvValue}>
                         <span className={styles.monoValue}>{payoutDetails.upiId}</span>
-                        <button 
+                        <button
                           type="button"
-                          className={styles.copyBtn} 
+                          className={styles.copyBtn}
                           onClick={() => handleCopy(payoutDetails.upiId, 'upi')}
                           title="Copy UPI ID"
                         >
@@ -252,9 +252,9 @@ const Profile = () => {
                         <span className={styles.kvLabel}>IFSC Code</span>
                         <span className={styles.kvValue}>
                           <span className={styles.monoValue}>{payoutDetails.ifscCode}</span>
-                          <button 
+                          <button
                             type="button"
-                            className={styles.copyBtn} 
+                            className={styles.copyBtn}
                             onClick={() => handleCopy(payoutDetails.ifscCode, 'ifsc')}
                             title="Copy IFSC Code"
                           >
@@ -419,7 +419,7 @@ const Profile = () => {
               </div>
             </div>
           </div>
-          
+
           <div className={styles.cardBody}>
             <div className={styles.keyValueList}>
               <div className={styles.kvItem}>
@@ -442,7 +442,7 @@ const Profile = () => {
                 </span>
                 <span className={styles.kvValue}>
                   <span className={isSeller ? styles.sellerPill : styles.buyerPill}>
-                    {isSeller ? "Seller Account" : "Buyer Account"}
+                    {isSeller ? "Seller" : "Buyer"}
                   </span>
                 </span>
               </div>

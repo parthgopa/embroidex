@@ -244,7 +244,10 @@ const AdminReviewQueue = ({
               {/* Description */}
               <div className={styles.infoSection}>
                 <h3>Description</h3>
-                <p className={styles.descriptionText}>{activeDesign?.description}</p>
+                <div
+                  className={styles.descriptionText}
+                  dangerouslySetInnerHTML={{ __html: activeDesign?.description || "—" }}
+                />
               </div>
 
               <div className={styles.infoSection}>
@@ -257,7 +260,11 @@ const AdminReviewQueue = ({
                     <strong>AI Title:</strong> {activeDesign?.title_ai || "Not generated"}
                   </div>
                   <div className={styles.detailItem}>
-                    <strong>Original Description:</strong> {activeDesign?.description_original || "Not provided"}
+                    <strong>Original Description:</strong>
+                    <div
+                      style={{ marginTop: 4 }}
+                      dangerouslySetInnerHTML={{ __html: activeDesign?.description_original || "Not provided" }}
+                    />
                   </div>
                   <div className={styles.detailItem}>
                     <strong>AI Description:</strong> {activeDesign?.description_ai || "Not generated"}

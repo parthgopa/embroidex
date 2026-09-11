@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
-import { 
+import {
   MdHome,
   MdExplore,
   MdShoppingCart,
@@ -57,7 +57,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     navigate("/");
   };
 
-  const initials = user?.name 
+  const initials = user?.name
     ? user.name.split(" ").map(n => n[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
     : "U";
 
@@ -68,14 +68,15 @@ const Sidebar = ({ isOpen, onClose }) => {
         <Link to="/" className={styles.brandLink} onClick={handleLinkClick}>
           <img src="/Embroidex.png" alt="Embroidex" className={styles.brandLogo} />
           <div className={styles.brandText}>
-            <span className={styles.brandTitle}>Embroidex</span>
-            <span className={styles.brandSubtitle}>Design Hub</span>
+            <span className={styles.brandTitle}>
+              Embroid<span className={styles.brandAccent}>ex</span>
+            </span>
           </div>
         </Link>
 
-        <button 
-          type="button" 
-          className={styles.mobileCloseBtn} 
+        <button
+          type="button"
+          className={styles.mobileCloseBtn}
           onClick={onClose}
           aria-label="Close navigation"
         >
@@ -93,7 +94,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             <span className={styles.userName}>{user?.name || "User"}</span>
             {isSeller && (
               <span className={styles.sellerPill}>
-                <MdCheckCircle size={12} /> Seller Account
+                <MdCheckCircle size={12} /> Seller
               </span>
             )}
           </div>
@@ -107,8 +108,8 @@ const Sidebar = ({ isOpen, onClose }) => {
           <span className={styles.sectionLabel}>ACCOUNT & ORDERS</span>
           <nav className={styles.navLinks}>
             {isAuthenticated && (
-              <NavLink 
-                to="/my-purchases" 
+              <NavLink
+                to="/my-purchases"
                 className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
                 onClick={handleLinkClick}
               >
@@ -117,8 +118,8 @@ const Sidebar = ({ isOpen, onClose }) => {
               </NavLink>
             )}
 
-            <NavLink 
-              to="/cart" 
+            <NavLink
+              to="/cart"
               className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
               onClick={handleLinkClick}
             >
@@ -130,8 +131,8 @@ const Sidebar = ({ isOpen, onClose }) => {
             </NavLink>
 
             {isAuthenticated && (
-              <NavLink 
-                to="/profile" 
+              <NavLink
+                to="/profile"
                 className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
                 onClick={handleLinkClick}
               >
@@ -150,8 +151,8 @@ const Sidebar = ({ isOpen, onClose }) => {
               <span className={styles.sellerSectionBadge}>Pro</span>
             </div>
             <nav className={styles.navLinks}>
-              <NavLink 
-                to="/seller/upload" 
+              <NavLink
+                to="/seller/upload"
                 className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
                 onClick={handleLinkClick}
               >
@@ -159,8 +160,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span>Upload Design</span>
               </NavLink>
 
-              <NavLink 
-                to="/seller/my-designs" 
+              <NavLink
+                to="/seller/my-designs"
                 className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
                 onClick={handleLinkClick}
               >
@@ -168,8 +169,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span>My Designs</span>
               </NavLink>
 
-              <NavLink 
-                to="/seller/earnings" 
+              <NavLink
+                to="/seller/earnings"
                 className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
                 onClick={handleLinkClick}
               >
@@ -177,8 +178,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span>Earnings & Payouts</span>
               </NavLink>
 
-              <NavLink 
-                to="/seller/payment-settings" 
+              <NavLink
+                to="/seller/payment-settings"
                 className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
                 onClick={handleLinkClick}
               >
@@ -199,8 +200,8 @@ const Sidebar = ({ isOpen, onClose }) => {
               <h4>Sell Your Designs</h4>
               <p>Monetize embroidery files with verified daily payouts</p>
             </div>
-            <Link 
-              to="/seller/register" 
+            <Link
+              to="/seller/register"
               className={styles.sellerCtaBtn}
               onClick={handleLinkClick}
             >
@@ -215,8 +216,8 @@ const Sidebar = ({ isOpen, onClose }) => {
       <div className={styles.sidebarFooter}>
         {isAuthenticated ? (
           <div className={styles.footerActions}>
-            <NavLink 
-              to="/profile" 
+            <NavLink
+              to="/profile"
               className={({ isActive }) => `${styles.footerItem} ${isActive ? styles.footerItemActive : ""}`}
               onClick={handleLinkClick}
             >
@@ -224,9 +225,9 @@ const Sidebar = ({ isOpen, onClose }) => {
               <span>Profile & Settings</span>
             </NavLink>
 
-            <button 
-              type="button" 
-              className={styles.logoutBtn} 
+            <button
+              type="button"
+              className={styles.logoutBtn}
               onClick={handleLogout}
             >
               <MdLogout size={18} />
@@ -235,16 +236,16 @@ const Sidebar = ({ isOpen, onClose }) => {
           </div>
         ) : (
           <div className={styles.guestAuthActions}>
-            <Link 
-              to="/login" 
+            <Link
+              to="/login"
               className={styles.loginBtn}
               onClick={handleLinkClick}
             >
               <MdLogin size={17} />
               <span>Login</span>
             </Link>
-            <Link 
-              to="/signup" 
+            <Link
+              to="/signup"
               className={styles.signupBtn}
               onClick={handleLinkClick}
             >

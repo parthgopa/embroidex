@@ -12,32 +12,38 @@
   padding: 0 1.5rem;
 }
 
-.breadcrumbNav {
+.topNavRow {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  font-size: 0.85rem;
-  color: var(--text-light);
   margin-bottom: 1.25rem;
 }
 
-.breadcrumbNav a {
-  color: var(--primary);
-  text-decoration: none;
-  font-weight: 500;
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.15rem;
+  background: #ffffff;
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-pill, 9999px);
+  color: var(--text-dark, #1e293b);
+  font-size: 0.875rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.breadcrumbNav a:hover {
-  text-decoration: underline;
+.backBtn:hover {
+  background: var(--primary-light, #eef2ff);
+  color: var(--primary, #4f46e5);
+  border-color: var(--primary, #4f46e5);
+  transform: translateX(-3px);
+  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.18);
 }
 
-.breadcrumbCurrent {
-  color: var(--text-dark);
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 250px;
+.backBtn:active {
+  transform: translateX(-1px);
 }
 
 /* 3-Column / Responsive Product Grid */
@@ -351,11 +357,40 @@
 }
 
 .descriptionText {
-  color: #475569;
-  line-height: 1.6;
-  font-size: 0.9rem;
-  white-space: pre-line;
+  color: #334155;
+  line-height: 1.65;
+  font-size: 0.95rem;
   margin: 0;
+  word-break: break-word;
+}
+
+.descriptionText p {
+  margin: 0 0 0.5rem 0;
+}
+
+.descriptionText p:last-child {
+  margin-bottom: 0;
+}
+
+.descriptionText ul,
+.descriptionText ol {
+  margin: 0.35rem 0 0.65rem 1.25rem;
+  padding: 0;
+}
+
+.descriptionText li {
+  margin-bottom: 0.25rem;
+}
+
+.descriptionText strong,
+.descriptionText b {
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.descriptionText a {
+  color: var(--primary);
+  text-decoration: underline;
 }
 
 /* ========================= */

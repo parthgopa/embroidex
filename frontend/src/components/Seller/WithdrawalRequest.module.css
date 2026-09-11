@@ -3,13 +3,15 @@
    ========================================================================== */
 
 .container {
-  max-width: 960px;
+  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
-  padding: 1.25rem 1rem 2.5rem;
+  padding: 1.5rem 2rem 3rem;
+  min-height: calc(100vh - 68px);
 }
 
 .header {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .header h2 {

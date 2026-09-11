@@ -166,7 +166,10 @@ const AdminDesigns = ({ designs, onApprove, onReject, onUnapprove, onDelete, BAS
                 {/* Description */}
                 <div className={styles.infoSection}>
                   <h4><MdDescription style={{marginRight:6,verticalAlign:"middle"}}/>Description</h4>
-                  <p className={styles.descText}>{activeDesign?.description}</p>
+                  <div
+                    className={styles.descText}
+                    dangerouslySetInnerHTML={{ __html: activeDesign?.description || "—" }}
+                  />
                 </div>
 
                 {/* EMB Metadata */}

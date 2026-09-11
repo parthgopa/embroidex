@@ -3,18 +3,20 @@
    ========================================================================== */
 
 .container {
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - 68px);
   background: var(--bg-main);
-  padding: 1.5rem 1rem 3rem;
+  padding: 1.5rem 2rem 3rem;
+  width: 100%;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
   gap: 1rem;
+  width: 100%;
 }
 
 .title {

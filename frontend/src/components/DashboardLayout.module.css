@@ -12,7 +12,7 @@
 /* ─── Right-Side Main Viewport Container ─────────────────────── */
 .mainViewport {
   flex: 1;
-  margin-left: 260px;
+  margin-left: 280px;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -24,12 +24,12 @@
 .topBar {
   position: sticky;
   top: 0;
-  height: 60px;
-  background: rgba(255, 255, 255, 0.92);
+  height: 68px;
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid #e2e8f0;
-  padding: 0 1.5rem;
+  padding: 0 1.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -69,13 +69,13 @@
 }
 
 .mobileLogoImg {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
 }
 
 .mobileLogoText {
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 750;
   color: #0f172a;
   letter-spacing: -0.02em;
@@ -91,10 +91,10 @@
 .topNavLink {
   display: inline-flex;
   align-items: center;
-  padding: 0.4rem 0.75rem;
+  padding: 0.5rem 0.85rem;
   border-radius: 8px;
   color: #475569;
-  font-size: 0.85rem;
+  font-size: 0.96rem;
   font-weight: 600;
   text-decoration: none;
   transition: all 0.15s ease;
@@ -107,8 +107,8 @@
 
 .cartIconBtn {
   position: relative;
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   border-radius: 10px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -132,10 +132,10 @@
   right: -5px;
   background: #ef4444;
   color: #ffffff;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  min-width: 17px;
-  height: 17px;
+  min-width: 18px;
+  height: 18px;
   border-radius: 9999px;
   display: flex;
   align-items: center;
@@ -145,8 +145,8 @@
 }
 
 .profileAvatarBtn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   display: flex;
@@ -154,7 +154,7 @@
   justify-content: center;
   color: #ffffff;
   text-decoration: none;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 700;
   box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -172,12 +172,12 @@
 .topLoginBtn {
   display: inline-flex;
   align-items: center;
-  padding: 0.45rem 1rem;
+  padding: 0.5rem 1.15rem;
   border-radius: 8px;
   background: #6366f1;
   color: #ffffff;
   border: none;
-  font-size: 0.825rem;
+  font-size: 0.92rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
