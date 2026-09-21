@@ -27,22 +27,29 @@
 
 ---
 
-### 🎨 Phase 2 Deliverables Completed:
-1. **Dynamic Theme System with System Auto-Detection**:
-   - Built [ThemeContext.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/context/ThemeContext.js) listening to `useColorScheme()` and `Appearance.addChangeListener()`. When the Android device switches between dark and light themes, the app adapts instantly.
-   - Connected `NavigationContainer`, `StatusBar`, `TopBar`, `TabNavigator`, `HomeScreen`, `CustomDrawerContent`, and `ExploreScreen` to theme colors dynamically.
-2. **Left Sidebar Icon-Only Theme Switcher**:
-   - Added a minimal 3-option toggle in [CustomDrawerContent.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/components/CustomDrawerContent.js) using **only icons** (`phone-portrait` for System Auto, `sunny` for Light, `moon` for Dark), with zero clutter.
-3. **Explore Screen & Right-Side Filter Sidebar**:
-   - Built full [ExploreScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/ExploreScreen.js) querying live `/seller/approved` and `/seller/categories`.
-   - Top instant search bar with clear button.
-   - Horizontal category quick-switch strip.
-   - **Right-Side Filter Sidebar**: slides out from the right with backdrop overlay, containing all 7 filter categories (Sort, Categories, Machine Types, Area, Needles, Formats, Price Ranges), live badge counts, and an **"Apply Filters"** button at the bottom.
-   - 2-Column design card grid with full photo thumbnails, format badges (`.EMB`, `.DST`), price in ₹, and instant "Add to Cart" action button.
-   - Pull-to-refresh (`RefreshControl`) and empty state with Reset Filters CTA.
-4. **Cross-Screen Linkage**:
-   - Category pills & showcase "See All" on Home Screen navigate to Explore with that category pre-filtered.
-   - Search icon in TopBar navigates to Explore and auto-focuses the search bar.
+### 🎨 Phase 5 Deliverables Completed:
+1. **Buyer Purchases Library ([MyPurchasesScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/MyPurchasesScreen.js))**:
+   - Live query to `GET /payment/my-purchases` showing full purchase cards with thumbnails, `.ZIP` badges, dates, receipt codes, and prices.
+   - Interactive official in-app receipt modal with order status, payment ID, and breakdown.
+   - Per-card download button with active loading spinner indicator.
+   - Empty and unauthenticated state handlers with direct CTAs.
+2. **Direct-to-Device Native Download Pipeline**:
+   - Kotlin module [NativeDownloadModule.kt](file:///Users/parth/Embroidex/embroidex/mobile_app/android/app/src/main/java/com/embroidex/NativeDownloadModule.kt) connected to Android's system `DownloadManager`.
+   - Sends `Authorization: Bearer <token>` in native headers, saving `.zip` files directly to `/sdcard/Download/`.
+   - Android system tray progress and completion notifications.
+   - Backend [Payment_routes.py](file:///Users/parth/Embroidex/embroidex/backend/routes/Payment_routes.py) multi-path resolution and on-the-fly packaging of `.EMB` files into genuine, valid `.zip` archives.
+3. **Embroidex Gemini AI Assistant**:
+   - Floating AI Bot with animated pulse on all screens.
+   - Full-screen modal assistant with suggestion chips, markdown rendering, chat history, and live backend AI integration.
+4. **Simple Clean Alert Dialog System ([AlertContext.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/context/AlertContext.js))**:
+   - Clean, standard rounded modal dialog (`borderRadius: 16`) using normal CSS styling with zero funky clutter.
+   - Globally intercepts all `Alert.alert(...)` calls throughout the app.
 
-*Last Updated: Phase 2 fully built and verified.*
+---
+
+### 🚀 Next Up: Phase 6 — Seller Hub & Earnings
+- **Seller Onboarding & Registration** ([SellerRegisterScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/SellerRegisterScreen.js))
+- **Unified Design & Photo Upload Flow** ([SellerUploadScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/SellerUploadScreen.js))
+- **Seller Earnings Analytics & Dashboard** ([SellerEarningsScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/SellerEarningsScreen.js))
+- **Bank Account Setup & Withdrawal Requests** (Integrating `Withdrawal_routes.py`)
 
