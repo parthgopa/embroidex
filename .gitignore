@@ -1,5 +1,8 @@
-# Backend uploads folder - user uploaded files
-backend/uploads/
+# Backend uploads folder - allow files & showcase, ignore extracted temp dirs
+backend/uploads/*_extracted/
+backend/uploads/*_extracted
+backend/uploads/files/*_extracted/
+backend/uploads/files/*_extracted
 
 # Python
 __pycache__/

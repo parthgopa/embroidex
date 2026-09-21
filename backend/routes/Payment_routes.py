@@ -425,61 +425,123 @@ def get_my_purchases():
 
 @payment_bp.route("/download/<purchase_id>", methods=["GET"])
 def download_purchase(purchase_id):
-    """Download purchased design files"""
-    token = request.headers.get("Authorization")
+    """Download purchased design files (as .zip) with multi-path resolution and token auth"""
+    token = request.headers.get("Authorization") or request.args.get("token")
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
     
     try:
-        token = token.replace("Bearer ", "")
+        token = token.replace("Bearer ", "").strip()
         user_id = decode_token(token)
-
     except:
         return jsonify({"error": "Invalid token"}), 401
     
     try:
         from flask import send_file
         import os
+        import zipfile
+        import io
         
         # Convert purchase_id to ObjectId
         try:
             purchase_obj_id = ObjectId(purchase_id)
-            print("Purchase ID:", purchase_obj_id)
         except:
             return jsonify({"error": "Invalid purchase ID"}), 400
         
-        print("User ID:", user_id)
-        # Verify purchase belongs to user
+        # Verify purchase belongs to user (handle both ObjectId and string user_id)
         purchase = PURCHASES_COLLECTION.find_one({
             "_id": purchase_obj_id,
-            "user_id": user_id
+            "$or": [
+                {"user_id": user_id},
+                {"user_id": str(user_id)}
+            ]
         })
         
         if not purchase:
-            return jsonify({"error": "Purchase not found or access denied"}), 404
+            purchase = PURCHASES_COLLECTION.find_one({"_id": purchase_obj_id})
+            if not purchase or (str(purchase.get("user_id")) != str(user_id) and purchase.get("user_id") != user_id):
+                return jsonify({"error": "Purchase not found or access denied"}), 404
         
-        # Get design to access file path
+        # Get design to access file path (handle both ObjectId and string design_id)
         design_id = purchase.get("design_id")
-        design = DESIGNS_COLLECTION.find_one({"_id": design_id})
+        design_query = {"_id": ObjectId(design_id)} if (design_id and ObjectId.is_valid(str(design_id))) else {"_id": design_id}
+        design = DESIGNS_COLLECTION.find_one(design_query)
         
         if not design:
             return jsonify({"error": "Design not found"}), 404
         
-        # Get design file path
-        design_file_path = design.get("design_file_path")
+        design_file_path = design.get("design_file_path") or purchase.get("zip_path")
         if not design_file_path:
             return jsonify({"error": "Design files not available"}), 404
         
-        # Send file
-        file_path = os.path.join(os.getcwd(), design_file_path)
-        if not os.path.exists(file_path):
-            print(f"File not found at: {file_path}")
+        # Resolve file path across candidate locations on server
+        base_dirs = [
+            os.getcwd(),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..")),
+            "/app",
+            "/app/backend"
+        ]
+        
+        resolved_file = None
+        for bdir in base_dirs:
+            p = os.path.join(bdir, design_file_path.lstrip("/"))
+            if os.path.isfile(p):
+                resolved_file = p
+                break
+            p_files = os.path.join(bdir, "uploads", "files", os.path.basename(design_file_path))
+            if os.path.isfile(p_files):
+                resolved_file = p_files
+                break
+            p_up = os.path.join(bdir, "uploads", os.path.basename(design_file_path))
+            if os.path.isfile(p_up):
+                resolved_file = p_up
+                break
+
+        # If not found by exact path, fuzzy-match by clean filename in uploads/files
+        if not resolved_file:
+            clean_name = os.path.basename(design_file_path)
+            if "_" in clean_name:
+                clean_name = clean_name.split("_", 1)[-1]
+            for bdir in base_dirs:
+                uf_dir = os.path.join(bdir, "uploads", "files")
+                if os.path.isdir(uf_dir):
+                    for fn in os.listdir(uf_dir):
+                        if clean_name.lower() in fn.lower():
+                            resolved_file = os.path.join(uf_dir, fn)
+                            break
+                if resolved_file:
+                    break
+
+        if not resolved_file or not os.path.isfile(resolved_file):
+            print(f"File not found on server. Tried paths for: {design_file_path}")
             return jsonify({"error": "File not found on server"}), 404
         
+        design_title = purchase.get("design_title") or design.get("title") or "design"
+        safe_title = "".join(c for c in design_title if c.isalnum() or c in (" ", "-", "_")).strip() or "design"
+        
+        # If already a ZIP file, stream directly
+        if resolved_file.lower().endswith(".zip"):
+            return send_file(
+                resolved_file,
+                mimetype="application/zip",
+                as_attachment=True,
+                download_name=f"{safe_title}.zip"
+            )
+        
+        # If it's a single embroidery file (.EMB, .DST, etc.), wrap in a real ZIP archive on the fly
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            inner_name = os.path.basename(resolved_file)
+            if "_" in inner_name:
+                inner_name = inner_name.split("_", 1)[-1]
+            zf.write(resolved_file, arcname=inner_name)
+        zip_buffer.seek(0)
+        
         return send_file(
-            file_path,
+            zip_buffer,
+            mimetype="application/zip",
             as_attachment=True,
-            download_name=f"{purchase.get('design_title', 'design')}.zip"
+            download_name=f"{safe_title}.zip"
         )
         
     except Exception as e:
