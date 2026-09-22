@@ -111,6 +111,19 @@ const CustomDrawerContent = (props) => {
               </View>
             </View>
           </View>
+
+          {/* Close 'X' Button */}
+          <TouchableOpacity
+            style={[styles.closeDrawerBtn, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9' }]}
+            onPress={() => {
+              if (props.closeDrawer) props.closeDrawer();
+              else if (navigation.closeDrawer) navigation.closeDrawer();
+            }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityLabel="Close Drawer"
+          >
+            <Ionicons name="close" size={20} color={colors.midnight} />
+          </TouchableOpacity>
         </View>
 
         {/* Upgrade or Switch Banner */}
@@ -382,6 +395,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     paddingBottom: 4,
+  },
+  closeDrawerBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+    alignSelf: 'flex-start',
   },
   avatarContainer: {
     position: 'relative',

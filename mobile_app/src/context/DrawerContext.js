@@ -4,15 +4,15 @@ import {
   Animated,
   StyleSheet,
   Dimensions,
-  TouchableOpacity,
   PanResponder,
   Modal,
+  Pressable,
 } from 'react-native';
 import CustomDrawerContent from '../components/CustomDrawerContent';
 import { useTheme } from './ThemeContext';
 
-const { width } = Dimensions.get('window');
-const DRAWER_WIDTH = Math.min(width * 0.82, 330);
+const { width: WINDOW_WIDTH, height: WINDOW_HEIGHT } = Dimensions.get('window');
+const DRAWER_WIDTH = Math.min(WINDOW_WIDTH * 0.82, 330);
 
 const DrawerContext = createContext({
   openDrawer: () => {},
@@ -62,23 +62,43 @@ export const DrawerProvider = ({ children }) => {
     }
   };
 
-  // PanResponder to allow swipe-to-close on the drawer
+  // PanResponder with capture phase to reliably allow swipe-to-close on the drawer
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dx) > 15 && gestureState.dx < 0;
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponderCapture: (_, gestureState) => {
+        // Intercept leftward swipes when horizontal movement dominates vertical movement
+        return gestureState.dx < -8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
       },
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return gestureState.dx < -8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+      },
+      onPanResponderTerminationRequest: () => false,
       onPanResponderMove: (_, gestureState) => {
         if (gestureState.dx < 0) {
           translateX.setValue(Math.max(-DRAWER_WIDTH, gestureState.dx));
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dx < -DRAWER_WIDTH * 0.25 || gestureState.vx < -0.5) {
+        if (gestureState.dx < -DRAWER_WIDTH * 0.2 || gestureState.vx < -0.35) {
           closeDrawer();
         } else {
-          openDrawer();
+          Animated.spring(translateX, {
+            toValue: 0,
+            friction: 8,
+            tension: 50,
+            useNativeDriver: true,
+          }).start();
         }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(translateX, {
+          toValue: 0,
+          friction: 8,
+          tension: 50,
+          useNativeDriver: true,
+        }).start();
       },
     })
   ).current;
@@ -93,15 +113,15 @@ export const DrawerProvider = ({ children }) => {
           visible={isOpen}
           transparent
           animationType="fade"
-          statusBarTranslucent
           onRequestClose={() => closeDrawer()}
         >
           <View style={styles.modalOverlay}>
-            {/* Direct Tap-outside Backdrop to Close (Zero Animated Wrapper blocking touches) */}
-            <TouchableOpacity
+            {/* Full Screen Pressable Backdrop */}
+            <Pressable
               style={styles.backdrop}
-              activeOpacity={1}
               onPress={() => closeDrawer()}
+              accessibilityLabel="Close sidebar"
+              accessibilityRole="button"
             />
 
             {/* Sliding Sidebar Drawer */}
@@ -130,23 +150,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalOverlay: {
-    flex: 1,
+    width: '100%',
+    height: '100%',
     position: 'relative',
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
   },
   drawer: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     left: 0,
+    width: DRAWER_WIDTH,
+    height: '100%',
     backgroundColor: '#ffffff',
     shadowColor: '#000000',
-    shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
+    shadowOffset: { width: 6, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
     elevation: 24,
   },
 });
