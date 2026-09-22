@@ -122,7 +122,11 @@ const LoginScreen = ({ navigation, route }) => {
         navigation.goBack();
       }
     } catch (err) {
-      Alert.alert('Login Failed', err.response?.data?.error || err.message || 'Invalid credentials');
+      let message = err.response?.data?.error || err.message || 'Invalid password or email Id';
+      if (message === 'Invalid credentials' || message.toLowerCase().includes('invalid credential')) {
+        message = 'Invalid password or email Id';
+      }
+      Alert.alert('Login Failed', message);
     } finally {
       setLoading(false);
     }

@@ -178,7 +178,7 @@ def login():
     user = USERS_COLLECTION.find_one({"email": email})
 
     if not user:
-        return jsonify({"error": "Invalid credentials"}), 401
+        return jsonify({"error": "Invalid password or email Id"}), 401
 
     signup_method = get_user_signup_method(user)
 
@@ -189,7 +189,7 @@ def login():
         }), 400
 
     if not user.get("password") or not verify_password(password, user["password"]):
-        return jsonify({"error": "Invalid credentials"}), 401
+        return jsonify({"error": "Invalid password or email Id"}), 401
 
     if user.get("is_active") == False:
         return jsonify({"error": "Your account has been deactivated. Please contact admin."}), 403

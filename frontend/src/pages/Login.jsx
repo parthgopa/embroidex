@@ -120,7 +120,10 @@ const Login = () => {
       window.location.href = "/seller/my-designs";
     } catch (err) {
       const status = err.response?.status;
-      const message = err.response?.data?.error || "Login failed";
+      let message = err.response?.data?.error || "Login failed";
+      if (message === "Invalid credentials" || message.toLowerCase().includes("invalid credential")) {
+        message = "Invalid password or email Id";
+      }
       if (status === 403) {
         setDeactivated(true);
       } else {
