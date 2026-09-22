@@ -7,6 +7,7 @@ import SignupScreen from '../screens/SignupScreen';
 import SellerRegisterScreen from '../screens/SellerRegisterScreen';
 import SellerUploadScreen from '../screens/SellerUploadScreen';
 import SellerEarningsScreen from '../screens/SellerEarningsScreen';
+import SellerMyDesignsScreen from '../screens/SellerMyDesignsScreen';
 import DesignDetailScreen from '../screens/DesignDetailScreen';
 
 const Stack = createNativeStackNavigator();
@@ -29,6 +30,7 @@ const RootNavigator = () => {
       <Stack.Screen name="SellerRegisterScreen" component={SellerRegisterScreen} />
       <Stack.Screen name="SellerUploadScreen" component={SellerUploadScreen} />
       <Stack.Screen name="SellerEarningsScreen" component={SellerEarningsScreen} />
+      <Stack.Screen name="SellerMyDesignsScreen" component={SellerMyDesignsScreen} />
 
       {/* Modals */}
       <Stack.Screen

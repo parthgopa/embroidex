@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MdVisibility, MdVisibilityOff, MdMailOutline, MdArrowBack, MdLockOutline, MdCheckCircle, MdErrorOutline } from "react-icons/md";
+import { FcGoogle } from "react-icons/fc";
 import { useAuth } from "../context/authContext";
 import API from "../services/api";
+import { signInWithGoogle } from "../services/firebase";
 import styles from "./Signup.module.css";
 
 const Signup = () => {
@@ -21,9 +23,39 @@ const Signup = () => {
 
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+
+  const handleGoogleSignup = async () => {
+    setGoogleLoading(true);
+    setErrorMsg("");
+    try {
+      const result = await signInWithGoogle();
+      const fbUser = result.user;
+      const idToken = await fbUser.getIdToken();
+
+      const res = await API.post("/auth/google-login", {
+        email: fbUser.email,
+        name: fbUser.displayName || "",
+        photo_url: fbUser.photoURL || "",
+        id_token: idToken,
+      });
+
+      localStorage.setItem("token", res.data.token);
+      await refreshUser();
+      window.location.href = "/seller/my-designs";
+    } catch (err) {
+      console.error("Google sign-up error:", err);
+      if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
+        return;
+      }
+      setErrorMsg(err.response?.data?.error || err.message || "Google sign-up failed");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -247,11 +279,25 @@ const Signup = () => {
               <button 
                 type="submit" 
                 className={`btn-primary-custom ${styles.submitBtn}`}
-                disabled={loading}
+                disabled={loading || googleLoading}
               >
                 {loading ? "Sending Verification Code..." : "Continue with Email Verification"}
               </button>
             </form>
+
+            <div className={styles.divider}>
+              <span>or sign up with</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleSignup}
+              className={styles.googleBtn}
+              disabled={loading || googleLoading}
+            >
+              <FcGoogle size={22} />
+              <span>{googleLoading ? "Connecting with Google..." : "Sign up with Google"}</span>
+            </button>
 
             <div className={styles.footer}>
               <p className={styles.footerText}>

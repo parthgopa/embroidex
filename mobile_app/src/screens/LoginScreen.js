@@ -11,13 +11,38 @@ import { SHADOWS } from '../theme/theme';
 
 const LoginScreen = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const { colors, isDark } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    try {
+      setGoogleLoading(true);
+      const { promptGoogleSignIn } = require('../services/googleAuth');
+      const googleData = await promptGoogleSignIn();
+      if (!googleData) return;
+
+      await googleLogin(googleData);
+      const returnTo = route.params?.returnTo;
+      if (returnTo === 'Cart') {
+        navigation.navigate('MainTabs', { screen: 'Cart' });
+      } else if (returnTo) {
+        navigation.navigate(returnTo);
+      } else {
+        navigation.goBack();
+      }
+    } catch (err) {
+      console.error('Google Sign-In Error:', err);
+      Alert.alert('Google Sign-In Failed', err.response?.data?.error || err.message || 'Could not sign in with Google');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -37,7 +62,7 @@ const LoginScreen = ({ navigation, route }) => {
         navigation.goBack();
       }
     } catch (err) {
-      Alert.alert('Login Failed', err.message || 'Invalid credentials');
+      Alert.alert('Login Failed', err.response?.data?.error || err.message || 'Invalid credentials');
     } finally {
       setLoading(false);
     }
@@ -98,10 +123,32 @@ const LoginScreen = ({ navigation, route }) => {
             <TouchableOpacity
               style={[styles.btn, { backgroundColor: colors.primary }, loading && styles.btnDisabled]}
               onPress={handleLogin}
-              disabled={loading}
+              disabled={loading || googleLoading}
               activeOpacity={0.82}
             >
               {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Sign In</Text>}
+            </TouchableOpacity>
+
+            <View style={styles.dividerRow}>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              <Text style={[styles.dividerText, { color: colors.slate }]}>OR</Text>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.googleBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={handleGoogleLogin}
+              disabled={loading || googleLoading}
+              activeOpacity={0.82}
+            >
+              {googleLoading ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <>
+                  <Ionicons name="logo-google" size={20} color="#EA4335" style={styles.googleIcon} />
+                  <Text style={[styles.googleBtnText, { color: colors.midnight }]}>Continue with Google</Text>
+                </>
+              )}
             </TouchableOpacity>
 
             <View style={styles.switchRow}>
@@ -145,6 +192,37 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { opacity: 0.7 },
   btnText: { fontSize: 16, fontWeight: '800', color: '#fff' },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1,
+    ...SHADOWS.subtle,
+  },
+  googleIcon: {
+    marginRight: 10,
+  },
+  googleBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
   switchText: { fontSize: 15, fontWeight: '500' },
   switchLink: { fontSize: 15, fontWeight: '800', textDecorationLine: 'underline' },

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { FcGoogle } from "react-icons/fc";
 import API from "../services/api";
+import { signInWithGoogle } from "../services/firebase";
 import styles from "./Login.module.css";
 
 const Login = () => {
@@ -10,11 +12,46 @@ const Login = () => {
     password: "",
   });
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState(null);
   const [deactivated, setDeactivated] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    setError(null);
+    setDeactivated(false);
+    try {
+      const result = await signInWithGoogle();
+      const fbUser = result.user;
+      const idToken = await fbUser.getIdToken();
+
+      const res = await API.post("/auth/google-login", {
+        email: fbUser.email,
+        name: fbUser.displayName || "",
+        photo_url: fbUser.photoURL || "",
+        id_token: idToken,
+      });
+
+      localStorage.setItem("token", res.data.token);
+      window.location.href = "/seller/my-designs";
+    } catch (err) {
+      console.error("Google sign-in error:", err);
+      if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
+        return;
+      }
+      const message = err.response?.data?.error || err.message || "Google sign-in failed";
+      if (err.response?.status === 403) {
+        setDeactivated(true);
+      } else {
+        setError(message);
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -89,11 +126,25 @@ const Login = () => {
           <button 
             type="submit" 
             className={`btn-primary-custom ${styles.submitBtn}`}
-            disabled={loading}
+            disabled={loading || googleLoading}
           >
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
+
+        <div className={styles.divider}>
+          <span>or continue with</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          className={styles.googleBtn}
+          disabled={loading || googleLoading}
+        >
+          <FcGoogle size={22} />
+          <span>{googleLoading ? "Connecting with Google..." : "Continue with Google"}</span>
+        </button>
 
         <div className={styles.footer}>
           <p className={styles.footerText}>

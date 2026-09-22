@@ -18,38 +18,45 @@
 | **Phase 3** | Design Details (Native FLAG_SECURE Screenshot Protection, Gallery, 2-Col Specs Table, HTML Description) & Persistent Cart (Guest Cart Merge on Login, Continue Purchase flow) | **COMPLETED** | Tested & confirmed by user ("this phase is good") |
 | **Phase 4** | Authentication (Login, 2-Step OTP Signup) & Checkout Pipeline | **COMPLETED** | Verified with live backend order creation & HMAC verification |
 | **Phase 5** | Buyer Purchases Library, Direct-to-Device Download for .zip/.emb & Embroidex Gemini AI Assistant | **COMPLETED** | Verified via Metro bundle build (0 errors) |
-| **Phase 6** | Seller Hub (Seller Onboarding, Unified Design & Photo Upload Flow, Earnings Analytics, Bank Setup & Withdrawals) | UPCOMING | Next phase |
+| **Phase 6** | Seller Hub (Seller Registration, Zero-Dependency Native File/Photo Picker, Full Design Upload Pipeline, Portfolio Management, Earnings & Bank Withdrawals) | **COMPLETED** | Verified via Android Kotlin Gradle & Metro bundle builds (0 errors) |
 
 ---
 
-### ⚠️ Deferred to Final Phase / Backlog (Per User Request)
-- **Razorpay Native Android Gradle Dependency**: `com.razorpay:standard-core:latest.integration` remote maven repo 502 Bad Gateway issue during Android Gradle build. App provides robust fallback/simulated checkout so full end-to-end purchasing & library features can be tested without blocking progress. Will resolve native build configuration in final polish phase.
+### 🎨 Phase 6 Deliverables Completed:
+1. **Zero-Dependency Native File & Photo Picker ([NativeFilePickerModule.kt](file:///Users/parth/Embroidex/embroidex/mobile_app/android/app/src/main/java/com/embroidex/NativeFilePickerModule.kt))**:
+   - Zero heavy third-party npm libraries, keeping app bundle size strictly minimal.
+   - Built directly on Bare Android using `Intent.ACTION_GET_CONTENT` with `ActivityEventListener`.
+   - Supports image selection (`pickImage(multiple)`), base64 thumbnail generation for instant preview, and binary document selection (`pickDocument()`) for embroidery machine files (`.EMB`, `.DST`, `.ZIP`, etc.).
+   - Exposed to React Native via [pickerHelper.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/utils/pickerHelper.js) (`pickMainPhoto()`, `pickAdditionalPhotos()`, `pickDesignFile()`).
+2. **Seller Onboarding & Registration ([SellerRegisterScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/SellerRegisterScreen.js))**:
+   - Complete 100% theme-adaptive registration screen.
+   - Live check for existing seller status with direct shortcuts to Upload and Earnings.
+   - Validates store name, designer bio, and connects to `POST /auth/register-seller`.
+3. **Comprehensive Design Upload Flow ([SellerUploadScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/SellerUploadScreen.js))**:
+   - Main front photo picker with real-time thumbnail preview.
+   - Up to 5 additional detail photos with remove buttons.
+   - Native design machine file selector with file name and size display.
+   - Format pills (`.EMB`, `.DST`, `.PES`, `.JEF`, `.EXP`, `.VP3`, etc.).
+   - Machine type selector (12 embroidery machine categories).
+   - Dynamic Category & Subcategory selection loaded directly from `GET /seller/categories`.
+   - Live earnings calculator showing seller's net 70% earnings alongside price input.
+   - Multipart `FormData` submission to `POST /seller/final-upload` with loading progress indicator.
+4. **Seller Portfolio Management ([SellerMyDesignsScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/SellerMyDesignsScreen.js))**:
+   - Fetches portfolio designs from `GET /seller/my-designs`.
+   - Metric overview cards (Total, Live, Review, Issues).
+   - Filter tabs (All, Live, Pending, Rejected).
+   - Detailed design cards with status badges (`Approved` [green], `In Review` [amber], `Action Required` [red]).
+   - Displays admin feedback/rejection reasons directly to the seller.
+   - Design deletion action via `DELETE /seller/design/:id` with confirmation modal.
+   - Pull-to-refresh and preview navigation.
+5. **Seller Earnings & Payout Dashboard ([SellerEarningsScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/SellerEarningsScreen.js))**:
+   - Hero Available Balance card with quick withdrawal CTA.
+   - Secondary KPI metrics: Net Royalties (70%), Gross Sales, Orders Fulfilled, Platform Commission (30%).
+   - Settlement Bank Account management with IFSC validation (`^[A-Z]{4}0[A-Z0-9]{6}$`) and account number confirmation.
+   - Payout request modal enforcing minimum ₹2,000 withdrawal threshold and balance limit.
+   - Tabbed history view: Sales breakdown (gross price, 30% platform fee, 70% seller take-home) and Withdrawal request tracking (reference IDs, transfer statuses).
+6. **Unified Navigation & Drawer Integration**:
+   - Registered `SellerMyDesignsScreen` in [RootNavigator.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/navigation/RootNavigator.js).
+   - Added portfolio, upload, and earnings links into [CustomDrawerContent.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/components/CustomDrawerContent.js) under the `SELLER HUB` accordion and in [ProfileScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/ProfileScreen.js).
 
----
-
-### 🎨 Phase 5 Deliverables Completed:
-1. **Buyer Purchases Library ([MyPurchasesScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/MyPurchasesScreen.js))**:
-   - Live query to `GET /payment/my-purchases` showing full purchase cards with thumbnails, `.ZIP` badges, dates, receipt codes, and prices.
-   - Interactive official in-app receipt modal with order status, payment ID, and breakdown.
-   - Per-card download button with active loading spinner indicator.
-   - Empty and unauthenticated state handlers with direct CTAs.
-2. **Direct-to-Device Native Download Pipeline**:
-   - Kotlin module [NativeDownloadModule.kt](file:///Users/parth/Embroidex/embroidex/mobile_app/android/app/src/main/java/com/embroidex/NativeDownloadModule.kt) connected to Android's system `DownloadManager`.
-   - Sends `Authorization: Bearer <token>` in native headers, saving `.zip` files directly to `/sdcard/Download/`.
-   - Android system tray progress and completion notifications.
-   - Backend [Payment_routes.py](file:///Users/parth/Embroidex/embroidex/backend/routes/Payment_routes.py) multi-path resolution and on-the-fly packaging of `.EMB` files into genuine, valid `.zip` archives.
-3. **Embroidex Gemini AI Assistant**:
-   - Floating AI Bot with animated pulse on all screens.
-   - Full-screen modal assistant with suggestion chips, markdown rendering, chat history, and live backend AI integration.
-4. **Simple Clean Alert Dialog System ([AlertContext.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/context/AlertContext.js))**:
-   - Clean, standard rounded modal dialog (`borderRadius: 16`) using normal CSS styling with zero funky clutter.
-   - Globally intercepts all `Alert.alert(...)` calls throughout the app.
-
----
-
-### 🚀 Next Up: Phase 6 — Seller Hub & Earnings
-- **Seller Onboarding & Registration** ([SellerRegisterScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/SellerRegisterScreen.js))
-- **Unified Design & Photo Upload Flow** ([SellerUploadScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/SellerUploadScreen.js))
-- **Seller Earnings Analytics & Dashboard** ([SellerEarningsScreen.js](file:///Users/parth/Embroidex/embroidex/mobile_app/src/screens/SellerEarningsScreen.js))
-- **Bank Account Setup & Withdrawal Requests** (Integrating `Withdrawal_routes.py`)
 

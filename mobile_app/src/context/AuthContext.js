@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API from '../services/api';
+import { configureGoogleSignIn } from '../services/googleAuth';
 
 const AuthContext = createContext({});
 
@@ -12,6 +13,7 @@ export const AuthProvider = ({ children }) => {
 
   // Load existing session on app launch
   useEffect(() => {
+    configureGoogleSignIn();
     loadStoredSession();
   }, []);
 
@@ -121,6 +123,26 @@ export const AuthProvider = ({ children }) => {
     return res.data;
   };
 
+  // Google Login
+  const googleLogin = async (googlePayload) => {
+    const res = await API.post('/auth/google-login', googlePayload);
+    const authToken = res.data.token;
+    if (authToken) {
+      setToken(authToken);
+      await AsyncStorage.setItem('token', authToken);
+
+      // Fetch fresh profile
+      const profRes = await API.get('/auth/profile', {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      setUser(profRes.data);
+      await AsyncStorage.setItem('user', JSON.stringify(profRes.data));
+      await fetchStats(authToken);
+      return profRes.data;
+    }
+    throw new Error('Authentication token not received');
+  };
+
   // Register as Seller
   const registerSeller = async (sellerData) => {
     const res = await API.post('/auth/register-seller', sellerData);
@@ -133,6 +155,12 @@ export const AuthProvider = ({ children }) => {
     try {
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user');
+      try {
+        const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+        await GoogleSignin.signOut();
+      } catch (e) {
+        // Ignore Google signout error if not signed in via Google
+      }
     } catch (e) {
       console.warn('Error clearing AsyncStorage on logout:', e);
     }
@@ -154,6 +182,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         isSeller,
         login,
+        googleLogin,
         sendSignupOtp,
         verifySignupOtp,
         registerSeller,

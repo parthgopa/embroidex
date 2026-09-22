@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  ScrollView,
   Image,
   ActivityIndicator,
   RefreshControl,
@@ -13,6 +14,7 @@ import {
   Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TopBar from '../components/TopBar';
@@ -284,9 +286,12 @@ const MyPurchasesScreen = ({ navigation }) => {
     }
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    fetchPurchases();
-  }, [fetchPurchases]);
+  // Automatically fetch purchases whenever this screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchPurchases();
+    }, [fetchPurchases])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -333,24 +338,49 @@ const MyPurchasesScreen = ({ navigation }) => {
           },
         ]}
       >
-        <View>
+        <View style={styles.headerTitleWrap}>
           <Text style={[styles.headerTitle, { color: colors.midnight }]}>My Purchases</Text>
           <Text style={[styles.headerSubtitle, { color: colors.slate }]}>
             Unlimited lifetime downloads for all designs
           </Text>
         </View>
-        {isAuthenticated && purchases.length > 0 && (
-          <View
-            style={[
-              styles.countPill,
-              { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#e0e7ff' },
-            ]}
-          >
-            <Text style={[styles.countPillText, { color: colors.primary }]}>
-              {purchases.length} {purchases.length === 1 ? 'Design' : 'Designs'}
-            </Text>
-          </View>
-        )}
+
+        <View style={styles.headerRightRow}>
+          {isAuthenticated && purchases.length > 0 && (
+            <View
+              style={[
+                styles.countPill,
+                { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#e0e7ff' },
+              ]}
+            >
+              <Text style={[styles.countPillText, { color: colors.primary }]}>
+                {purchases.length} {purchases.length === 1 ? 'Design' : 'Designs'}
+              </Text>
+            </View>
+          )}
+
+          {isAuthenticated && (
+            <TouchableOpacity
+              style={[
+                styles.headerRefreshBtn,
+                {
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#f1f5f9',
+                  borderColor: colors.border,
+                },
+              ]}
+              onPress={onRefresh}
+              disabled={refreshing || loading}
+              activeOpacity={0.75}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              {refreshing ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons name="refresh" size={18} color={colors.midnight} />
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Main Content */}
@@ -388,8 +418,19 @@ const MyPurchasesScreen = ({ navigation }) => {
           <Text style={[styles.loadingText, { color: colors.slate }]}>Loading your purchases...</Text>
         </View>
       ) : purchases.length === 0 ? (
-        // Empty Purchases
-        <View style={styles.centerState}>
+        // Empty Purchases with Pull-to-Refresh and Refresh Button
+        <ScrollView
+          contentContainerStyle={styles.centerScrollState}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
+        >
           <View
             style={[
               styles.stateIconCircle,
@@ -403,17 +444,42 @@ const MyPurchasesScreen = ({ navigation }) => {
           </View>
           <Text style={[styles.stateTitle, { color: colors.midnight }]}>No Purchases Yet</Text>
           <Text style={[styles.stateDesc, { color: colors.slate }]}>
-            Explore thousands of premium machine embroidery patterns and start crafting today.
+            Explore thousands of premium machine embroidery patterns or pull down to check for recent purchases.
           </Text>
-          <TouchableOpacity
-            style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
-            onPress={() => navigation.navigate('Explore')}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="compass-outline" size={18} color="#ffffff" style={{ marginRight: 8 }} />
-            <Text style={styles.primaryBtnText}>Browse Marketplace</Text>
-          </TouchableOpacity>
-        </View>
+
+          <View style={styles.emptyBtnGroup}>
+            <TouchableOpacity
+              style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
+              onPress={() => navigation.navigate('Explore')}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="compass-outline" size={18} color="#ffffff" style={{ marginRight: 8 }} />
+              <Text style={styles.primaryBtnText}>Browse Marketplace</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.refreshOutlineBtn,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f8fafc',
+                },
+              ]}
+              onPress={onRefresh}
+              disabled={refreshing}
+              activeOpacity={0.8}
+            >
+              {refreshing ? (
+                <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 8 }} />
+              ) : (
+                <Ionicons name="refresh-outline" size={18} color={colors.midnight} style={{ marginRight: 8 }} />
+              )}
+              <Text style={[styles.refreshOutlineBtnText, { color: colors.midnight }]}>
+                {refreshing ? 'Checking...' : 'Refresh Purchases'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       ) : (
         // Purchases List
         <FlatList
@@ -468,6 +534,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  headerTitleWrap: {
+    flex: 1,
+    marginRight: 10,
+  },
+  headerRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerRefreshBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '900',
@@ -494,6 +577,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
+  },
+  centerScrollState: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 40,
+  },
+  emptyBtnGroup: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 12,
   },
   stateIconCircle: {
     width: 84,
@@ -533,6 +628,22 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '800',
+  },
+  refreshOutlineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    width: '100%',
+    maxWidth: 240,
+    ...SHADOWS.subtle,
+  },
+  refreshOutlineBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 
   // Purchases List

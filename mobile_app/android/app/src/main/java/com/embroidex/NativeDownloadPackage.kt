@@ -9,7 +9,10 @@ import com.facebook.react.uimanager.ViewManager
 
 class NativeDownloadPackage : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-        return listOf(NativeDownloadModule(reactContext))
+        return listOf(
+            NativeDownloadModule(reactContext),
+            NativeFilePickerModule(reactContext)
+        )
     }
 
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<View, ReactShadowNode<*>>> {

@@ -157,10 +157,8 @@ const CustomDrawerContent = (props) => {
 
         <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
 
-        {/* Main Navigation Items */}
+        {/* Navigation Section: Explore & Home */}
         <View style={styles.navSection}>
-          <Text style={[styles.sectionHeader, { color: colors.slate }]}>MAIN MENU</Text>
-
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => handleNavigation('MainTabs', { screen: 'Home' })}
@@ -182,27 +180,6 @@ const CustomDrawerContent = (props) => {
 
           <TouchableOpacity
             style={styles.navItem}
-            onPress={() => handleNavigation('MainTabs', { screen: 'Purchases' })}
-          >
-            <Ionicons name="bag-check-outline" size={20} color={colors.midnight} style={styles.navIcon} />
-            <Text style={[styles.navLabel, { color: colors.midnight }]}>My Purchases Library</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => handleNavigation('MainTabs', { screen: 'Cart' })}
-          >
-            <Ionicons name="cart-outline" size={20} color={colors.midnight} style={styles.navIcon} />
-            <Text style={[styles.navLabel, { color: colors.midnight }]}>Shopping Cart</Text>
-            {cartCount > 0 && (
-              <View style={[styles.cartCountPill, { backgroundColor: colors.accentPink }]}>
-                <Text style={styles.cartCountPillText}>{cartCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.navItem}
             onPress={() => handleNavigation('ChatbotModal')}
           >
             <Ionicons name="sparkles-outline" size={20} color="#7c3aed" style={styles.navIcon} />
@@ -213,14 +190,57 @@ const CustomDrawerContent = (props) => {
           </TouchableOpacity>
         </View>
 
-        {/* Seller Section (if seller or logged in) */}
+        <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
+
+        {/* ACCOUNT & ORDERS Section */}
+        <View style={styles.navSection}>
+          <Text style={[styles.sectionHeader, { color: colors.slate }]}>ACCOUNT & ORDERS</Text>
+
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => handleNavigation('MainTabs', { screen: 'Purchases' })}
+          >
+            <Ionicons name="bag-handle-outline" size={20} color={colors.midnight} style={styles.navIcon} />
+            <Text style={[styles.navLabel, { color: colors.midnight }]}>My Purchases</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => handleNavigation('MainTabs', { screen: 'Cart' })}
+          >
+            <Ionicons name="cart-outline" size={20} color={colors.midnight} style={styles.navIcon} />
+            <Text style={[styles.navLabel, { color: colors.midnight }]}>My Cart</Text>
+            {cartCount > 0 && (
+              <View style={[styles.cartCountPill, { backgroundColor: colors.accentPink }]}>
+                <Text style={styles.cartCountPillText}>{cartCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => handleNavigation('MainTabs', { screen: 'Profile' })}
+          >
+            <Ionicons name="person-outline" size={20} color={colors.midnight} style={styles.navIcon} />
+            <Text style={[styles.navLabel, { color: colors.midnight }]}>My Profile</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
+
+        {/* SELLER STUDIO Section */}
         {isAuthenticated && isSeller && (
           <View style={styles.navSection}>
             <TouchableOpacity
               style={styles.sectionHeaderRow}
               onPress={() => setSellerMenuExpanded(!sellerMenuExpanded)}
             >
-              <Text style={[styles.sectionHeader, { color: colors.slate }]}>SELLER HUB</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={[styles.sectionHeader, { color: colors.slate, marginBottom: 0 }]}>SELLER STUDIO</Text>
+                <View style={styles.proBadge}>
+                  <Text style={styles.proBadgeText}>PRO</Text>
+                </View>
+              </View>
               <Ionicons
                 name={sellerMenuExpanded ? "chevron-down" : "chevron-forward"}
                 size={14}
@@ -235,7 +255,15 @@ const CustomDrawerContent = (props) => {
                   onPress={() => handleNavigation('SellerUploadScreen')}
                 >
                   <Ionicons name="cloud-upload-outline" size={20} color={colors.midnight} style={styles.navIcon} />
-                  <Text style={[styles.navLabel, { color: colors.midnight }]}>Upload New Design</Text>
+                  <Text style={[styles.navLabel, { color: colors.midnight }]}>Upload Design</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.navItem}
+                  onPress={() => handleNavigation('SellerMyDesignsScreen')}
+                >
+                  <Ionicons name="copy-outline" size={20} color={colors.midnight} style={styles.navIcon} />
+                  <Text style={[styles.navLabel, { color: colors.midnight }]}>My Designs</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -243,7 +271,15 @@ const CustomDrawerContent = (props) => {
                   onPress={() => handleNavigation('SellerEarningsScreen')}
                 >
                   <Ionicons name="wallet-outline" size={20} color={colors.midnight} style={styles.navIcon} />
-                  <Text style={[styles.navLabel, { color: colors.midnight }]}>Earnings & Withdrawals</Text>
+                  <Text style={[styles.navLabel, { color: colors.midnight }]}>Earnings & Payouts</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.navItem}
+                  onPress={() => handleNavigation('SellerEarningsScreen', { initialTab: 'settings' })}
+                >
+                  <Ionicons name="card-outline" size={20} color={colors.midnight} style={styles.navIcon} />
+                  <Text style={[styles.navLabel, { color: colors.midnight }]}>Payment Settings</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -493,6 +529,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.8,
     marginBottom: 8,
+  },
+  proBadge: {
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+  proBadgeText: {
+    color: '#2563eb',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   expandChevron: {
     fontSize: 14,

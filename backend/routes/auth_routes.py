@@ -11,6 +11,21 @@ import os
 auth_bp = Blueprint("auth", __name__)
 
 
+def get_user_signup_method(user):
+    """
+    Returns 'google' or 'password' depending on user's registration method.
+    Defaults to 'password' for users with passwords or legacy accounts.
+    """
+    if not user:
+        return None
+    method = user.get("signup_method")
+    if method:
+        return str(method).lower().strip()
+    if user.get("password"):
+        return "password"
+    return "google"
+
+
 @auth_bp.route("/send-signup-otp", methods=["POST"])
 def send_signup_otp():
     data = request.json or {}
@@ -30,8 +45,12 @@ def send_signup_otp():
         return jsonify({"error": "Password must be at least 6 characters"}), 400
 
     # Check if user already exists
-    if USERS_COLLECTION.find_one({"email": email}):
-        return jsonify({"error": "An account with this email already exists. Please login."}), 400
+    existing_user = USERS_COLLECTION.find_one({"email": email})
+    if existing_user:
+        signup_method = get_user_signup_method(existing_user)
+        if signup_method == "google":
+            return jsonify({"error": "This email was registered using Google. Please sign in with Google."}), 400
+        return jsonify({"error": "An account with this email already exists. Please sign in with your password."}), 400
 
     # Generate 6-digit OTP
     otp_code = f"{random.randint(100000, 999999)}"
@@ -83,8 +102,12 @@ def verify_signup_otp():
         return jsonify({"error": "Invalid verification code. Please check and try again."}), 400
 
     # Check if user already exists
-    if USERS_COLLECTION.find_one({"email": email}):
-        return jsonify({"error": "User already exists. Please login."}), 400
+    existing_user = USERS_COLLECTION.find_one({"email": email})
+    if existing_user:
+        signup_method = get_user_signup_method(existing_user)
+        if signup_method == "google":
+            return jsonify({"error": "This email was registered using Google. Please sign in with Google."}), 400
+        return jsonify({"error": "User already exists. Please sign in with your password."}), 400
 
     # Create verified user
     user = {
@@ -94,6 +117,7 @@ def verify_signup_otp():
         "role": "buyer",
         "is_seller": False,
         "is_verified": True,
+        "signup_method": "password",
         "created_at": now
     }
     
@@ -119,11 +143,15 @@ def verify_signup_otp():
 
 @auth_bp.route("/signup", methods=["POST"])
 def signup():
-    data = request.json
+    data = request.json or {}
     email = data.get("email", "").strip().lower()
 
-    if USERS_COLLECTION.find_one({"email": email}):
-        return jsonify({"error": "User already exists"}), 400
+    existing_user = USERS_COLLECTION.find_one({"email": email})
+    if existing_user:
+        signup_method = get_user_signup_method(existing_user)
+        if signup_method == "google":
+            return jsonify({"error": "This email was registered using Google. Please sign in with Google."}), 400
+        return jsonify({"error": "User already exists. Please sign in with your password."}), 400
 
     user = {
         "name": data["name"],
@@ -131,6 +159,7 @@ def signup():
         "password": hash_password(data["password"]),
         "role": "buyer",
         "is_seller": False,
+        "signup_method": "password",
         "created_at": datetime.datetime.utcnow()
     }
     
@@ -141,11 +170,24 @@ def signup():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    data = request.json
+    data = request.json or {}
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
 
-    user = USERS_COLLECTION.find_one({"email": data["email"]})
+    user = USERS_COLLECTION.find_one({"email": email})
 
-    if not user or not verify_password(data["password"], user["password"]):
+    if not user:
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    signup_method = get_user_signup_method(user)
+
+    # Case 2: User signed up with Google, trying to login with password
+    if signup_method == "google":
+        return jsonify({
+            "error": "This email was registered using Google. Please sign in with Google."
+        }), 400
+
+    if not user.get("password") or not verify_password(password, user["password"]):
         return jsonify({"error": "Invalid credentials"}), 401
 
     if user.get("is_active") == False:
@@ -154,6 +196,81 @@ def login():
     token = generate_token(user["_id"])
 
     return jsonify({"token": token})
+
+
+@auth_bp.route("/google-login", methods=["POST"])
+def google_login():
+    """
+    Authenticate or register user via Google Sign-In (Firebase)
+    Accepts: { email, name, photo_url, id_token }
+    Returns: { token, user }
+    """
+    data = request.json or {}
+    email = data.get("email", "").strip().lower()
+    name = data.get("name", "").strip()
+    photo_url = data.get("photo_url", "")
+
+    if not email:
+        return jsonify({"error": "Email is required for Google login"}), 400
+
+    now = datetime.datetime.utcnow()
+
+    # Check if user already exists
+    user = USERS_COLLECTION.find_one({"email": email})
+
+    if not user:
+        # Create a new user account for Google sign-in
+        user_doc = {
+            "name": name or email.split("@")[0],
+            "email": email,
+            "role": "buyer",
+            "is_seller": False,
+            "is_verified": True,
+            "signup_method": "google",
+            "photo_url": photo_url,
+            "created_at": now
+        }
+        res = USERS_COLLECTION.insert_one(user_doc)
+        user_id = res.inserted_id
+        is_seller = False
+        user_name = user_doc["name"]
+    else:
+        # User already exists - check signup method!
+        signup_method = get_user_signup_method(user)
+
+        # Case 1: User signed up with password, but trying to login using Google
+        if signup_method == "password":
+            return jsonify({
+                "error": "This email is registered with a password. Please sign in using your email and password."
+            }), 400
+
+        user_id = user["_id"]
+        if user.get("is_active") == False:
+            return jsonify({"error": "Your account has been deactivated. Please contact admin."}), 403
+
+        # Update photo and ensure signup_method is set
+        update_fields = {}
+        if not user.get("signup_method"):
+            update_fields["signup_method"] = "google"
+        if photo_url and not user.get("photo_url"):
+            update_fields["photo_url"] = photo_url
+        if update_fields:
+            USERS_COLLECTION.update_one({"_id": user_id}, {"$set": update_fields})
+
+        is_seller = user.get("is_seller", False)
+        user_name = user.get("name", name)
+
+    token = generate_token(user_id)
+
+    return jsonify({
+        "token": token,
+        "user": {
+            "name": user_name,
+            "email": email,
+            "role": "buyer",
+            "is_seller": is_seller
+        }
+    }), 200
 
 
 @auth_bp.route("/me", methods=["GET"])

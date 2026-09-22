@@ -72,19 +72,29 @@ def get_seller_earnings():
                 "buyer_id": str(purchase.get("user_id"))
             })
         
-        # Get total withdrawn amount (from withdrawal records)
-        # For now, we'll assume no withdrawals have been made
-        # In production, you'd query a WITHDRAWALS_COLLECTION
-        total_withdrawn = 0
+        # Get total withdrawn amount (from approved withdrawal records)
+        approved_withdrawals = list(WITHDRAWALS_COLLECTION.find({
+            "sellerId": user_id,
+            "status": "APPROVED"
+        }))
+        total_withdrawn = round(sum(w.get("amount", 0) for w in approved_withdrawals), 2)
         
-        # Available balance = total earnings - withdrawn
-        available_balance = round(total_seller_earning - total_withdrawn, 2)
+        # Get pending withdrawals (deducted from balance)
+        pending_withdrawals = list(WITHDRAWALS_COLLECTION.find({
+            "sellerId": user_id,
+            "status": "PENDING"
+        }))
+        pending_amount = round(sum(w.get("amount", 0) for w in pending_withdrawals), 2)
+        
+        # Available balance = total earnings - withdrawn - pending
+        available_balance = round(total_seller_earning - total_withdrawn - pending_amount, 2)
         
         earnings_summary = {
             "total_sales": round(total_sales, 2),
             "platform_fee": round(total_platform_fee, 2),
             "total_earnings": round(total_seller_earning, 2),
             "total_withdrawn": total_withdrawn,
+            "pending_amount": pending_amount,
             "available_balance": available_balance,
             "total_orders": len(purchases),
             "platform_fee_percent": platform_fee_percent

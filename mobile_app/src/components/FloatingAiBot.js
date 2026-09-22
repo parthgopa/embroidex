@@ -19,20 +19,21 @@ const FloatingAiBot = () => {
   const { isChatMinimized, openChat, messages } = useChat();
   const [currentRoute, setCurrentRoute] = useState('');
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
+  const bottomAnim = React.useRef(new Animated.Value(28)).current;
 
-  // Listen to navigation state to hide FAB when on ChatbotModal
+  // Listen to navigation state to detect route and hide FAB on ChatbotModal
   useEffect(() => {
     let unsubscribe;
     const interval = setInterval(() => {
       if (navigationRef.isReady()) {
-        clearInterval(interval);
         setCurrentRoute(navigationRef.getCurrentRoute()?.name || '');
         try {
           unsubscribe = navigationRef.addListener('state', () => {
             setCurrentRoute(navigationRef.getCurrentRoute()?.name || '');
           });
+          clearInterval(interval);
         } catch (e) {
-          // ignore
+          // retry
         }
       }
     }, 100);
@@ -42,6 +43,23 @@ const FloatingAiBot = () => {
       if (unsubscribe) unsubscribe();
     };
   }, []);
+
+  // Determine if the current screen has an app bottom navbar or sticky footer
+  const hasBottomBar = ['MainTabs', 'Home', 'Explore', 'Cart', 'Purchases', 'Profile', 'DesignDetailScreen'].includes(currentRoute);
+
+  // Smoothly adjust bottom offset: above mobile navbar when no app navbar, or above tab bar when tab bar is present
+  useEffect(() => {
+    const targetBottom = hasBottomBar
+      ? (insets.bottom > 0 ? insets.bottom : 0) + 80
+      : Math.max(insets.bottom, 12) + 16;
+
+    Animated.spring(bottomAnim, {
+      toValue: targetBottom,
+      friction: 8,
+      tension: 50,
+      useNativeDriver: false,
+    }).start();
+  }, [hasBottomBar, insets.bottom]);
 
   // Subtle pulsing animation when minimized
   useEffect(() => {
@@ -82,7 +100,7 @@ const FloatingAiBot = () => {
       style={[
         styles.container,
         {
-          bottom: Math.max(insets.bottom, 14) + 68,
+          bottom: bottomAnim,
           transform: [{ scale: pulseAnim }],
         },
       ]}
@@ -117,7 +135,6 @@ const FloatingAiBot = () => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 84, // Elevated above bottom tabs
     right: 18,
     alignItems: 'center',
     zIndex: 9999,

@@ -143,7 +143,8 @@ export const AlertProvider = ({ children }) => {
                         : isDestructive
                         ? [styles.btnDestructive, { backgroundColor: '#ef4444' }]
                         : [styles.btnPrimary, { backgroundColor: colors.primary }],
-                      !isSingle && alertConfig.buttons.length <= 2 && { flex: 1 },
+                      isSingle && styles.btnSingle,
+                      !isSingle && alertConfig.buttons.length === 2 && { flex: 1 },
                       index > 0 && alertConfig.buttons.length <= 2 && { marginLeft: 10 },
                       alertConfig.buttons.length > 2 && { marginBottom: 8, width: '100%' },
                     ]}
@@ -217,6 +218,7 @@ const styles = StyleSheet.create({
   buttonsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     width: '100%',
   },
   buttonsStacked: {
@@ -228,6 +230,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  btnSingle: {
+    minWidth: 90,
+    paddingHorizontal: 22,
   },
   btnPrimary: {},
   btnCancel: {

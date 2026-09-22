@@ -11,7 +11,7 @@ import { SHADOWS } from '../theme/theme';
 
 const SignupScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const { sendSignupOtp, verifySignupOtp } = useAuth();
+  const { sendSignupOtp, verifySignupOtp, googleLogin } = useAuth();
   const { colors } = useTheme();
 
   const [step, setStep] = useState(1);
@@ -21,6 +21,24 @@ const SignupScreen = ({ navigation }) => {
   const [showPw, setShowPw] = useState(false);
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleSignup = async () => {
+    try {
+      setGoogleLoading(true);
+      const { promptGoogleSignIn } = require('../services/googleAuth');
+      const googleData = await promptGoogleSignIn();
+      if (!googleData) return;
+
+      await googleLogin(googleData);
+      navigation.navigate('MainTabs', { screen: 'Home' });
+    } catch (err) {
+      console.error('Google Sign-Up Error:', err);
+      Alert.alert('Google Sign-Up Failed', err.response?.data?.error || err.message || 'Could not sign up with Google');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSendOtp = async () => {
     if (!name.trim() || !email.trim() || !password) {
@@ -37,7 +55,7 @@ const SignupScreen = ({ navigation }) => {
       Alert.alert('Code Sent', `A 6-digit code has been sent to ${email}.`);
       setStep(2);
     } catch (err) {
-      Alert.alert('Failed', err.message);
+      Alert.alert('Failed', err.response?.data?.error || err.message || 'Could not send verification code');
     } finally {
       setLoading(false);
     }
@@ -54,7 +72,7 @@ const SignupScreen = ({ navigation }) => {
       Alert.alert('Welcome!', 'Account created successfully.');
       navigation.navigate('MainTabs', { screen: 'Home' });
     } catch (err) {
-      Alert.alert('Verification Failed', err.message);
+      Alert.alert('Verification Failed', err.response?.data?.error || err.message || 'Verification failed');
     } finally {
       setLoading(false);
     }
@@ -127,10 +145,32 @@ const SignupScreen = ({ navigation }) => {
               <TouchableOpacity
                 style={[styles.btn, { backgroundColor: colors.primary }, loading && styles.btnDisabled]}
                 onPress={handleSendOtp}
-                disabled={loading}
+                disabled={loading || googleLoading}
                 activeOpacity={0.82}
               >
                 {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Continue with OTP →</Text>}
+              </TouchableOpacity>
+
+              <View style={styles.dividerRow}>
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+                <Text style={[styles.dividerText, { color: colors.slate }]}>OR</Text>
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.googleBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                onPress={handleGoogleSignup}
+                disabled={loading || googleLoading}
+                activeOpacity={0.82}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : (
+                  <>
+                    <Ionicons name="logo-google" size={20} color="#EA4335" style={styles.googleIcon} />
+                    <Text style={[styles.googleBtnText, { color: colors.midnight }]}>Sign up with Google</Text>
+                  </>
+                )}
               </TouchableOpacity>
 
               <View style={styles.switchRow}>
@@ -218,6 +258,37 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
   switchText: { fontSize: 15, fontWeight: '500' },
   switchLink: { fontSize: 15, fontWeight: '800', textDecorationLine: 'underline' },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1,
+    ...SHADOWS.subtle,
+  },
+  googleIcon: {
+    marginRight: 10,
+  },
+  googleBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
 });
 
 export default SignupScreen;

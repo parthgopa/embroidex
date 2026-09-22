@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
-import { MdAdd, MdDelete, MdSave, MdUpload } from "react-icons/md";
+import {
+  MdAdd,
+  MdDelete,
+  MdSave,
+  MdUpload,
+  MdEdit,
+  MdDragIndicator,
+  MdArrowBack,
+  MdArrowForward,
+} from "react-icons/md";
 import API from "../../services/api";
 import styles from "./AdminDashboardV2.module.css";
 
@@ -9,6 +18,8 @@ const AdminHomepageConfig = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState({});
+  const [draggedItem, setDraggedItem] = useState(null); // { showcaseIndex, imgIndex }
+  const [draggedOverIndex, setDraggedOverIndex] = useState(null);
   const [config, setConfig] = useState({
     topCategories: [],
     showcases: [],
@@ -144,6 +155,99 @@ const AdminHomepageConfig = () => {
     }
   };
 
+  // ── Replace existing image ────────────────────────────────────────────────
+  const handleReplaceImage = async (showcaseIndex, imgIndex, file) => {
+    if (!file) return;
+    const uploadKey = `${showcaseIndex}-${imgIndex}-replace`;
+    setUploading((prev) => ({ ...prev, [uploadKey]: true }));
+
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await API.post("/admin/showcase-image-upload", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const s = [...config.showcases];
+      s[showcaseIndex].images[imgIndex] = {
+        ...s[showcaseIndex].images[imgIndex],
+        url: res.data.url,
+      };
+      setConfig({ ...config, showcases: s });
+    } catch (err) {
+      console.error("Replace image failed", err.response?.data || err);
+      alert(err.response?.data?.error || "Failed to replace image.");
+    } finally {
+      setUploading((prev) => {
+        const n = { ...prev };
+        delete n[uploadKey];
+        return n;
+      });
+    }
+  };
+
+  // ── Move image order by buttons ───────────────────────────────────────────
+  const moveImage = (showcaseIndex, fromIndex, toIndex) => {
+    const s = [...config.showcases];
+    const images = [...s[showcaseIndex].images];
+    if (toIndex < 0 || toIndex >= images.length) return;
+    const [item] = images.splice(fromIndex, 1);
+    images.splice(toIndex, 0, item);
+    s[showcaseIndex].images = images;
+    setConfig({ ...config, showcases: s });
+  };
+
+  // ── Drag & Drop Handlers ──────────────────────────────────────────────────
+  const handleDragStart = (e, showcaseIndex, imgIndex) => {
+    setDraggedItem({ showcaseIndex, imgIndex });
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", `${showcaseIndex}-${imgIndex}`);
+  };
+
+  const handleDragOver = (e, showcaseIndex, imgIndex) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (!draggedItem || draggedItem.showcaseIndex !== showcaseIndex) return;
+    if (draggedOverIndex !== imgIndex) {
+      setDraggedOverIndex(imgIndex);
+    }
+  };
+
+  const handleDrop = (e, showcaseIndex, targetIndex) => {
+    e.preventDefault();
+    if (!draggedItem || draggedItem.showcaseIndex !== showcaseIndex) {
+      setDraggedItem(null);
+      setDraggedOverIndex(null);
+      return;
+    }
+
+    const sourceIndex = draggedItem.imgIndex;
+    if (sourceIndex === targetIndex) {
+      setDraggedItem(null);
+      setDraggedOverIndex(null);
+      return;
+    }
+
+    const s = [...config.showcases];
+    const images = [...s[showcaseIndex].images];
+    const [movedImage] = images.splice(sourceIndex, 1);
+    images.splice(targetIndex, 0, movedImage);
+    s[showcaseIndex].images = images;
+
+    setConfig({ ...config, showcases: s });
+    setDraggedItem(null);
+    setDraggedOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDraggedOverIndex(null);
+  };
+
   const anyUploading = Object.keys(uploading).length > 0;
 
   if (loading) return <div style={{ padding: "40px" }}>Loading configuration…</div>;
@@ -272,46 +376,197 @@ const AdminHomepageConfig = () => {
                     </div>
                   </div>
 
-                  {/* Image grid — flexible, 4 per row */}
-                  <h4 style={{ fontSize: "14px", fontWeight: "600", marginBottom: "12px", color: "var(--text-dark)" }}>
-                    Design Images — {(showcase.images || []).length} uploaded
-                    <span style={{ fontWeight: 400, color: "var(--text-light)", fontSize: "12px", marginLeft: "8px" }}>
-                      (displayed 4 per row on homepage)
-                    </span>
-                  </h4>
+                  {/* Image grid header with drag tip */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+                    <h4 style={{ fontSize: "14px", fontWeight: "600", margin: 0, color: "var(--text-dark)" }}>
+                      Design Images — {(showcase.images || []).length} uploaded
+                      <span style={{ fontWeight: 400, color: "var(--text-light)", fontSize: "12px", marginLeft: "8px" }}>
+                        (displayed 4 per row on homepage)
+                      </span>
+                    </h4>
+                    {(showcase.images || []).length > 1 && (
+                      <span style={{ fontSize: "12px", color: "var(--primary, #4f46e5)", display: "flex", alignItems: "center", gap: "4px", fontWeight: "500" }}>
+                        <MdDragIndicator size={16} /> Drag cards or use &larr; &rarr; to reorder
+                      </span>
+                    )}
+                  </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "12px" }}>
-                    {(showcase.images || []).map((imgData, ii) => (
-                      <div
-                        key={ii}
-                        style={{ border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden", background: "white" }}
-                      >
-                        {/* Preview */}
-                        <div style={{ width: "100%", aspectRatio: "1", background: "#f4f6f8", overflow: "hidden" }}>
-                          <img
-                            src={`${BASE_URL}/${imgData.url}`}
-                            alt={imgData.name || `Image ${ii + 1}`}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                            onError={(e) => { e.target.src = "/placeholder-image.png"; }}
-                          />
-                        </div>
-                        <div style={{ padding: "8px" }}>
-                          <input
-                            type="text"
-                            value={imgData.name || ""}
-                            onChange={(e) => updateImageName(si, ii, e.target.value)}
-                            placeholder="Card label (optional)"
-                            style={{ width: "100%", padding: "5px 6px", borderRadius: "4px", border: "1px solid var(--border-color)", fontSize: "12px", boxSizing: "border-box", marginBottom: "4px" }}
-                          />
-                          <button
-                            onClick={() => removeImage(si, ii)}
-                            style={{ width: "100%", padding: "4px", background: "none", border: "1px solid #fca5a5", borderRadius: "4px", color: "#ef4444", cursor: "pointer", fontSize: "11px" }}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px", marginBottom: "12px" }}>
+                    {(showcase.images || []).map((imgData, ii) => {
+                      const isThisDragging = draggedItem?.showcaseIndex === si && draggedItem?.imgIndex === ii;
+                      const isThisOver = draggedItem?.showcaseIndex === si && draggedOverIndex === ii && !isThisDragging;
+                      const replaceKey = `${si}-${ii}-replace`;
+                      const isReplacingThis = Boolean(uploading[replaceKey]);
+
+                      return (
+                        <div
+                          key={ii}
+                          draggable={!anyUploading}
+                          onDragStart={(e) => handleDragStart(e, si, ii)}
+                          onDragOver={(e) => handleDragOver(e, si, ii)}
+                          onDrop={(e) => handleDrop(e, si, ii)}
+                          onDragEnd={handleDragEnd}
+                          style={{
+                            border: isThisOver
+                              ? "2px dashed var(--primary, #4f46e5)"
+                              : "1px solid var(--border-color)",
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                            background: "white",
+                            opacity: isThisDragging ? 0.35 : 1,
+                            transform: isThisOver ? "scale(1.03)" : "none",
+                            boxShadow: isThisOver
+                              ? "0 4px 14px rgba(79, 70, 229, 0.25)"
+                              : isThisDragging
+                              ? "none"
+                              : "0 1px 4px rgba(0,0,0,0.06)",
+                            transition: "transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease",
+                            display: "flex",
+                            flexDirection: "column",
+                          }}
+                        >
+                          {/* Top Drag & Reorder Bar */}
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              padding: "6px 8px",
+                              background: "#f1f5f9",
+                              borderBottom: "1px solid var(--border-color)",
+                              cursor: "grab",
+                              userSelect: "none",
+                            }}
+                            title="Drag to reorder"
                           >
-                            Remove
-                          </button>
+                            <span style={{ display: "flex", alignItems: "center", gap: "2px", fontSize: "12px", color: "#64748b", fontWeight: "600" }}>
+                              <MdDragIndicator size={16} /> #{ii + 1}
+                            </span>
+                            <div style={{ display: "flex", gap: "3px" }}>
+                              <button
+                                type="button"
+                                disabled={ii === 0}
+                                onClick={() => moveImage(si, ii, ii - 1)}
+                                title="Move left"
+                                style={{
+                                  background: "white",
+                                  border: "1px solid #cbd5e1",
+                                  borderRadius: "4px",
+                                  padding: "2px 5px",
+                                  cursor: ii === 0 ? "not-allowed" : "pointer",
+                                  opacity: ii === 0 ? 0.4 : 1,
+                                  display: "flex",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <MdArrowBack size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={ii === (showcase.images.length - 1)}
+                                onClick={() => moveImage(si, ii, ii + 1)}
+                                title="Move right"
+                                style={{
+                                  background: "white",
+                                  border: "1px solid #cbd5e1",
+                                  borderRadius: "4px",
+                                  padding: "2px 5px",
+                                  cursor: ii === (showcase.images.length - 1) ? "not-allowed" : "pointer",
+                                  opacity: ii === (showcase.images.length - 1) ? 0.4 : 1,
+                                  display: "flex",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <MdArrowForward size={13} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Preview Area with Change Photo Overlay */}
+                          <div style={{ position: "relative", width: "100%", aspectRatio: "1", background: "#f8fafc", overflow: "hidden" }}>
+                            <img
+                              src={`${BASE_URL}/${imgData.url}`}
+                              alt={imgData.name || `Image ${ii + 1}`}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              onError={(e) => { e.target.src = "/placeholder-image.png"; }}
+                            />
+
+                            {/* Change Photo Overlay Button */}
+                            <label
+                              style={{
+                                position: "absolute",
+                                bottom: "6px",
+                                right: "6px",
+                                background: "rgba(15, 23, 42, 0.82)",
+                                color: "white",
+                                padding: "4px 8px",
+                                borderRadius: "6px",
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                cursor: isReplacingThis ? "not-allowed" : "pointer",
+                                backdropFilter: "blur(4px)",
+                                boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                                transition: "background 0.2s",
+                              }}
+                              title="Replace this photo with a new one"
+                            >
+                              <MdEdit size={13} />
+                              {isReplacingThis ? "Replacing…" : "Change Photo"}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: "none" }}
+                                disabled={isReplacingThis}
+                                onChange={(e) => handleReplaceImage(si, ii, e.target.files[0])}
+                              />
+                            </label>
+                          </div>
+
+                          {/* Card Info & Label */}
+                          <div style={{ padding: "8px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                            <input
+                              type="text"
+                              value={imgData.name || ""}
+                              onChange={(e) => updateImageName(si, ii, e.target.value)}
+                              placeholder="Card label (optional)"
+                              style={{
+                                width: "100%",
+                                padding: "6px 8px",
+                                borderRadius: "4px",
+                                border: "1px solid var(--border-color)",
+                                fontSize: "12px",
+                                boxSizing: "border-box",
+                                marginBottom: "8px",
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeImage(si, ii)}
+                              style={{
+                                width: "100%",
+                                padding: "5px",
+                                background: "#fff1f2",
+                                border: "1px solid #fecdd3",
+                                borderRadius: "4px",
+                                color: "#e11d48",
+                                cursor: "pointer",
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "4px",
+                              }}
+                            >
+                              <MdDelete size={14} /> Remove Photo
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                     {/* Upload slot */}
                     <label

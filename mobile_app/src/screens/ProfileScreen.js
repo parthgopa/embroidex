@@ -108,14 +108,28 @@ const ProfileScreen = ({ navigation }) => {
                     onPress={() => navigation.navigate('SellerUploadScreen')}
                   >
                     <Ionicons name="cloud-upload-outline" size={20} color={colors.midnight} style={styles.menuIcon} />
-                    <Text style={[styles.menuLabel, { color: colors.midnight }]}>Upload New Design</Text>
+                    <Text style={[styles.menuLabel, { color: colors.midnight }]}>Upload Design</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+                    onPress={() => navigation.navigate('SellerMyDesignsScreen')}
+                  >
+                    <Ionicons name="copy-outline" size={20} color={colors.midnight} style={styles.menuIcon} />
+                    <Text style={[styles.menuLabel, { color: colors.midnight }]}>My Designs</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
                     onPress={() => navigation.navigate('SellerEarningsScreen')}
                   >
                     <Ionicons name="wallet-outline" size={20} color={colors.midnight} style={styles.menuIcon} />
-                    <Text style={[styles.menuLabel, { color: colors.midnight }]}>Earnings & Withdrawals</Text>
+                    <Text style={[styles.menuLabel, { color: colors.midnight }]}>Earnings & Payouts</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+                    onPress={() => navigation.navigate('SellerEarningsScreen', { initialTab: 'settings' })}
+                  >
+                    <Ionicons name="card-outline" size={20} color={colors.midnight} style={styles.menuIcon} />
+                    <Text style={[styles.menuLabel, { color: colors.midnight }]}>Payment Settings</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -123,8 +137,8 @@ const ProfileScreen = ({ navigation }) => {
                 style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
                 onPress={() => navigation.navigate('Purchases')}
               >
-                <Ionicons name="bag-check-outline" size={20} color={colors.midnight} style={styles.menuIcon} />
-                <Text style={[styles.menuLabel, { color: colors.midnight }]}>My Purchases Library</Text>
+                <Ionicons name="bag-handle-outline" size={20} color={colors.midnight} style={styles.menuIcon} />
+                <Text style={[styles.menuLabel, { color: colors.midnight }]}>My Purchases</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.menuItemDanger} onPress={handleLogout}>
                 <Ionicons name="log-out-outline" size={20} color={colors.danger} style={styles.menuIcon} />

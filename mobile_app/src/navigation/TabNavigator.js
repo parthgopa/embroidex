@@ -41,6 +41,10 @@ const TabNavigator = () => {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
 
+  // Ensure comfortable breathing room so text never touches the mobile navbar
+  const bottomPadding = insets.bottom > 0 ? insets.bottom + 6 : 12;
+  const barHeight = 58 + bottomPadding;
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -53,8 +57,8 @@ const TabNavigator = () => {
           {
             backgroundColor: colors.surface,
             borderTopColor: colors.border,
-            height: 56 + Math.max(insets.bottom, 6),
-            paddingBottom: Math.max(insets.bottom, 6),
+            height: barHeight,
+            paddingBottom: bottomPadding,
           },
         ],
         tabBarLabelStyle: styles.tabBarLabel,
@@ -122,22 +126,21 @@ const TabNavigator = () => {
 const styles = StyleSheet.create({
   tabBar: {
     borderTopWidth: 1,
-    height: 64,
-    paddingBottom: 8,
-    paddingTop: 8,
+    paddingTop: 6,
     ...SHADOWS.subtle,
   },
   tabBarLabel: {
     fontSize: 11,
     fontWeight: '700',
-    marginTop: 2,
+    marginTop: 1,
+    marginBottom: 2,
   },
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 40,
-    height: 30,
-    borderRadius: 15,
+    width: 38,
+    height: 28,
+    borderRadius: 14,
   },
   iconWrapperActive: {},
   emoji: {
