@@ -80,10 +80,19 @@ const SignupScreen = ({ navigation }) => {
 
   const inputStyle = [styles.inputBox, { backgroundColor: colors.background, borderColor: colors.border }];
 
+  // Ensure ample clearance above Android 3-button or gesture system navbar and iOS home bar
+  const effectiveBottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 48 : 20);
+  const rootPaddingBottom = effectiveBottomInset;
+  const scrollPaddingBottom = effectiveBottomInset + 40;
+
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface, paddingTop: Math.max(insets.top, 20), paddingBottom: Math.max(insets.bottom, 20) }]}>
+    <View style={[styles.root, { backgroundColor: colors.surface, paddingTop: Math.max(insets.top, 20), paddingBottom: rootPaddingBottom }]}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingBottom: scrollPaddingBottom }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <TouchableOpacity
             style={[styles.backBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
             onPress={() => (step === 2 ? setStep(1) : navigation.goBack())}
@@ -225,7 +234,7 @@ const SignupScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  scroll: { paddingHorizontal: 24, paddingBottom: 32 },
+  scroll: { flexGrow: 1, paddingHorizontal: 24 },
   backBtn: {
     width: 42, height: 42, borderRadius: 21,
     alignItems: 'center', justifyContent: 'center',

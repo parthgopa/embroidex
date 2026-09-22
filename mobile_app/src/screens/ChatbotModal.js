@@ -298,7 +298,7 @@ const ChatbotModal = ({ navigation }) => {
         )}
 
         {/* Bottom Input Row */}
-        <View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 12), backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+        <View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 48 : 12) + 6, backgroundColor: colors.surface, borderTopColor: colors.border }]}>
           <TextInput
             style={[
               styles.input,

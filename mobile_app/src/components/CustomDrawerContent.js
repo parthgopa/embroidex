@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -60,7 +61,7 @@ const CustomDrawerContent = (props) => {
   };
 
   return (
-    <View style={[styles.safeArea, { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 10, backgroundColor: colors.surface }]}>
+    <View style={[styles.safeArea, { paddingTop: insets.top + 10, paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 48 : 10) + 10, backgroundColor: colors.surface }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

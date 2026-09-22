@@ -861,7 +861,7 @@ const SellerEarningsScreen = ({ route, navigation }) => {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.modalOverlay}
         >
-          <View style={[styles.modalCard, { backgroundColor: colors.surface, paddingBottom: Math.max(insets.bottom, 24) + 24 }]}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surface, paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 48 : 24) + 24 }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.midnight }]}>Request Payout</Text>
               <TouchableOpacity onPress={() => setWithdrawModalVisible(false)}>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert,
-  Modal, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform,
+  Modal, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import TopBar from '../components/TopBar';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -13,6 +14,7 @@ import API from '../services/api';
 const ProfileScreen = ({ navigation }) => {
   const { user, isAuthenticated, isSeller, logout, stats } = useAuth();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   // Change Password Modal States
   const [modalVisible, setModalVisible] = useState(false);
@@ -25,6 +27,27 @@ const ProfileScreen = ({ navigation }) => {
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
   const [pwCountdown, setPwCountdown] = useState(60);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  // Dynamically calculate clearance for Android 3-button or gesture system navbar and iOS home bar
+  const systemNavBottom = Math.max(insets.bottom, Platform.OS === 'android' ? 48 : 20);
+  const modalPaddingBottom = keyboardVisible ? 16 : systemNavBottom + 20;
+  const scrollPaddingBottom = systemNavBottom + 100;
 
   useEffect(() => {
     let timer;
@@ -118,7 +141,7 @@ const ProfileScreen = ({ navigation }) => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopBar />
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: scrollPaddingBottom }]}>
         {/* Profile Card */}
         <View style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
@@ -284,7 +307,12 @@ const ProfileScreen = ({ navigation }) => {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.modalOverlay}
         >
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFillObject}
+            activeOpacity={1}
+            onPress={() => setModalVisible(false)}
+          />
+          <View style={[styles.modalContent, { backgroundColor: colors.surface, paddingBottom: modalPaddingBottom }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.midnight }]}>Change Password</Text>
               <TouchableOpacity
@@ -522,7 +550,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
     ...SHADOWS.card,
   },
   modalHeader: {
