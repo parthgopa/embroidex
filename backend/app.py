@@ -83,6 +83,11 @@ UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 def serve_uploads(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
+from utils.scheduler import start_otp_cleanup_scheduler
+
+# Start background daily OTP cleanup scheduler (purges OTPs > 30 days)
+start_otp_cleanup_scheduler()
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)

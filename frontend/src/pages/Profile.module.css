@@ -740,3 +740,327 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ─── Registered As & Password Change Styles ────────────────── */
+.methodBadgeGoogle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.methodBadgePassword {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.changePasswordBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #4f46e5;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.changePasswordBtn:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+.inlineActionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  color: #4f46e5;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.15s ease;
+}
+
+.inlineActionBtn:hover {
+  background: #eef2ff;
+  border-color: #a5b4fc;
+}
+
+.googleNoticeBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #334155;
+  font-size: 0.875rem;
+}
+
+.googleNoticeBox strong {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 2px;
+  color: #0f172a;
+}
+
+.googleNoticeBox p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.securityInfoBox {
+  padding: 6px 0;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.securityInfoBox p {
+  margin: 0 0 8px 0;
+}
+
+/* Password Change Interactive Box */
+.pwModalContainer {
+  margin-top: 16px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 20px 24px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.pwModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.pwModalHeader h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.closeBtn:hover {
+  color: #475569;
+}
+
+.pwErrorBanner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.pwSuccessBanner {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #059669;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.pwStepBox {
+  padding: 10px 0;
+}
+
+.pwStepDesc {
+  margin: 0 0 14px 0;
+  font-size: 0.9rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.pwActionRow {
+  margin-top: 14px;
+}
+
+.sendCodeBtn {
+  padding: 10px 20px;
+  background: #4f46e5;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sendCodeBtn:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.sendCodeBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.otpInputGroup {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.pwOtpInput {
+  font-family: monospace;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 10px;
+  width: 220px;
+  height: 48px;
+  text-align: center;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  padding-left: 10px;
+  outline: none;
+  background: #ffffff;
+}
+
+.pwOtpInput:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.pwResendRow {
+  font-size: 0.825rem;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+
+.resendBtnLink {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.resendBtnLink:hover {
+  text-decoration: underline;
+}
+
+.pwForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 360px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.formLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.textInput {
+  width: 100%;
+  height: 42px;
+  padding: 0 38px 0 12px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #ffffff;
+}
+
+.textInput:focus {
+  border-color: #4f46e5;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.eyeToggle {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.eyeToggle:hover {
+  color: #475569;
+}
+
+/* REAL-TIME MATCH INDICATOR */
+.matchIndicatorSuccess {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 6px;
+  color: #047857;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.matchIndicatorError {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 600;
+}

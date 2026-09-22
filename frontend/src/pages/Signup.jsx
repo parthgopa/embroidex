@@ -1,10 +1,21 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { MdVisibility, MdVisibilityOff, MdMailOutline, MdArrowBack, MdLockOutline, MdCheckCircle, MdErrorOutline } from "react-icons/md";
+import {
+  MdVisibility,
+  MdVisibilityOff,
+  MdMailOutline,
+  MdArrowBack,
+  MdLockOutline,
+  MdPersonOutline,
+  MdCheckCircle,
+  MdErrorOutline,
+  MdRefresh,
+} from "react-icons/md";
 import { FcGoogle } from "react-icons/fc";
 import { useAuth } from "../context/authContext";
 import API from "../services/api";
 import { signInWithGoogle } from "../services/firebase";
+import authBanner from "../assets/auth-banner.jpg";
 import styles from "./Signup.module.css";
 
 const Signup = () => {
@@ -136,6 +147,7 @@ const Signup = () => {
 
       setSuccessMsg(res.data?.message || "A new verification code has been sent!");
       setCountdown(60);
+      setOtp("");
     } catch (err) {
       setErrorMsg(err.response?.data?.error || "Failed to resend verification code.");
     } finally {
@@ -144,33 +156,32 @@ const Signup = () => {
   };
 
   // Step 2: Verify OTP & Create Account
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setErrorMsg("");
-    setSuccessMsg("");
-
-    const cleanOtp = otp.trim();
-    if (cleanOtp.length !== 6) {
+  const handleVerifyOtp = async (codeToVerify) => {
+    const finalOtp = (codeToVerify || otp).trim();
+    if (finalOtp.length !== 6) {
       return setErrorMsg("Please enter the complete 6-digit verification code.");
     }
 
     setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
 
     try {
       const res = await API.post("/auth/verify-signup-otp", {
         name: form.name.trim(),
         email: form.email.trim().toLowerCase(),
         password: form.password,
-        otp: cleanOtp,
+        otp: finalOtp,
       });
 
       if (res.data?.token) {
         localStorage.setItem("token", res.data.token);
-        if (refreshUser) await refreshUser();
       }
 
-      alert("✓ Account created and verified successfully!");
-      navigate("/");
+      setSuccessMsg("Account created and verified successfully!");
+      setTimeout(() => {
+        window.location.href = "/seller/my-designs";
+      }, 600);
     } catch (err) {
       setErrorMsg(err.response?.data?.error || "Invalid verification code. Please check and try again.");
     } finally {
@@ -182,176 +193,194 @@ const Signup = () => {
     const val = e.target.value.replace(/\D/g, "").slice(0, 6);
     setOtp(val);
     setErrorMsg("");
+
+    // Auto verify as soon as 6 digits are typed
+    if (val.length === 6) {
+      handleVerifyOtp(val);
+    }
   };
 
   return (
     <div className={styles.wrapper}>
-      <div className={`container-box ${styles.card}`}>
-        {step === "form" ? (
-          <>
-            {/* STEP 1: INITIAL SIGNUP FORM */}
-            <div className={styles.header}>
-              <h2 className={styles.title}>Create Account</h2>
-              <p className={styles.subtitle}>Join Embroidex and start creating</p>
-            </div>
-
-            {errorMsg && (
-              <div className={styles.errorBanner}>
-                <MdErrorOutline size={18} />
-                <span>{errorMsg}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSendOtp} className={styles.form}>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Full Name *</label>
-                <input
-                  type="text"
-                  name="name"
-                  placeholder="Enter your full name"
-                  className="input-custom"
-                  onChange={handleChange}
-                  value={form.name}
-                  required
-                />
+      <div className={styles.authContainer}>
+        {/* LEFT COLUMN: FORM SIDE */}
+        <div className={styles.formSide}>
+          <div className={styles.formInner}>
+            {step === "form" ? (
+            <>
+              {/* STEP 1: INITIAL SIGNUP FORM */}
+              <div className={styles.header}>
+                <h2 className={styles.title}>Create Account</h2>
+                <p className={styles.subtitle}>Join Embroidex and start creating or trading embroidery designs</p>
               </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Email Address *</label>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="name@example.com"
-                  className="input-custom"
-                  onChange={handleChange}
-                  value={form.email}
-                  required
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Password *</label>
-                <div className={styles.passwordWrapper}>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    placeholder="Create password (min. 6 characters)"
-                    className="input-custom"
-                    onChange={handleChange}
-                    value={form.password}
-                    required
-                    minLength={6}
-                  />
-                  <button
-                    type="button"
-                    className={styles.eyeButton}
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label="Toggle password visibility"
-                  >
-                    {showPassword ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
-                  </button>
+              {errorMsg && (
+                <div className={styles.errorBanner}>
+                  <MdErrorOutline size={18} />
+                  <span>{errorMsg}</span>
                 </div>
-              </div>
+              )}
 
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Confirm Password *</label>
-                <div className={styles.passwordWrapper}>
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    name="confirmPassword"
-                    placeholder="Re-enter your password"
-                    className="input-custom"
-                    onChange={handleChange}
-                    value={form.confirmPassword}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className={styles.eyeButton}
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    aria-label="Toggle confirm password visibility"
-                  >
-                    {showConfirmPassword ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
-                  </button>
+              {successMsg && (
+                <div className={styles.successBanner}>
+                  <MdCheckCircle size={18} />
+                  <span>{successMsg}</span>
                 </div>
+              )}
+
+              <form onSubmit={handleSendOtp} className={styles.form}>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Full Name *</label>
+                  <div className={styles.inputWrapper}>
+                    <MdPersonOutline size={19} className={styles.inputIcon} />
+                    <input
+                      type="text"
+                      name="name"
+                      placeholder="Enter your full name"
+                      className={`input-custom ${styles.inputField}`}
+                      onChange={handleChange}
+                      value={form.name}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Email Address *</label>
+                  <div className={styles.inputWrapper}>
+                    <MdMailOutline size={19} className={styles.inputIcon} />
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="name@example.com"
+                      className={`input-custom ${styles.inputField}`}
+                      onChange={handleChange}
+                      value={form.email}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Password *</label>
+                  <div className={styles.inputWrapper}>
+                    <MdLockOutline size={19} className={styles.inputIcon} />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      placeholder="Min. 6 characters"
+                      className={`input-custom ${styles.inputField}`}
+                      onChange={handleChange}
+                      value={form.password}
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      className={styles.eyeButton}
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label="Toggle password visibility"
+                    >
+                      {showPassword ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Confirm Password *</label>
+                  <div className={styles.inputWrapper}>
+                    <MdLockOutline size={19} className={styles.inputIcon} />
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      placeholder="Re-enter password"
+                      className={`input-custom ${styles.inputField}`}
+                      onChange={handleChange}
+                      value={form.confirmPassword}
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      className={styles.eyeButton}
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label="Toggle password visibility"
+                    >
+                      {showConfirmPassword ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className={`btn-primary-custom ${styles.submitBtn}`}
+                  disabled={loading || googleLoading}
+                >
+                  {loading ? "Sending Verification Code..." : "Continue with Email Verification"}
+                </button>
+              </form>
+
+              <div className={styles.divider}>
+                <span>or sign up with</span>
               </div>
 
-              <button 
-                type="submit" 
-                className={`btn-primary-custom ${styles.submitBtn}`}
+              <button
+                type="button"
+                onClick={handleGoogleSignup}
+                className={styles.googleBtn}
                 disabled={loading || googleLoading}
               >
-                {loading ? "Sending Verification Code..." : "Continue with Email Verification"}
+                <FcGoogle size={22} />
+                <span>{googleLoading ? "Connecting with Google..." : "Sign up with Google"}</span>
               </button>
-            </form>
 
-            <div className={styles.divider}>
-              <span>or sign up with</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleGoogleSignup}
-              className={styles.googleBtn}
-              disabled={loading || googleLoading}
-            >
-              <FcGoogle size={22} />
-              <span>{googleLoading ? "Connecting with Google..." : "Sign up with Google"}</span>
-            </button>
-
-            <div className={styles.footer}>
-              <p className={styles.footerText}>
-                Already have an account? 
-                <Link to="/login" className={styles.link}> Login</Link>
-              </p>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* STEP 2: OTP VERIFICATION SCREEN */}
-            <div className={styles.header}>
-              <div className={styles.otpIconBadge}>
-                <MdMailOutline size={28} />
+              <div className={styles.footer}>
+                <p className={styles.footerText}>
+                  Already have an account?{" "}
+                  <Link to="/login" className={styles.link}>
+                    Login
+                  </Link>
+                </p>
               </div>
-              <h2 className={styles.title}>Verify Your Email</h2>
-              <p className={styles.subtitle}>
-                We sent a 6-digit verification code to:
-              </p>
-              <div className={styles.emailPill}>
-                <span>{form.email}</span>
-                <button
-                  type="button"
-                  className={styles.changeEmailBtn}
-                  onClick={() => {
-                    setStep("form");
-                    setErrorMsg("");
-                  }}
-                  title="Change email"
-                >
-                  Edit
-                </button>
-              </div>
-            </div>
+            </>
+          ) : (
+            <>
+              {/* STEP 2: OTP VERIFICATION SCREEN */}
+              <button
+                type="button"
+                className={styles.backLink}
+                onClick={() => {
+                  setStep("form");
+                  setErrorMsg("");
+                }}
+              >
+                <MdArrowBack size={18} />
+                <span>Back to Edit Details</span>
+              </button>
 
-            {successMsg && (
-              <div className={styles.successBanner}>
-                <MdCheckCircle size={18} />
-                <span>{successMsg}</span>
+              <div className={styles.header}>
+                <h2 className={styles.title}>Verify Your Email</h2>
+                <p className={styles.subtitle}>
+                  We sent a 6-digit code to <strong>{form.email}</strong>. It will be verified automatically when entered.
+                </p>
               </div>
-            )}
 
-            {errorMsg && (
-              <div className={styles.errorBanner}>
-                <MdErrorOutline size={18} />
-                <span>{errorMsg}</span>
-              </div>
-            )}
+              {successMsg && (
+                <div className={styles.successBanner}>
+                  <MdCheckCircle size={18} />
+                  <span>{successMsg}</span>
+                </div>
+              )}
 
-            <form onSubmit={handleVerifyOtp} className={styles.form}>
-              <div className={styles.formGroup}>
-                <label className={styles.label} style={{ textAlign: "center", display: "block" }}>
-                  Enter 6-Digit OTP
-                </label>
+              {errorMsg && (
+                <div className={styles.errorBanner}>
+                  <MdErrorOutline size={18} />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              <div className={styles.otpCardBox}>
+                <label className={styles.otpLabel}>6-Digit Verification Code</label>
                 <input
                   ref={otpInputRef}
                   type="text"
@@ -359,58 +388,69 @@ const Signup = () => {
                   autoComplete="one-time-code"
                   maxLength={6}
                   placeholder="------"
-                  className={`input-custom ${styles.otpInput}`}
+                  className={styles.otpBigInput}
                   value={otp}
                   onChange={handleOtpChange}
-                  required
+                  disabled={loading}
                 />
-              </div>
 
-              <button 
-                type="submit" 
-                className={`btn-primary-custom ${styles.submitBtn}`}
-                disabled={loading || otp.length !== 6}
-              >
-                {loading ? "Verifying & Creating Account..." : "Verify & Complete Signup"}
-              </button>
-
-              <div className={styles.resendSection}>
-                {countdown > 0 ? (
-                  <span className={styles.countdownText}>
-                    Resend code in <strong>{countdown}s</strong>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    className={styles.resendBtn}
-                    onClick={handleResendOtp}
-                    disabled={resending}
-                  >
-                    {resending ? "Sending code..." : "Resend Verification Code"}
-                  </button>
+                {loading && (
+                  <div className={styles.verifyingIndicator}>
+                    <span className={styles.spinner} />
+                    <span>Verifying code & activating account...</span>
+                  </div>
                 )}
+
+                <div className={styles.resendArea}>
+                  <span className={styles.resendText}>Didn't get the code?</span>
+                  {countdown > 0 ? (
+                    <span className={styles.countdownBadge}>Resend in {countdown}s</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.resendActionBtn}
+                      onClick={handleResendOtp}
+                      disabled={resending || loading}
+                    >
+                      <MdRefresh size={16} />
+                      <span>{resending ? "Sending..." : "Resend Code"}</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <button
-                type="button"
-                className={styles.backToFormBtn}
-                onClick={() => {
-                  setStep("form");
-                  setErrorMsg("");
-                }}
-              >
-                <MdArrowBack size={16} /> Back to Edit Details
-              </button>
-            </form>
+              <div className={styles.footer}>
+                <p className={styles.footerText}>
+                  Already have an account?{" "}
+                  <Link to="/login" className={styles.link}>
+                    Login
+                  </Link>
+                </p>
+              </div>
+            </>
+          )}
+          </div>
+        </div>
 
-            <div className={styles.footer}>
-              <p className={styles.footerText}>
-                Already have an account? 
-                <Link to="/login" className={styles.link}> Login</Link>
-              </p>
+        {/* RIGHT COLUMN: CONCEPT ARTWORK BANNER */}
+        <div className={styles.bannerSide}>
+          <img src={authBanner} alt="Embroidex Embroidery Software Art" className={styles.bannerImg} />
+          <div className={styles.bannerOverlay}>
+            <div className={styles.bannerBadge}>
+              <span className={styles.pulseDot} />
+              <span>Digital Embroidery Platform</span>
             </div>
-          </>
-        )}
+            <h3 className={styles.bannerTitle}>Craft Elevated. Stitches Mastered.</h3>
+            <p className={styles.bannerText}>
+              Empower your textile creativity with precision stitch engines, color-managed thread palettes, and instantaneous file export.
+            </p>
+            <div className={styles.featurePills}>
+              <span className={styles.pill}>🧵 Silk & Metallic Palettes</span>
+              <span className={styles.pill}>💎 High-Density Stitching</span>
+              <span className={styles.pill}>🛡️ Verified Pattern Security</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

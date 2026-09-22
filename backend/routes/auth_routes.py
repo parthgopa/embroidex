@@ -2,11 +2,12 @@ from flask import Blueprint, request, jsonify
 import random
 import datetime
 import re
-from config import USERS_COLLECTION, ADMIN_KEY, PURCHASES_COLLECTION, DESIGNS_COLLECTION, SETTINGS_COLLECTION, SIGNUP_OTPS_COLLECTION
+from config import USERS_COLLECTION, ADMIN_KEY, PURCHASES_COLLECTION, DESIGNS_COLLECTION, SETTINGS_COLLECTION, SIGNUP_OTPS_COLLECTION, PASSWORD_RESET_OTPS_COLLECTION
 from utils.jwt_utils import encode_token, decode_token, generate_token
 from utils.hash_utils import hash_password, verify_password
-from utils.email_utils import send_otp_email
+from utils.email_utils import send_otp_email, send_password_reset_otp_email
 import os
+import secrets
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -293,7 +294,8 @@ def get_current_user():
         "name": user.get("name"),
         "email": user.get("email"),
         "role": user.get("role", "buyer"),
-        "is_seller": user.get("is_seller", False)
+        "is_seller": user.get("is_seller", False),
+        "signup_method": get_user_signup_method(user)
     }), 200
 
 
@@ -391,7 +393,8 @@ def get_profile():
         "email": user.get("email"),
         "role": user.get("role", "buyer"),
         "is_seller": user.get("is_seller", False),
-        "seller_info": user.get("seller_info")
+        "seller_info": user.get("seller_info"),
+        "signup_method": get_user_signup_method(user)
     }), 200
 
 
@@ -447,3 +450,336 @@ def get_user_stats():
         stats["totalEarnings"] = round(total_earnings, 2)
     
     return jsonify(stats), 200
+
+
+@auth_bp.route("/forgot-password", methods=["POST"])
+def forgot_password():
+    """
+    Step 1: User requests an OTP to reset their password.
+    Checks if account exists, whether it is google-registered,
+    generates a 6-digit OTP, saves it, and sends via email.
+    """
+    data = request.json or {}
+    email = data.get("email", "").strip().lower()
+
+    if not email:
+        return jsonify({"error": "Email address is required"}), 400
+
+    email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+    if not re.match(email_regex, email):
+        return jsonify({"error": "Please enter a valid email address"}), 400
+
+    user = USERS_COLLECTION.find_one({"email": email})
+    if not user:
+        return jsonify({"error": "No account found with this email address. Please check the spelling or sign up."}), 404
+
+    signup_method = get_user_signup_method(user)
+    if signup_method == "google" and not user.get("password"):
+        return jsonify({
+            "error": "This account is registered using Google Sign-In. Please sign in with Google."
+        }), 400
+
+    # Generate 6-digit OTP
+    otp_code = f"{random.randint(100000, 999999)}"
+    now = datetime.datetime.utcnow()
+    expires_at = now + datetime.timedelta(minutes=10)
+
+    PASSWORD_RESET_OTPS_COLLECTION.update_one(
+        {"email": email},
+        {
+            "$set": {
+                "otp": otp_code,
+                "created_at": now,
+                "expires_at": expires_at,
+                "is_verified": False,
+                "reset_token": None,
+                "reset_token_expires_at": None
+            }
+        },
+        upsert=True
+    )
+
+    user_name = user.get("name", "User")
+    success, msg = send_password_reset_otp_email(email, otp_code, user_name=user_name)
+    if not success:
+        return jsonify({"error": f"Failed to send verification email: {msg}"}), 500
+
+    return jsonify({
+        "message": f"Verification code sent to {email}",
+        "email": email
+    }), 200
+
+
+@auth_bp.route("/verify-reset-otp", methods=["POST"])
+def verify_reset_otp():
+    """
+    Step 2: Auto-called as soon as 6 digits are entered.
+    Validates OTP and issues a temporary reset token.
+    """
+    data = request.json or {}
+    email = data.get("email", "").strip().lower()
+    otp_entered = str(data.get("otp", "")).strip()
+
+    if not email or not otp_entered:
+        return jsonify({"error": "Email and 6-digit code are required"}), 400
+
+    if len(otp_entered) != 6:
+        return jsonify({"error": "Please enter a 6-digit verification code"}), 400
+
+    record = PASSWORD_RESET_OTPS_COLLECTION.find_one({"email": email})
+    if not record:
+        return jsonify({"error": "No password reset request found. Please request a new code."}), 400
+
+    now = datetime.datetime.utcnow()
+    if record.get("expires_at") and record["expires_at"] < now:
+        return jsonify({"error": "Verification code has expired. Please request a new one."}), 400
+
+    if str(record.get("otp")) != otp_entered:
+        return jsonify({"error": "Incorrect verification code. Please check and try again."}), 400
+
+    # Generate secure reset token valid for 15 minutes
+    reset_token = secrets.token_hex(32)
+    token_expiry = now + datetime.timedelta(minutes=15)
+
+    PASSWORD_RESET_OTPS_COLLECTION.update_one(
+        {"email": email},
+        {
+            "$set": {
+                "is_verified": True,
+                "reset_token": reset_token,
+                "reset_token_expires_at": token_expiry
+            }
+        }
+    )
+
+    return jsonify({
+        "message": "Code verified successfully",
+        "email": email,
+        "reset_token": reset_token
+    }), 200
+
+
+@auth_bp.route("/reset-password", methods=["POST"])
+def reset_password():
+    """
+    Step 3: Submit new password using the validated reset token.
+    """
+    data = request.json or {}
+    email = data.get("email", "").strip().lower()
+    reset_token = data.get("reset_token", "").strip()
+    new_password = data.get("new_password", "")
+
+    if not email or not reset_token or not new_password:
+        return jsonify({"error": "Email, reset token, and new password are required"}), 400
+
+    if len(new_password) < 6:
+        return jsonify({"error": "New password must be at least 6 characters long"}), 400
+
+    record = PASSWORD_RESET_OTPS_COLLECTION.find_one({"email": email})
+    if not record or not record.get("is_verified"):
+        return jsonify({"error": "Verification required. Please verify your OTP code first."}), 400
+
+    now = datetime.datetime.utcnow()
+    if record.get("reset_token_expires_at") and record["reset_token_expires_at"] < now:
+        return jsonify({"error": "Reset session has expired. Please request a new verification code."}), 400
+
+    if record.get("reset_token") != reset_token:
+        return jsonify({"error": "Invalid reset session. Please request a new verification code."}), 400
+
+    # Hash new password
+    hashed_pw = hash_password(new_password)
+
+    # Update user in DB
+    result = USERS_COLLECTION.update_one(
+        {"email": email},
+        {
+            "$set": {
+                "password": hashed_pw,
+                "signup_method": "password",
+                "updated_at": datetime.datetime.utcnow()
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        return jsonify({"error": "User account not found."}), 404
+
+    # Remove the OTP record
+    PASSWORD_RESET_OTPS_COLLECTION.delete_one({"email": email})
+
+    return jsonify({
+        "message": "Your password has been successfully reset! You can now log in with your new password."
+    }), 200
+
+
+@auth_bp.route("/change-password/send-otp", methods=["POST"])
+def send_change_password_otp():
+    """
+    Authenticated: User requests an OTP to change their current password in Profile/Settings.
+    Only available if signup_method == 'password'.
+    """
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        token = token.replace("Bearer ", "")
+        user_id = decode_token(token)
+    except:
+        return jsonify({"error": "Invalid token"}), 401
+    
+    user = USERS_COLLECTION.find_one({"_id": user_id})
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    if get_user_signup_method(user) == "google" and not user.get("password"):
+        return jsonify({
+            "error": "This account is linked with Google Sign-In. Password change is only available for accounts with a password."
+        }), 400
+
+    email = user.get("email")
+    otp_code = f"{random.randint(100000, 999999)}"
+    now = datetime.datetime.utcnow()
+    expires_at = now + datetime.timedelta(minutes=10)
+
+    PASSWORD_RESET_OTPS_COLLECTION.update_one(
+        {"email": email},
+        {
+            "$set": {
+                "otp": otp_code,
+                "purpose": "change_password",
+                "created_at": now,
+                "expires_at": expires_at,
+                "is_verified": False,
+                "change_token": None,
+                "change_token_expires_at": None
+            }
+        },
+        upsert=True
+    )
+
+    success, msg = send_otp_email(email, otp_code, user_name=user.get("name", "User"))
+    if not success:
+        return jsonify({"error": f"Failed to send email: {msg}"}), 500
+
+    return jsonify({
+        "message": f"Verification code sent to {email}",
+        "email": email
+    }), 200
+
+
+@auth_bp.route("/change-password/verify-otp", methods=["POST"])
+def verify_change_password_otp():
+    """
+    Authenticated: Verify 6-digit OTP for changing password.
+    """
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        token = token.replace("Bearer ", "")
+        user_id = decode_token(token)
+    except:
+        return jsonify({"error": "Invalid token"}), 401
+    
+    user = USERS_COLLECTION.find_one({"_id": user_id})
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.json or {}
+    otp_entered = str(data.get("otp", "")).strip()
+
+    if not otp_entered or len(otp_entered) != 6:
+        return jsonify({"error": "Please enter a valid 6-digit verification code"}), 400
+
+    record = PASSWORD_RESET_OTPS_COLLECTION.find_one({"email": user["email"]})
+    if not record:
+        return jsonify({"error": "No verification request found. Please request a new code."}), 400
+
+    now = datetime.datetime.utcnow()
+    if record.get("expires_at") and record["expires_at"] < now:
+        return jsonify({"error": "Verification code has expired. Please request a new one."}), 400
+
+    if str(record.get("otp")) != otp_entered:
+        return jsonify({"error": "Incorrect verification code. Please check and try again."}), 400
+
+    # Generate temporary change token
+    change_token = secrets.token_hex(32)
+    token_expiry = now + datetime.timedelta(minutes=15)
+
+    PASSWORD_RESET_OTPS_COLLECTION.update_one(
+        {"email": user["email"]},
+        {
+            "$set": {
+                "is_verified": True,
+                "change_token": change_token,
+                "change_token_expires_at": token_expiry
+            }
+        }
+    )
+
+    return jsonify({
+        "message": "OTP verified successfully",
+        "change_token": change_token
+    }), 200
+
+
+@auth_bp.route("/change-password/update", methods=["POST"])
+def update_changed_password():
+    """
+    Authenticated: Submit new password using the validated change token.
+    """
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        token = token.replace("Bearer ", "")
+        user_id = decode_token(token)
+    except:
+        return jsonify({"error": "Invalid token"}), 401
+    
+    user = USERS_COLLECTION.find_one({"_id": user_id})
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.json or {}
+    change_token = data.get("change_token", "").strip()
+    new_password = data.get("new_password", "")
+
+    if not change_token or not new_password:
+        return jsonify({"error": "Change token and new password are required"}), 400
+
+    if len(new_password) < 6:
+        return jsonify({"error": "New password must be at least 6 characters long"}), 400
+
+    record = PASSWORD_RESET_OTPS_COLLECTION.find_one({"email": user["email"]})
+    if not record or not record.get("is_verified"):
+        return jsonify({"error": "Please verify your OTP code first."}), 400
+
+    now = datetime.datetime.utcnow()
+    if record.get("change_token_expires_at") and record["change_token_expires_at"] < now:
+        return jsonify({"error": "Session has expired. Please request a new verification code."}), 400
+
+    if record.get("change_token") != change_token:
+        return jsonify({"error": "Invalid verification session. Please request a new code."}), 400
+
+    hashed_pw = hash_password(new_password)
+
+    USERS_COLLECTION.update_one(
+        {"_id": user_id},
+        {
+            "$set": {
+                "password": hashed_pw,
+                "signup_method": "password",
+                "updated_at": datetime.datetime.utcnow()
+            }
+        }
+    )
+
+    PASSWORD_RESET_OTPS_COLLECTION.delete_one({"email": user["email"]})
+
+    return jsonify({
+        "message": "Password changed successfully!"
+    }), 200

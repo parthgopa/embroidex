@@ -24,8 +24,13 @@ import {
   MdVerified,
   MdArrowForward,
   MdContentCopy,
-  MdCheck
+  MdCheck,
+  MdLockOutline,
+  MdVpnKey,
+  MdVisibility,
+  MdVisibilityOff
 } from "react-icons/md";
+import { FcGoogle } from "react-icons/fc";
 import API from "../services/api";
 import styles from "./Profile.module.css";
 
@@ -36,6 +41,110 @@ const Profile = () => {
   const [payoutDetails, setPayoutDetails] = useState(null);
   const [stats, setStats] = useState(null);
   const [copiedKey, setCopiedKey] = useState(null);
+
+  // Change Password state
+  const [showPwModal, setShowPwModal] = useState(false);
+  const [pwStep, setPwStep] = useState("initial"); // "initial" | "otp" | "new_password"
+  const [pwOtp, setPwOtp] = useState("");
+  const [changeToken, setChangeToken] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwCountdown, setPwCountdown] = useState(60);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState("");
+
+  useEffect(() => {
+    let timer;
+    if (pwStep === "otp" && pwCountdown > 0) {
+      timer = setInterval(() => setPwCountdown((prev) => prev - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [pwStep, pwCountdown]);
+
+  const handleStartChangePassword = () => {
+    setShowPwModal(true);
+    setPwStep("initial");
+    setPwError("");
+    setPwSuccess("");
+    setPwOtp("");
+    setNewPw("");
+    setConfirmPw("");
+  };
+
+  const handleSendPwOtp = async () => {
+    setPwLoading(true);
+    setPwError("");
+    setPwSuccess("");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await API.post("/auth/change-password/send-otp", {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPwSuccess(res.data.message || `Code sent to ${user?.email}`);
+      setPwStep("otp");
+      setPwCountdown(60);
+    } catch (err) {
+      setPwError(err.response?.data?.error || "Failed to send verification code.");
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
+  const handleVerifyPwOtp = async (codeToVerify) => {
+    const code = (codeToVerify || pwOtp).trim();
+    if (code.length !== 6) {
+      return setPwError("Please enter the 6-digit verification code.");
+    }
+    setPwLoading(true);
+    setPwError("");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await API.post("/auth/change-password/verify-otp", { otp: code }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setChangeToken(res.data.change_token);
+      setPwStep("new_password");
+      setPwSuccess("Code verified! Please create your new password.");
+    } catch (err) {
+      setPwError(err.response?.data?.error || "Invalid verification code.");
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    if (newPw.length < 6) {
+      return setPwError("Password must be at least 6 characters long.");
+    }
+    if (newPw !== confirmPw) {
+      return setPwError("Passwords do not match. Please re-enter.");
+    }
+    setPwLoading(true);
+    setPwError("");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await API.post("/auth/change-password/update", {
+        change_token: changeToken,
+        new_password: newPw
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPwSuccess(res.data.message || "Password updated successfully!");
+      setTimeout(() => {
+        setShowPwModal(false);
+        setPwStep("initial");
+        setPwSuccess("");
+      }, 1500);
+    } catch (err) {
+      setPwError(err.response?.data?.error || "Failed to update password.");
+    } finally {
+      setPwLoading(false);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -152,6 +261,17 @@ const Profile = () => {
               <div className={styles.userMeta}>
                 <span className={styles.metaItem}>
                   <MdEmail size={15} /> {user?.email || "No email available"}
+                </span>
+                <span className={styles.metaItem}>
+                  {user?.signup_method === "google" ? (
+                    <span className={styles.methodBadgeGoogle}>
+                      <FcGoogle size={14} /> Registered with Google
+                    </span>
+                  ) : (
+                    <span className={styles.methodBadgePassword}>
+                      <MdLockOutline size={14} /> Registered with Password
+                    </span>
+                  )}
                 </span>
                 {isSeller && user?.seller_info?.mobile_number && (
                   <span className={styles.metaItem}>
@@ -447,6 +567,23 @@ const Profile = () => {
                 </span>
               </div>
 
+              <div className={styles.kvItem}>
+                <span className={styles.kvLabel}>
+                  <MdLockOutline size={16} className={styles.kvIcon} /> Registered Via
+                </span>
+                <span className={styles.kvValue}>
+                  {user?.signup_method === "google" ? (
+                    <span className={styles.methodBadgeGoogle}>
+                      <FcGoogle size={14} /> Google Account
+                    </span>
+                  ) : (
+                    <span className={styles.methodBadgePassword}>
+                      <MdLockOutline size={14} /> Email & Password
+                    </span>
+                  )}
+                </span>
+              </div>
+
               {isSeller && user?.seller_info?.mobile_number && (
                 <div className={styles.kvItem}>
                   <span className={styles.kvLabel}>
@@ -465,6 +602,242 @@ const Profile = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Security & Password Section */}
+        <div className={styles.cardSection}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardTitleGroup}>
+              <div className={styles.cardHeaderIcon}>
+                <MdLockOutline size={20} />
+              </div>
+              <div>
+                <h2 className={styles.cardTitle}>Account Security</h2>
+                <p className={styles.cardSubtitle}>Manage your sign-in credentials and password</p>
+              </div>
+            </div>
+
+            {user?.signup_method === "google" ? (
+              <span className={styles.methodBadgeGoogle}>
+                <FcGoogle size={16} /> Google Account
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleStartChangePassword}
+                className={styles.changePasswordBtn}
+              >
+                <MdVpnKey size={16} /> Change Password
+              </button>
+            )}
+          </div>
+
+          <div className={styles.cardBody}>
+            {user?.signup_method === "google" ? (
+              <div className={styles.googleNoticeBox}>
+                <FcGoogle size={24} />
+                <div>
+                  <strong>Managed via Google Sign-In</strong>
+                  <p>Your Embroidex account is authenticated using your Google profile. You do not have a separate password here.</p>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.securityInfoBox}>
+                <p>
+                  To change your password, an OTP verification code will be sent to your registered email address <strong>{user?.email}</strong>.
+                </p>
+                {!showPwModal && (
+                  <button
+                    type="button"
+                    onClick={handleStartChangePassword}
+                    className={styles.inlineActionBtn}
+                  >
+                    <MdVpnKey size={16} /> Change My Password
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Interactive Password Change Box */}
+            {showPwModal && user?.signup_method !== "google" && (
+              <div className={styles.pwModalContainer}>
+                <div className={styles.pwModalHeader}>
+                  <h3>Change Password</h3>
+                  <button
+                    type="button"
+                    className={styles.closeBtn}
+                    onClick={() => setShowPwModal(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {pwError && <div className={styles.pwErrorBanner}>{pwError}</div>}
+                {pwSuccess && <div className={styles.pwSuccessBanner}>{pwSuccess}</div>}
+
+                {/* STEP 1: INITIAL */}
+                {pwStep === "initial" && (
+                  <div className={styles.pwStepBox}>
+                    <p className={styles.pwStepDesc}>
+                      Click below to send a 6-digit verification code to <strong>{user?.email}</strong>.
+                    </p>
+                    <div className={styles.pwActionRow}>
+                      <button
+                        type="button"
+                        onClick={handleSendPwOtp}
+                        className={styles.sendCodeBtn}
+                        disabled={pwLoading}
+                      >
+                        {pwLoading ? "Sending Code..." : "Send Verification Code"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 2: VERIFY OTP */}
+                {pwStep === "otp" && (
+                  <div className={styles.pwStepBox}>
+                    <p className={styles.pwStepDesc}>
+                      Enter the 6-digit code sent to <strong>{user?.email}</strong>:
+                    </p>
+                    <div className={styles.otpInputGroup}>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="------"
+                        value={pwOtp}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                          setPwOtp(val);
+                          setPwError("");
+                          if (val.length === 6) {
+                            handleVerifyPwOtp(val);
+                          }
+                        }}
+                        className={styles.pwOtpInput}
+                        autoFocus
+                      />
+                    </div>
+
+                    <div className={styles.pwResendRow}>
+                      {pwCountdown > 0 ? (
+                        <span>Resend code in {pwCountdown}s</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleSendPwOtp}
+                          disabled={pwLoading}
+                          className={styles.resendBtnLink}
+                        >
+                          Resend Code
+                        </button>
+                      )}
+                    </div>
+
+                    <div className={styles.pwActionRow}>
+                      <button
+                        type="button"
+                        onClick={() => handleVerifyPwOtp(pwOtp)}
+                        className={styles.sendCodeBtn}
+                        disabled={pwLoading || pwOtp.length !== 6}
+                      >
+                        {pwLoading ? "Verifying..." : "Verify Code"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: NEW PASSWORD */}
+                {pwStep === "new_password" && (
+                  <form onSubmit={handleUpdatePassword} className={styles.pwForm}>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>New Password</label>
+                      <div className={styles.inputWrap}>
+                        <input
+                          type={showNewPw ? "text" : "password"}
+                          placeholder="Min. 6 characters"
+                          value={newPw}
+                          onChange={(e) => {
+                            setNewPw(e.target.value);
+                            setPwError("");
+                          }}
+                          className={styles.textInput}
+                          required
+                          minLength={6}
+                        />
+                        <button
+                          type="button"
+                          className={styles.eyeToggle}
+                          onClick={() => setShowNewPw(!showNewPw)}
+                        >
+                          {showNewPw ? <MdVisibilityOff size={18} /> : <MdVisibility size={18} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Confirm New Password</label>
+                      <div className={styles.inputWrap}>
+                        <input
+                          type={showConfirmPw ? "text" : "password"}
+                          placeholder="Re-enter new password"
+                          value={confirmPw}
+                          onChange={(e) => {
+                            setConfirmPw(e.target.value);
+                            setPwError("");
+                          }}
+                          className={styles.textInput}
+                          required
+                          minLength={6}
+                        />
+                        <button
+                          type="button"
+                          className={styles.eyeToggle}
+                          onClick={() => setShowConfirmPw(!showConfirmPw)}
+                        >
+                          {showConfirmPw ? <MdVisibilityOff size={18} /> : <MdVisibility size={18} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* REAL-TIME MATCH INDICATION */}
+                    {newPw && confirmPw && (
+                      <div
+                        className={
+                          newPw === confirmPw
+                            ? styles.matchIndicatorSuccess
+                            : styles.matchIndicatorError
+                        }
+                      >
+                        {newPw === confirmPw ? (
+                          <>
+                            <MdCheckCircle size={16} />
+                            <span>Passwords match</span>
+                          </>
+                        ) : (
+                          <>
+                            <MdWarning size={16} />
+                            <span>Passwords do not match</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    <div className={styles.pwActionRow}>
+                      <button
+                        type="submit"
+                        className={styles.sendCodeBtn}
+                        disabled={pwLoading || !newPw || newPw !== confirmPw || newPw.length < 6}
+                      >
+                        {pwLoading ? "Updating..." : "Change Password"}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
