@@ -26,6 +26,10 @@ build/
 .env
 .env.local
 
+# Firebase / Google Services
+google-services.json
+**/google-services.json
+
 # IDE
 .vscode/
 .idea/

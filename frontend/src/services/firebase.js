@@ -3,7 +3,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 // Web app's Firebase configuration loaded from environment variables (.env)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAWzA90KlxjWHeGOMjK_lMAxSuXmJ9XYoU",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "ai4cs-482314.firebaseapp.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "ai4cs-482314",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "ai4cs-482314.firebasestorage.app",

@@ -1,41 +1,41 @@
 {
   "project_info": {
-    "project_number": "475491008850",
-    "project_id": "ai4cs-482314",
-    "storage_bucket": "ai4cs-482314.firebasestorage.app"
+    "project_number": "YOUR_PROJECT_NUMBER",
+    "project_id": "YOUR_PROJECT_ID",
+    "storage_bucket": "YOUR_PROJECT_ID.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:475491008850:android:e62366b07fde84a0bafa8b",
+        "mobilesdk_app_id": "1:YOUR_PROJECT_NUMBER:android:YOUR_APP_ID",
         "android_client_info": {
           "package_name": "com.embroidex"
         }
       },
       "oauth_client": [
         {
-          "client_id": "475491008850-73u0c68pvgpuofs9q6dk4shkbmovei5b.apps.googleusercontent.com",
+          "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.embroidex",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+            "certificate_hash": "YOUR_SHA1_HASH"
           }
         },
         {
-          "client_id": "475491008850-sf8e4cl21h9tg5ja3aa0r2pcetbg63cg.apps.googleusercontent.com",
+          "client_id": "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCQR0YNRPQJz-GzmRhjMXG_UKNoJTXBs9M"
+          "current_key": "YOUR_API_KEY"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "475491008850-1ejrbkja819calfdvdg4vg0ovs9in5nh.apps.googleusercontent.com",
+              "client_id": "YOUR_OTHER_CLIENT_ID.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

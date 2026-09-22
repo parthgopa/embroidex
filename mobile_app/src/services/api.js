@@ -8,7 +8,7 @@ import { Platform } from 'react-native';
  * Set USE_DEV_BACKEND = true  -> Connects to your local machine (Flask port 5000)
  * Set USE_DEV_BACKEND = false -> Connects to hosted production backend
  */
-export const USE_DEV_BACKEND = true;
+export const USE_DEV_BACKEND = false;
 
 /**
  * DEV URL OPTIONS:
@@ -61,7 +61,7 @@ API.interceptors.response.use(
       error.response?.data?.message ||
       error.message ||
       'An unexpected network error occurred';
-    
+
     console.error(`[API Error] ${error.config?.url}:`, message);
     const customError = new Error(message);
     customError.response = error.response;
