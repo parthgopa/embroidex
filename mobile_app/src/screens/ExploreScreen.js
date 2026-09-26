@@ -131,7 +131,7 @@ const DesignCard = React.memo(({ item, inCart, onAddToCart, onRemoveFromCart, on
 
       {/* Right Side: Details & Actions */}
       <View style={styles.cardDetails}>
-        <View>
+        <View style={styles.cardTopInfo}>
           {/* Category & Spec Badges */}
           <View style={styles.tagsWrap}>
             {item.category && (
@@ -1180,11 +1180,12 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 12,
     alignItems: 'center',
+    minHeight: 140,
     ...SHADOWS.subtle,
   },
   cardImgContainer: {
-    width: 106,
-    height: 118,
+    width: 108,
+    height: 128,
     borderRadius: 12,
     overflow: 'hidden',
     position: 'relative',
@@ -1218,53 +1219,60 @@ const styles = StyleSheet.create({
   cardDetails: {
     flex: 1,
     marginLeft: 12,
-    height: 118,
+    minHeight: 128,
     justifyContent: 'space-between',
+    paddingVertical: 2,
+  },
+  cardTopInfo: {
+    flexShrink: 1,
+    marginBottom: 4,
   },
   tagsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
+    gap: 5,
+    marginBottom: 3,
   },
   categoryPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2.5,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
   },
   categoryPillText: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.1,
   },
   specPill: {
-    paddingHorizontal: 6,
-    paddingVertical: 2.5,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
   },
   specPillText: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '600',
   },
   cardTitle: {
-    fontSize: 14.5,
+    fontSize: 14,
     fontWeight: '800',
-    lineHeight: 19,
-    letterSpacing: -0.3,
+    lineHeight: 18,
+    letterSpacing: -0.2,
+    marginTop: 2,
   },
   machineTypeText: {
     fontSize: 11,
     fontWeight: '500',
-    marginTop: 2,
+    marginTop: 1,
   },
   cardBottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 2,
+    paddingTop: 4,
+    marginTop: 'auto',
   },
   priceContainer: {
     flexDirection: 'row',
@@ -1277,29 +1285,29 @@ const styles = StyleSheet.create({
     marginRight: 1,
   },
   cardPrice: {
-    fontSize: 17,
+    fontSize: 16.5,
     fontWeight: '900',
     letterSpacing: -0.3,
   },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 13,
-    paddingVertical: 6.5,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 18,
     ...SHADOWS.subtle,
   },
   addBtnText: {
     color: '#ffffff',
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '800',
   },
   removeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 11,
+    paddingHorizontal: 10,
     paddingVertical: 5.5,
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
   },
   removeBtnText: {
