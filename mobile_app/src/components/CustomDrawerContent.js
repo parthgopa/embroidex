@@ -61,8 +61,9 @@ const CustomDrawerContent = (props) => {
   };
 
   return (
-    <View style={[styles.safeArea, { paddingTop: insets.top + 10, paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 48 : 10) + 10, backgroundColor: colors.surface }]}>
+    <View style={[styles.safeArea, { paddingTop: insets.top + 10, backgroundColor: colors.surface }]}>
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -171,7 +172,7 @@ const CustomDrawerContent = (props) => {
 
         <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
 
-        {/* Navigation Section: Explore & Home */}
+        {/* Navigation Section: Home & AI */}
         <View style={styles.navSection}>
           <TouchableOpacity
             style={styles.navItem}
@@ -179,17 +180,6 @@ const CustomDrawerContent = (props) => {
           >
             <Ionicons name="home-outline" size={20} color={colors.midnight} style={styles.navIcon} />
             <Text style={[styles.navLabel, { color: colors.midnight }]}>Home</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => handleNavigation('MainTabs', { screen: 'Explore' })}
-          >
-            <Ionicons name="compass-outline" size={20} color={colors.midnight} style={styles.navIcon} />
-            <Text style={[styles.navLabel, { color: colors.midnight }]}>Explore All Designs</Text>
-            <View style={[styles.countBadge, { backgroundColor: colors.primaryMuted }]}>
-              <Text style={[styles.countBadgeText, { color: colors.primary }]}>New</Text>
-            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -236,101 +226,98 @@ const CustomDrawerContent = (props) => {
             onPress={() => handleNavigation('MainTabs', { screen: 'Profile' })}
           >
             <Ionicons name="person-outline" size={20} color={colors.midnight} style={styles.navIcon} />
-            <Text style={[styles.navLabel, { color: colors.midnight }]}>My Profile</Text>
+            <Text style={[styles.navLabel, { color: colors.midnight }]}>Profile</Text>
           </TouchableOpacity>
         </View>
-
-        <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
 
         {/* SELLER STUDIO Section */}
         {isAuthenticated && isSeller && (
-          <View style={styles.navSection}>
-            <TouchableOpacity
-              style={styles.sectionHeaderRow}
-              onPress={() => setSellerMenuExpanded(!sellerMenuExpanded)}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={[styles.sectionHeader, { color: colors.slate, marginBottom: 0 }]}>SELLER STUDIO</Text>
-                <View style={styles.proBadge}>
-                  <Text style={styles.proBadgeText}>PRO</Text>
+          <>
+            <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
+            <View style={styles.navSection}>
+              <TouchableOpacity
+                style={styles.sectionHeaderRow}
+                onPress={() => setSellerMenuExpanded(!sellerMenuExpanded)}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={[styles.sectionHeader, { color: colors.slate, marginBottom: 0 }]}>SELLER STUDIO</Text>
+                  <View style={styles.proBadge}>
+                    <Text style={styles.proBadgeText}>PRO</Text>
+                  </View>
                 </View>
-              </View>
-              <Ionicons
-                name={sellerMenuExpanded ? "chevron-down" : "chevron-forward"}
-                size={14}
-                color={colors.slate}
-              />
-            </TouchableOpacity>
+                <Ionicons
+                  name={sellerMenuExpanded ? "chevron-down" : "chevron-forward"}
+                  size={14}
+                  color={colors.slate}
+                />
+              </TouchableOpacity>
 
-            {sellerMenuExpanded && (
-              <>
-                <TouchableOpacity
-                  style={styles.navItem}
-                  onPress={() => handleNavigation('SellerUploadScreen')}
-                >
-                  <Ionicons name="cloud-upload-outline" size={20} color={colors.midnight} style={styles.navIcon} />
-                  <Text style={[styles.navLabel, { color: colors.midnight }]}>Upload Design</Text>
-                </TouchableOpacity>
+              {sellerMenuExpanded && (
+                <>
+                  <TouchableOpacity
+                    style={styles.navItem}
+                    onPress={() => handleNavigation('SellerUploadScreen')}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={20} color={colors.midnight} style={styles.navIcon} />
+                    <Text style={[styles.navLabel, { color: colors.midnight }]}>Upload Design</Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.navItem}
-                  onPress={() => handleNavigation('SellerMyDesignsScreen')}
-                >
-                  <Ionicons name="copy-outline" size={20} color={colors.midnight} style={styles.navIcon} />
-                  <Text style={[styles.navLabel, { color: colors.midnight }]}>My Designs</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.navItem}
+                    onPress={() => handleNavigation('SellerMyDesignsScreen')}
+                  >
+                    <Ionicons name="copy-outline" size={20} color={colors.midnight} style={styles.navIcon} />
+                    <Text style={[styles.navLabel, { color: colors.midnight }]}>My Designs</Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.navItem}
-                  onPress={() => handleNavigation('SellerEarningsScreen')}
-                >
-                  <Ionicons name="wallet-outline" size={20} color={colors.midnight} style={styles.navIcon} />
-                  <Text style={[styles.navLabel, { color: colors.midnight }]}>Earnings & Payouts</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.navItem}
+                    onPress={() => handleNavigation('SellerEarningsScreen')}
+                  >
+                    <Ionicons name="wallet-outline" size={20} color={colors.midnight} style={styles.navIcon} />
+                    <Text style={[styles.navLabel, { color: colors.midnight }]}>Earnings & Payouts</Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.navItem}
-                  onPress={() => handleNavigation('SellerEarningsScreen', { initialTab: 'settings' })}
-                >
-                  <Ionicons name="card-outline" size={20} color={colors.midnight} style={styles.navIcon} />
-                  <Text style={[styles.navLabel, { color: colors.midnight }]}>Payment Settings</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
+                  <TouchableOpacity
+                    style={styles.navItem}
+                    onPress={() => handleNavigation('SellerEarningsScreen', { initialTab: 'settings' })}
+                  >
+                    <Ionicons name="card-outline" size={20} color={colors.midnight} style={styles.navIcon} />
+                    <Text style={[styles.navLabel, { color: colors.midnight }]}>Payment Settings</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </>
+        )}
+      </ScrollView>
+
+      {/* Sticky Bottom Footer: Sign Out / In + Fixed Theme Toggle */}
+      <View
+        style={[
+          styles.drawerFooter,
+          {
+            borderTopColor: colors.borderLight,
+            backgroundColor: colors.surface,
+            paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 12),
+          },
+        ]}
+      >
+        {isAuthenticated ? (
+          <TouchableOpacity style={styles.logoutItem} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={20} color={colors.danger || '#ef4444'} style={styles.navIcon} />
+            <Text style={[styles.logoutLabel, { color: colors.danger || '#ef4444' }]}>Sign Out</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.loginItem}
+            onPress={() => handleNavigation('LoginScreen')}
+          >
+            <Ionicons name="log-in-outline" size={20} color={colors.primary} style={styles.navIcon} />
+            <Text style={[styles.loginLabel, { color: colors.primary }]}>Sign In / Register</Text>
+          </TouchableOpacity>
         )}
 
-        <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
-
-        {/* Account & Profile */}
-        <View style={styles.navSection}>
-          <Text style={[styles.sectionHeader, { color: colors.slate }]}>ACCOUNT</Text>
-
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => handleNavigation('MainTabs', { screen: 'Profile' })}
-          >
-            <Ionicons name="person-circle-outline" size={21} color={colors.midnight} style={styles.navIcon} />
-            <Text style={[styles.navLabel, { color: colors.midnight }]}>Profile & Settings</Text>
-          </TouchableOpacity>
-
-          {isAuthenticated ? (
-            <TouchableOpacity style={styles.logoutItem} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={20} color={colors.danger || '#ef4444'} style={styles.navIcon} />
-              <Text style={[styles.logoutLabel, { color: colors.danger || '#ef4444' }]}>Sign Out</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.loginItem}
-              onPress={() => handleNavigation('LoginScreen')}
-            >
-              <Ionicons name="log-in-outline" size={20} color={colors.primary} style={styles.navIcon} />
-              <Text style={[styles.loginLabel, { color: colors.primary }]}>Sign In / Register</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Theme Mode Toggle (Icon-only: System / Light / Dark) */}
         <View style={[styles.themeToggleContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
           <TouchableOpacity
             style={[
@@ -377,7 +364,7 @@ const CustomDrawerContent = (props) => {
             />
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 };
@@ -641,6 +628,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     flex: 1,
   },
+  drawerFooter: {
+    borderTopWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
   themeToggleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -648,7 +640,8 @@ const styles = StyleSheet.create({
     padding: 4,
     borderRadius: 24,
     borderWidth: 1,
-    marginTop: 18,
+    marginTop: 8,
+    marginBottom: 4,
   },
   themeIconBtn: {
     flex: 1,

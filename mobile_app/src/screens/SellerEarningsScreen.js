@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -28,6 +30,23 @@ const SellerEarningsScreen = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
   const { isAuthenticated, isSeller } = useAuth();
+  const scrollViewRef = useRef(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => setKeyboardHeight(e?.endCoordinates?.height || 0)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Active tab: 'overview' | 'withdrawals' | 'settings'
   const initialTab = route.params?.initialTab === 'settings' ? 'settings' : 'overview';
@@ -329,7 +348,12 @@ const SellerEarningsScreen = ({ route, navigation }) => {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 16) + 40 }]}
+          ref={scrollViewRef}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 100 : Math.max(insets.bottom, 16) + 60 },
+          ]}
+          keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -761,6 +785,7 @@ const SellerEarningsScreen = ({ route, navigation }) => {
                       placeholderTextColor={colors.slateMuted}
                       value={upiId}
                       onChangeText={setUpiId}
+                      onFocus={() => setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150)}
                       autoCapitalize="none"
                     />
                     <Text style={[styles.inputHint, { color: colors.slateMuted }]}>
@@ -784,6 +809,7 @@ const SellerEarningsScreen = ({ route, navigation }) => {
                       placeholderTextColor={colors.slateMuted}
                       value={accountHolderName}
                       onChangeText={setAccountHolderName}
+                      onFocus={() => setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150)}
                     />
 
                     <Text style={[styles.inputLabel, { color: colors.midnight }]}>Bank Name</Text>
@@ -796,6 +822,7 @@ const SellerEarningsScreen = ({ route, navigation }) => {
                       placeholderTextColor={colors.slateMuted}
                       value={bankName}
                       onChangeText={setBankName}
+                      onFocus={() => setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150)}
                     />
 
                     <Text style={[styles.inputLabel, { color: colors.midnight }]}>
@@ -811,6 +838,7 @@ const SellerEarningsScreen = ({ route, navigation }) => {
                       keyboardType="number-pad"
                       value={accountNumber}
                       onChangeText={setAccountNumber}
+                      onFocus={() => setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150)}
                     />
 
                     <Text style={[styles.inputLabel, { color: colors.midnight }]}>
@@ -827,6 +855,7 @@ const SellerEarningsScreen = ({ route, navigation }) => {
                       maxLength={11}
                       value={ifscCode}
                       onChangeText={(t) => setIfscCode(t.toUpperCase())}
+                      onFocus={() => setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150)}
                     />
                   </View>
                 )}
@@ -857,11 +886,22 @@ const SellerEarningsScreen = ({ route, navigation }) => {
         transparent
         onRequestClose={() => setWithdrawModalVisible(false)}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.modalOverlay}
+        <View
+          style={[
+            styles.modalOverlay,
+            { paddingBottom: keyboardHeight > 0 ? keyboardHeight : Math.max(insets.bottom, Platform.OS === 'android' ? 48 : 24) },
+          ]}
         >
-          <View style={[styles.modalCard, { backgroundColor: colors.surface, paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 48 : 24) + 24 }]}>
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: colors.surface,
+                paddingBottom: 16,
+                maxHeight: Dimensions.get('window').height * (keyboardHeight > 0 ? 0.65 : 0.85),
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.midnight }]}>Request Payout</Text>
               <TouchableOpacity onPress={() => setWithdrawModalVisible(false)}>
@@ -869,113 +909,119 @@ const SellerEarningsScreen = ({ route, navigation }) => {
               </TouchableOpacity>
             </View>
 
-            <View style={[styles.balanceNoticeBox, { backgroundColor: colors.surfaceAlt }]}>
-              <Text style={[styles.balanceNoticeLabel, { color: colors.slate }]}>Available Balance</Text>
-              <Text
-                style={[
-                  styles.balanceNoticeAmount,
-                  { color: availableBal < 0 ? '#ef4444' : colors.primary },
-                ]}
-              >
-                ₹{availableBal.toFixed(2)}
-              </Text>
-            </View>
-
-            <Text style={[styles.inputLabel, { color: colors.midnight, marginTop: 12 }]}>
-              Withdrawal Amount (₹) *
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                { backgroundColor: colors.surfaceAlt, borderColor: colors.border, color: colors.midnight, fontSize: 18, fontWeight: '700' },
-              ]}
-              placeholder={`Minimum ₹${MIN_WITHDRAWAL}`}
-              placeholderTextColor={colors.slateMuted}
-              keyboardType="number-pad"
-              value={withdrawAmount}
-              onChangeText={setWithdrawAmount}
-              editable={availableBal >= MIN_WITHDRAWAL}
-            />
-            <Text style={[styles.inputHint, { color: colors.slate, marginTop: 4 }]}>
-              Minimum: ₹{MIN_WITHDRAWAL} | Available: ₹{availableBal.toFixed(2)}
-            </Text>
-
-            {availableBal < MIN_WITHDRAWAL && (
-              <View style={[styles.modalWarningNotice, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2', borderColor: isDark ? '#b91c1c' : '#fecaca' }]}>
-                <Ionicons name="alert-circle" size={16} color="#dc2626" style={{ marginRight: 6 }} />
-                <Text style={[styles.modalWarningText, { color: '#dc2626' }]}>
-                  You need at least ₹{MIN_WITHDRAWAL} to request a withdrawal.
-                </Text>
-              </View>
-            )}
-
-            {/* Quick Amount Chips */}
-            {availableBal >= MIN_WITHDRAWAL && (
-              <View style={styles.chipRow}>
-                {[2000, 5000, 10000].map((amt) => {
-                  if (amt > availableBal) return null;
-                  return (
-                    <TouchableOpacity
-                      key={amt}
-                      style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.surfaceAlt }]}
-                      onPress={() => setWithdrawAmount(String(amt))}
-                    >
-                      <Text style={[styles.chipText, { color: colors.midnight }]}>₹{amt}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-                <TouchableOpacity
-                  style={[styles.chip, { borderColor: colors.primary, backgroundColor: colors.primaryMuted }]}
-                  onPress={() => setWithdrawAmount(String(Math.floor(availableBal)))}
-                >
-                  <Text style={[styles.chipText, { color: colors.primary, fontWeight: '700' }]}>All (Max)</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Target Payout Destination (UPI or Bank) */}
-            {payoutDetails && (
-              <View style={[styles.targetBankNote, { borderColor: colors.border }]}>
-                <Ionicons
-                  name={hasUpi ? 'qr-code-outline' : 'business-outline'}
-                  size={18}
-                  color={colors.primary}
-                  style={{ marginRight: 8 }}
-                />
-                <Text style={[styles.targetBankText, { color: colors.midnight }]}>
-                  Settling via{' '}
-                  <Text style={{ fontWeight: '700' }}>
-                    {hasUpi
-                      ? `UPI (${payoutDetails.upiId})`
-                      : `${payoutDetails.bankName || 'Bank'} (${payoutDetails.accountNumber})`}
-                  </Text>
-                </Text>
-              </View>
-            )}
-
-            <Text style={[styles.payoutDisclaimer, { color: colors.slateMuted }]}>
-              Processing Time: Withdrawal requests are processed within 2-3 business days.
-            </Text>
-
-            <TouchableOpacity
-              style={[
-                styles.submitBtn,
-                {
-                  backgroundColor: availableBal >= MIN_WITHDRAWAL ? colors.primary : 'rgba(100,116,139,0.5)',
-                  opacity: availableBal >= MIN_WITHDRAWAL ? 1 : 0.65,
-                },
-              ]}
-              onPress={handleSubmitWithdraw}
-              disabled={availableBal < MIN_WITHDRAWAL || submittingWithdraw}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 16 }}
             >
-              {submittingWithdraw ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <Text style={styles.submitBtnText}>Request Withdrawal</Text>
+              <View style={[styles.balanceNoticeBox, { backgroundColor: colors.surfaceAlt }]}>
+                <Text style={[styles.balanceNoticeLabel, { color: colors.slate }]}>Available Balance</Text>
+                <Text
+                  style={[
+                    styles.balanceNoticeAmount,
+                    { color: availableBal < 0 ? '#ef4444' : colors.primary },
+                  ]}
+                >
+                  ₹{availableBal.toFixed(2)}
+                </Text>
+              </View>
+
+              <Text style={[styles.inputLabel, { color: colors.midnight, marginTop: 12 }]}>
+                Withdrawal Amount (₹) *
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { backgroundColor: colors.surfaceAlt, borderColor: colors.border, color: colors.midnight, fontSize: 18, fontWeight: '700' },
+                ]}
+                placeholder={`Minimum ₹${MIN_WITHDRAWAL}`}
+                placeholderTextColor={colors.slateMuted}
+                keyboardType="number-pad"
+                value={withdrawAmount}
+                onChangeText={setWithdrawAmount}
+                editable={availableBal >= MIN_WITHDRAWAL}
+              />
+              <Text style={[styles.inputHint, { color: colors.slate, marginTop: 4 }]}>
+                Minimum: ₹{MIN_WITHDRAWAL} | Available: ₹{availableBal.toFixed(2)}
+              </Text>
+
+              {availableBal < MIN_WITHDRAWAL && (
+                <View style={[styles.modalWarningNotice, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2', borderColor: isDark ? '#b91c1c' : '#fecaca' }]}>
+                  <Ionicons name="alert-circle" size={16} color="#dc2626" style={{ marginRight: 6 }} />
+                  <Text style={[styles.modalWarningText, { color: '#dc2626' }]}>
+                    You need at least ₹${MIN_WITHDRAWAL} to request a withdrawal.
+                  </Text>
+                </View>
               )}
-            </TouchableOpacity>
+
+              {/* Quick Amount Chips */}
+              {availableBal >= MIN_WITHDRAWAL && (
+                <View style={styles.chipRow}>
+                  {[2000, 5000, 10000].map((amt) => {
+                    if (amt > availableBal) return null;
+                    return (
+                      <TouchableOpacity
+                        key={amt}
+                        style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.surfaceAlt }]}
+                        onPress={() => setWithdrawAmount(String(amt))}
+                      >
+                        <Text style={[styles.chipText, { color: colors.midnight }]}>₹{amt}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  <TouchableOpacity
+                    style={[styles.chip, { borderColor: colors.primary, backgroundColor: colors.primaryMuted }]}
+                    onPress={() => setWithdrawAmount(String(Math.floor(availableBal)))}
+                  >
+                    <Text style={[styles.chipText, { color: colors.primary, fontWeight: '700' }]}>All (Max)</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Target Payout Destination (UPI or Bank) */}
+              {payoutDetails && (
+                <View style={[styles.targetBankNote, { borderColor: colors.border }]}>
+                  <Ionicons
+                    name={hasUpi ? 'qr-code-outline' : 'business-outline'}
+                    size={18}
+                    color={colors.primary}
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text style={[styles.targetBankText, { color: colors.midnight }]}>
+                    Settling via{' '}
+                    <Text style={{ fontWeight: '700' }}>
+                      {hasUpi
+                        ? `UPI (${payoutDetails.upiId})`
+                        : `${payoutDetails.bankName || 'Bank'} (${payoutDetails.accountNumber})`}
+                    </Text>
+                  </Text>
+                </View>
+              )}
+
+              <Text style={[styles.payoutDisclaimer, { color: colors.slateMuted }]}>
+                Processing Time: Withdrawal requests are processed within 2-3 business days.
+              </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.submitBtn,
+                  {
+                    backgroundColor: availableBal >= MIN_WITHDRAWAL ? colors.primary : 'rgba(100,116,139,0.5)',
+                    opacity: availableBal >= MIN_WITHDRAWAL ? 1 : 0.65,
+                  },
+                ]}
+                onPress={handleSubmitWithdraw}
+                disabled={availableBal < MIN_WITHDRAWAL || submittingWithdraw}
+              >
+                {submittingWithdraw ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.submitBtnText}>Request Withdrawal</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
     </View>
   );

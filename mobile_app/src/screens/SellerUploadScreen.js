@@ -12,6 +12,7 @@ import {
   Modal,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -173,6 +174,24 @@ const SellerUploadScreen = ({ route, navigation }) => {
 
   // (i) Information popup modal
   const [infoModal, setInfoModal] = useState({ visible: false, key: null });
+
+  // Soft keyboard height tracker
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => setKeyboardHeight(e?.endCoordinates?.height || 0)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Helper to resolve thumbnail
   const resolveThumbnailSource = (thumb) => {
@@ -569,7 +588,11 @@ const SellerUploadScreen = ({ route, navigation }) => {
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 80 : insets.bottom + 60 },
+          ]}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {/* Header Title */}

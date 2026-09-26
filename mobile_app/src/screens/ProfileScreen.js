@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert,
   Modal, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard,
+  Dimensions,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,16 +35,16 @@ const ProfileScreen = ({ navigation }) => {
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
   const [pwCountdown, setPwCountdown] = useState(60);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      () => setKeyboardVisible(true)
+      (e) => setKeyboardHeight(e?.endCoordinates?.height || 0)
     );
     const hideSub = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => setKeyboardVisible(false)
+      () => setKeyboardHeight(0)
     );
     return () => {
       showSub.remove();
@@ -53,7 +54,7 @@ const ProfileScreen = ({ navigation }) => {
 
   // Dynamically calculate clearance for Android 3-button or gesture system navbar and iOS home bar
   const systemNavBottom = Math.max(insets.bottom, Platform.OS === 'android' ? 48 : 20);
-  const modalPaddingBottom = keyboardVisible ? 16 : systemNavBottom + 20;
+  const modalBottomOffset = keyboardHeight > 0 ? keyboardHeight : systemNavBottom;
   const scrollPaddingBottom = systemNavBottom + 100;
 
   useEffect(() => {
@@ -381,16 +382,27 @@ const ProfileScreen = ({ navigation }) => {
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.modalOverlay}
+        <View
+          style={[
+            styles.modalOverlay,
+            { paddingBottom: modalBottomOffset },
+          ]}
         >
           <TouchableOpacity
             style={StyleSheet.absoluteFillObject}
             activeOpacity={1}
             onPress={() => setModalVisible(false)}
           />
-          <View style={[styles.modalContent, { backgroundColor: colors.surface, paddingBottom: modalPaddingBottom }]}>
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: colors.surface,
+                paddingBottom: 16,
+                maxHeight: Dimensions.get('window').height * (keyboardHeight > 0 ? 0.65 : 0.85),
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.midnight }]}>Change Password</Text>
               <TouchableOpacity
@@ -401,160 +413,166 @@ const ProfileScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
 
-            {/* STEP 1: SEND CODE */}
-            {pwStep === 'initial' && (
-              <View style={styles.modalBody}>
-                <Text style={[styles.modalDesc, { color: colors.slate }]}>
-                  To update your password, we'll send a 6-digit OTP verification code to your registered email:
-                </Text>
-                <View style={[styles.emailBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Ionicons name="mail-outline" size={18} color={colors.primary} />
-                  <Text style={[styles.emailBoxText, { color: colors.midnight }]}>{user?.email}</Text>
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.modalBtn, { backgroundColor: colors.primary }]}
-                  onPress={handleSendPwOtp}
-                  disabled={pwLoading}
-                >
-                  {pwLoading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.modalBtnText}>Send Verification Code</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* STEP 2: VERIFY OTP */}
-            {pwStep === 'otp' && (
-              <View style={styles.modalBody}>
-                <Text style={[styles.modalDesc, { color: colors.slate }]}>
-                  Enter the 6-digit code sent to <Text style={{ fontWeight: '700', color: colors.midnight }}>{user?.email}</Text>:
-                </Text>
-
-                <TextInput
-                  style={[styles.modalOtpInput, { color: colors.primary, borderColor: colors.primary }]}
-                  placeholder="------"
-                  placeholderTextColor={colors.slate}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  value={pwOtp}
-                  onChangeText={(text) => {
-                    const clean = text.replace(/[^0-9]/g, '').slice(0, 6);
-                    setPwOtp(clean);
-                    if (clean.length === 6) {
-                      handleVerifyPwOtp(clean);
-                    }
-                  }}
-                  autoFocus
-                />
-
-                <View style={styles.modalResendRow}>
-                  {pwCountdown > 0 ? (
-                    <Text style={[styles.modalResendText, { color: colors.slate }]}>
-                      Resend code in {pwCountdown}s
-                    </Text>
-                  ) : (
-                    <TouchableOpacity onPress={handleSendPwOtp} disabled={pwLoading}>
-                      <Text style={[styles.modalResendBtn, { color: colors.primary }]}>Resend Code</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.modalBtn, { backgroundColor: colors.primary }]}
-                  onPress={() => handleVerifyPwOtp(pwOtp)}
-                  disabled={pwLoading || pwOtp.length !== 6}
-                >
-                  {pwLoading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.modalBtnText}>Verify Code</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* STEP 3: NEW PASSWORD & CONFIRM PASSWORD WITH REAL-TIME MATCH */}
-            {pwStep === 'new_password' && (
-              <View style={styles.modalBody}>
-                <Text style={[styles.modalDesc, { color: colors.slate }]}>
-                  Set a new, secure password (minimum 6 characters).
-                </Text>
-
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>New Password</Text>
-                  <View style={[styles.modalInputWrap, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                    <Ionicons name="lock-closed-outline" size={18} color={colors.slate} />
-                    <TextInput
-                      style={[styles.modalTextInput, { color: colors.midnight }]}
-                      placeholder="Min. 6 characters"
-                      placeholderTextColor={colors.slate}
-                      secureTextEntry={!showNewPw}
-                      value={newPw}
-                      onChangeText={setNewPw}
-                    />
-                    <TouchableOpacity onPress={() => setShowNewPw(!showNewPw)}>
-                      <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.slate} />
-                    </TouchableOpacity>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 16 }}
+            >
+              {/* STEP 1: SEND CODE */}
+              {pwStep === 'initial' && (
+                <View style={styles.modalBody}>
+                  <Text style={[styles.modalDesc, { color: colors.slate }]}>
+                    To update your password, we'll send a 6-digit OTP verification code to your registered email:
+                  </Text>
+                  <View style={[styles.emailBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Ionicons name="mail-outline" size={18} color={colors.primary} />
+                    <Text style={[styles.emailBoxText, { color: colors.midnight }]}>{user?.email}</Text>
                   </View>
-                </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Confirm New Password</Text>
-                  <View style={[styles.modalInputWrap, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                    <Ionicons name="lock-closed-outline" size={18} color={colors.slate} />
-                    <TextInput
-                      style={[styles.modalTextInput, { color: colors.midnight }]}
-                      placeholder="Re-enter password"
-                      placeholderTextColor={colors.slate}
-                      secureTextEntry={!showConfirmPw}
-                      value={confirmPw}
-                      onChangeText={setConfirmPw}
-                    />
-                    <TouchableOpacity onPress={() => setShowConfirmPw(!showConfirmPw)}>
-                      <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.slate} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* REAL-TIME MATCH INDICATION */}
-                {newPw.length > 0 && confirmPw.length > 0 && (
-                  <View style={styles.matchIndicatorRow}>
-                    {newPw === confirmPw ? (
-                      <>
-                        <Ionicons name="checkmark-circle" size={16} color="#16a34a" />
-                        <Text style={[styles.matchText, { color: '#16a34a' }]}>Passwords match</Text>
-                      </>
+                  <TouchableOpacity
+                    style={[styles.modalBtn, { backgroundColor: colors.primary }]}
+                    onPress={handleSendPwOtp}
+                    disabled={pwLoading}
+                  >
+                    {pwLoading ? (
+                      <ActivityIndicator color="#fff" />
                     ) : (
-                      <>
-                        <Ionicons name="alert-circle" size={16} color="#dc2626" />
-                        <Text style={[styles.matchText, { color: '#dc2626' }]}>Passwords do not match</Text>
-                      </>
+                      <Text style={styles.modalBtnText}>Send Verification Code</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* STEP 2: VERIFY OTP */}
+              {pwStep === 'otp' && (
+                <View style={styles.modalBody}>
+                  <Text style={[styles.modalDesc, { color: colors.slate }]}>
+                    Enter the 6-digit code sent to <Text style={{ fontWeight: '700', color: colors.midnight }}>{user?.email}</Text>:
+                  </Text>
+
+                  <TextInput
+                    style={[styles.modalOtpInput, { color: colors.primary, borderColor: colors.primary }]}
+                    placeholder="------"
+                    placeholderTextColor={colors.slate}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    value={pwOtp}
+                    onChangeText={(text) => {
+                      const clean = text.replace(/[^0-9]/g, '').slice(0, 6);
+                      setPwOtp(clean);
+                      if (clean.length === 6) {
+                        handleVerifyPwOtp(clean);
+                      }
+                    }}
+                    autoFocus
+                  />
+
+                  <View style={styles.modalResendRow}>
+                    {pwCountdown > 0 ? (
+                      <Text style={[styles.modalResendText, { color: colors.slate }]}>
+                        Resend code in {pwCountdown}s
+                      </Text>
+                    ) : (
+                      <TouchableOpacity onPress={handleSendPwOtp} disabled={pwLoading}>
+                        <Text style={[styles.modalResendBtn, { color: colors.primary }]}>Resend Code</Text>
+                      </TouchableOpacity>
                     )}
                   </View>
-                )}
 
-                <TouchableOpacity
-                  style={[
-                    styles.modalBtn,
-                    { backgroundColor: colors.primary },
-                    (newPw !== confirmPw || newPw.length < 6 || pwLoading) && styles.btnDisabled,
-                  ]}
-                  onPress={handleUpdatePassword}
-                  disabled={pwLoading || newPw !== confirmPw || newPw.length < 6}
-                >
-                  {pwLoading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.modalBtnText}>Update Password</Text>
+                  <TouchableOpacity
+                    style={[styles.modalBtn, { backgroundColor: colors.primary }]}
+                    onPress={() => handleVerifyPwOtp(pwOtp)}
+                    disabled={pwLoading || pwOtp.length !== 6}
+                  >
+                    {pwLoading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.modalBtnText}>Verify Code</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* STEP 3: NEW PASSWORD & CONFIRM PASSWORD WITH REAL-TIME MATCH */}
+              {pwStep === 'new_password' && (
+                <View style={styles.modalBody}>
+                  <Text style={[styles.modalDesc, { color: colors.slate }]}>
+                    Set a new, secure password (minimum 6 characters).
+                  </Text>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>New Password</Text>
+                    <View style={[styles.modalInputWrap, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <Ionicons name="lock-closed-outline" size={18} color={colors.slate} />
+                      <TextInput
+                        style={[styles.modalTextInput, { color: colors.midnight }]}
+                        placeholder="Min. 6 characters"
+                        placeholderTextColor={colors.slate}
+                        secureTextEntry={!showNewPw}
+                        value={newPw}
+                        onChangeText={setNewPw}
+                      />
+                      <TouchableOpacity onPress={() => setShowNewPw(!showNewPw)}>
+                        <Ionicons name={showNewPw ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.slate} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Confirm New Password</Text>
+                    <View style={[styles.modalInputWrap, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <Ionicons name="lock-closed-outline" size={18} color={colors.slate} />
+                      <TextInput
+                        style={[styles.modalTextInput, { color: colors.midnight }]}
+                        placeholder="Re-enter password"
+                        placeholderTextColor={colors.slate}
+                        secureTextEntry={!showConfirmPw}
+                        value={confirmPw}
+                        onChangeText={setConfirmPw}
+                      />
+                      <TouchableOpacity onPress={() => setShowConfirmPw(!showConfirmPw)}>
+                        <Ionicons name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.slate} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* REAL-TIME MATCH INDICATION */}
+                  {newPw.length > 0 && confirmPw.length > 0 && (
+                    <View style={styles.matchIndicatorRow}>
+                      {newPw === confirmPw ? (
+                        <>
+                          <Ionicons name="checkmark-circle" size={16} color="#16a34a" />
+                          <Text style={[styles.matchText, { color: '#16a34a' }]}>Passwords match</Text>
+                        </>
+                      ) : (
+                        <>
+                          <Ionicons name="alert-circle" size={16} color="#dc2626" />
+                          <Text style={[styles.matchText, { color: '#dc2626' }]}>Passwords do not match</Text>
+                        </>
+                      )}
+                    </View>
                   )}
-                </TouchableOpacity>
-              </View>
-            )}
+
+                  <TouchableOpacity
+                    style={[
+                      styles.modalBtn,
+                      { backgroundColor: colors.primary },
+                      (newPw !== confirmPw || newPw.length < 6 || pwLoading) && styles.btnDisabled,
+                    ]}
+                    onPress={handleUpdatePassword}
+                    disabled={pwLoading || newPw !== confirmPw || newPw.length < 6}
+                  >
+                    {pwLoading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.modalBtnText}>Update Password</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </ScrollView>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
 
       {/* EDIT PROFILE MODAL */}
@@ -564,16 +582,27 @@ const ProfileScreen = ({ navigation }) => {
         animationType="slide"
         onRequestClose={() => setEditModalVisible(false)}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.modalOverlay}
+        <View
+          style={[
+            styles.modalOverlay,
+            { paddingBottom: modalBottomOffset },
+          ]}
         >
           <TouchableOpacity
             style={StyleSheet.absoluteFillObject}
             activeOpacity={1}
             onPress={() => setEditModalVisible(false)}
           />
-          <View style={[styles.modalContent, { backgroundColor: colors.surface, paddingBottom: modalPaddingBottom }]}>
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: colors.surface,
+                paddingBottom: 16,
+                maxHeight: Dimensions.get('window').height * (keyboardHeight > 0 ? 0.65 : 0.85),
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.midnight }]}>Edit Profile Details</Text>
               <TouchableOpacity
@@ -584,7 +613,11 @@ const ProfileScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 24 }}
+            >
               <View style={styles.modalBody}>
                 {/* Full Name */}
                 <View style={styles.inputGroup}>
@@ -662,7 +695,7 @@ const ProfileScreen = ({ navigation }) => {
               </View>
             </ScrollView>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
     </View>
   );

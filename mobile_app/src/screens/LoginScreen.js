@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, BackHandler,
+  Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -235,10 +236,27 @@ const LoginScreen = ({ navigation, route }) => {
 
   const inputStyle = [styles.inputContainer, { backgroundColor: colors.background, borderColor: colors.border }];
 
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => setKeyboardHeight(e?.endCoordinates?.height || 0)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   // Ensure ample clearance above Android 3-button or gesture system navbar and iOS home bar
   const effectiveBottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 48 : 20);
   const rootPaddingBottom = effectiveBottomInset;
-  const scrollPaddingBottom = effectiveBottomInset + 40;
+  const scrollPaddingBottom = keyboardHeight > 0 ? keyboardHeight + 60 : effectiveBottomInset + 40;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.surface, paddingTop: Math.max(insets.top, 20), paddingBottom: rootPaddingBottom }]}>
