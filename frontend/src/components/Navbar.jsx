@@ -146,7 +146,7 @@ const Navbar = () => {
                     className={`${styles.mobileMenuItem} ${styles.mobileLogoutBtn}`} 
                     onClick={handleLogout}
                   >
-                    <span>Sign Out</span>
+                    <span>Logout</span>
                   </button>
                 </>
               ) : (

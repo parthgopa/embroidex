@@ -50,8 +50,8 @@ def send_signup_otp():
     if existing_user:
         signup_method = get_user_signup_method(existing_user)
         if signup_method == "google":
-            return jsonify({"error": "This email was registered using Google. Please sign in with Google."}), 400
-        return jsonify({"error": "An account with this email already exists. Please sign in with your password."}), 400
+            return jsonify({"error": "This email was registered using Google. Please login in with Google."}), 400
+        return jsonify({"error": "An account with this email already exists. Please login in with your password."}), 400
 
     # Generate 6-digit OTP
     otp_code = f"{random.randint(100000, 999999)}"
@@ -107,8 +107,8 @@ def verify_signup_otp():
     if existing_user:
         signup_method = get_user_signup_method(existing_user)
         if signup_method == "google":
-            return jsonify({"error": "This email was registered using Google. Please sign in with Google."}), 400
-        return jsonify({"error": "User already exists. Please sign in with your password."}), 400
+            return jsonify({"error": "This email was registered using Google. Please login in with Google."}), 400
+        return jsonify({"error": "User already exists. Please login in with your password."}), 400
 
     # Create verified user
     user = {
@@ -151,8 +151,8 @@ def signup():
     if existing_user:
         signup_method = get_user_signup_method(existing_user)
         if signup_method == "google":
-            return jsonify({"error": "This email was registered using Google. Please sign in with Google."}), 400
-        return jsonify({"error": "User already exists. Please sign in with your password."}), 400
+            return jsonify({"error": "This email was registered using Google. Please login in with Google."}), 400
+        return jsonify({"error": "User already exists. Please login in with your password."}), 400
 
     user = {
         "name": data["name"],
@@ -185,7 +185,7 @@ def login():
     # Case 2: User signed up with Google, trying to login with password
     if signup_method == "google":
         return jsonify({
-            "error": "This email was registered using Google. Please sign in with Google."
+            "error": "This email was registered using Google. Please login in with Google."
         }), 400
 
     if not user.get("password") or not verify_password(password, user["password"]):
@@ -242,7 +242,7 @@ def google_login():
         # Case 1: User signed up with password, but trying to login using Google
         if signup_method == "password":
             return jsonify({
-                "error": "This email is registered with a password. Please sign in using your email and password."
+                "error": "This email is registered with a password. Please login in using your email and password."
             }), 400
 
         user_id = user["_id"]
@@ -539,7 +539,7 @@ def forgot_password():
     signup_method = get_user_signup_method(user)
     if signup_method == "google" and not user.get("password"):
         return jsonify({
-            "error": "This account is registered using Google Sign-In. Please sign in with Google."
+            "error": "This account is registered using Google Sign-In. Please login in with Google."
         }), 400
 
     # Generate 6-digit OTP

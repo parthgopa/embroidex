@@ -281,7 +281,7 @@ const Login = () => {
               <>
                 <div className={styles.header}>
                   <h2 className={styles.title}>Welcome Back</h2>
-                  <p className={styles.subtitle}>Sign in to access your Embroidex workspace</p>
+                  <p className={styles.subtitle}>Login In to access your Embroidex workspace</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
@@ -344,7 +344,7 @@ const Login = () => {
                     className={`btn-primary-custom ${styles.submitBtn}`}
                     disabled={loading || googleLoading}
                   >
-                    {loading ? "Logging in..." : "Sign In"}
+                    {loading ? "Logging in..." : "Login In"}
                   </button>
                 </form>
 
@@ -552,7 +552,7 @@ const Login = () => {
                     className={`btn-primary-custom ${styles.submitBtn}`}
                     disabled={loading}
                   >
-                    {loading ? "Updating Password..." : "Update Password & Sign In"}
+                    {loading ? "Updating Password..." : "Update Password & Login In"}
                   </button>
                 </form>
               </>

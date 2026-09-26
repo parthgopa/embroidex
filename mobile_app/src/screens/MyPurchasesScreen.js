@@ -400,7 +400,7 @@ const MyPurchasesScreen = ({ navigation }) => {
           </View>
           <Text style={[styles.stateTitle, { color: colors.midnight }]}>Purchases Library</Text>
           <Text style={[styles.stateDesc, { color: colors.slate }]}>
-            Sign in to your Embroidex account to view and download all your purchased embroidery patterns.
+            Login In to your Embroidex account to view and download all your purchased embroidery patterns.
           </Text>
           <TouchableOpacity
             style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
@@ -408,7 +408,7 @@ const MyPurchasesScreen = ({ navigation }) => {
             activeOpacity={0.85}
           >
             <Ionicons name="log-in-outline" size={18} color="#ffffff" style={{ marginRight: 8 }} />
-            <Text style={styles.primaryBtnText}>Sign In to Account</Text>
+            <Text style={styles.primaryBtnText}>Login In to Account</Text>
           </TouchableOpacity>
         </View>
       ) : loading ? (

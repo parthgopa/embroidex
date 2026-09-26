@@ -273,9 +273,9 @@ const Profile = () => {
               type="button"
               onClick={handleLogout}
               className={styles.headerLogoutBtn}
-              title="Sign out of account"
+              title="Logout of account"
             >
-              <MdLogout size={16} /> Sign Out
+              <MdLogout size={16} /> Logout
             </button>
           </div>
         </div>

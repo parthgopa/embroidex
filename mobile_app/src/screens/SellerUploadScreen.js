@@ -439,9 +439,9 @@ const SellerUploadScreen = ({ route, navigation }) => {
   // Form submission (New Upload OR Update)
   const handleSubmit = async () => {
     if (!isAuthenticated) {
-      Alert.alert('Sign In Required', 'Please sign in to upload or edit designs.', [
+      Alert.alert('Login In Required', 'Please login in to upload or edit designs.', [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign In', onPress: () => navigation.navigate('LoginScreen') },
+        { text: 'Login In', onPress: () => navigation.navigate('LoginScreen') },
       ]);
       return;
     }

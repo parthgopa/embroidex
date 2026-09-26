@@ -99,7 +99,7 @@ const LoginScreen = ({ navigation, route }) => {
       }
     } catch (err) {
       console.error('Google Sign-In Error:', err);
-      Alert.alert('Google Sign-In Failed', err.response?.data?.error || err.message || 'Could not sign in with Google');
+      Alert.alert('Google Login In Failed', err.response?.data?.error || err.message || 'Could not login in with Google');
     } finally {
       setGoogleLoading(false);
     }
@@ -219,7 +219,7 @@ const LoginScreen = ({ navigation, route }) => {
         new_password: newPassword,
       });
 
-      Alert.alert('Success', res.data?.message || 'Password reset successfully! Please sign in.');
+      Alert.alert('Success', res.data?.message || 'Password reset successfully! Please login in.');
       setEmail(resetEmail);
       setPassword('');
       setNewPassword('');
@@ -281,7 +281,7 @@ const LoginScreen = ({ navigation, route }) => {
           {mode === 'login' && (
             <>
               <Text style={[styles.title, { color: colors.midnight }]}>Welcome Back</Text>
-              <Text style={[styles.subtitle, { color: colors.slate }]}>Sign in to your Embroidex account</Text>
+              <Text style={[styles.subtitle, { color: colors.slate }]}>Login In to your Embroidex account</Text>
 
               <View style={styles.form}>
                 <View style={styles.group}>
@@ -335,7 +335,7 @@ const LoginScreen = ({ navigation, route }) => {
                   disabled={loading || googleLoading}
                   activeOpacity={0.82}
                 >
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Sign In</Text>}
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Login In</Text>}
                 </TouchableOpacity>
 
                 <View style={styles.dividerRow}>
@@ -416,7 +416,7 @@ const LoginScreen = ({ navigation, route }) => {
                   onPress={() => setMode('login')}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Text style={[styles.cancelText, { color: colors.slate }]}>Return to Sign In</Text>
+                  <Text style={[styles.cancelText, { color: colors.slate }]}>Return to Login In</Text>
                 </TouchableOpacity>
               </View>
             </>

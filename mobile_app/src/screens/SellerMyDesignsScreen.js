@@ -141,13 +141,13 @@ const SellerMyDesignsScreen = ({ navigation }) => {
           <Ionicons name="lock-closed-outline" size={56} color={colors.primary} style={{ marginBottom: 16 }} />
           <Text style={[styles.emptyTitle, { color: colors.midnight }]}>Authentication Required</Text>
           <Text style={[styles.emptySubtitle, { color: colors.slate }]}>
-            Please sign in to view your seller portfolio and uploaded embroidery designs.
+            Please login in to view your seller portfolio and uploaded embroidery designs.
           </Text>
           <TouchableOpacity
             style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
             onPress={() => navigation.navigate('LoginScreen')}
           >
-            <Text style={styles.primaryBtnText}>Sign In Now</Text>
+            <Text style={styles.primaryBtnText}>Login In Now</Text>
           </TouchableOpacity>
         </View>
       </View>

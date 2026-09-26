@@ -106,11 +106,11 @@ const CartScreen = ({ navigation }) => {
     // 1. Auth gate
     if (!isAuthenticated) {
       Alert.alert(
-        'Sign In Required',
-        'Please sign in to proceed with checkout.',
+        'Login In Required',
+        'Please login in to proceed with checkout.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Sign In', onPress: () => navigation.navigate('LoginScreen', { returnTo: 'Cart' }) },
+          { text: 'Login In', onPress: () => navigation.navigate('LoginScreen', { returnTo: 'Cart' }) },
         ]
       );
       return;

@@ -231,7 +231,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               onClick={handleLogout}
             >
               <MdLogout size={18} />
-              <span>Sign Out</span>
+              <span>Logout</span>
             </button>
           </div>
         ) : (

@@ -185,7 +185,7 @@ const SignupScreen = ({ navigation }) => {
               <View style={styles.switchRow}>
                 <Text style={[styles.switchText, { color: colors.slate }]}>Already have an account? </Text>
                 <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
-                  <Text style={[styles.switchLink, { color: colors.primary }]}>Sign In</Text>
+                  <Text style={[styles.switchLink, { color: colors.primary }]}>Login In</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -220,7 +220,7 @@ const SignupScreen = ({ navigation }) => {
               <View style={styles.switchRow}>
                 <Text style={[styles.switchText, { color: colors.slate }]}>Have an account? </Text>
                 <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
-                  <Text style={[styles.switchLink, { color: colors.primary }]}>Sign In</Text>
+                  <Text style={[styles.switchLink, { color: colors.primary }]}>Login In</Text>
                 </TouchableOpacity>
               </View>
             </View>

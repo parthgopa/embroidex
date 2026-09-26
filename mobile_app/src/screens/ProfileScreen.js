@@ -164,10 +164,10 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Sign Out',
+        text: 'Logout',
         style: 'destructive',
         onPress: async () => {
           await logout();
@@ -192,7 +192,7 @@ const ProfileScreen = ({ navigation }) => {
             {isAuthenticated ? user?.name : 'Guest User'}
           </Text>
           <Text style={[styles.email, { color: colors.slate }]}>
-            {isAuthenticated ? user?.email : 'Sign in to access your library'}
+            {isAuthenticated ? user?.email : 'Login In to access your library'}
           </Text>
 
           {/* Phone & Address Details */}
@@ -291,7 +291,7 @@ const ProfileScreen = ({ navigation }) => {
               onPress={() => navigation.navigate('LoginScreen')}
             >
               <Ionicons name="log-in-outline" size={20} color={colors.primary} style={styles.menuIcon} />
-              <Text style={[styles.menuLabel, { color: colors.midnight }]}>Sign In to Account</Text>
+              <Text style={[styles.menuLabel, { color: colors.midnight }]}>Login In to Account</Text>
             </TouchableOpacity>
           ) : (
             <>
@@ -368,7 +368,7 @@ const ProfileScreen = ({ navigation }) => {
 
               <TouchableOpacity style={styles.menuItemDanger} onPress={handleLogout}>
                 <Ionicons name="log-out-outline" size={20} color={colors.danger} style={styles.menuIcon} />
-                <Text style={[styles.menuLabel, { color: colors.danger }]}>Sign Out</Text>
+                <Text style={[styles.menuLabel, { color: colors.danger }]}>Logout</Text>
               </TouchableOpacity>
             </>
           )}

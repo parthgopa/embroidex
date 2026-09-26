@@ -19,7 +19,7 @@ export const downloadPurchasedZip = async (purchase, authToken) => {
   try {
     const token = authToken || (await AsyncStorage.getItem('token'));
     if (!token) {
-      Alert.alert('Sign In Required', 'Please sign in to download your purchased files.');
+      Alert.alert('Login In Required', 'Please login in to download your purchased files.');
       return false;
     }
 

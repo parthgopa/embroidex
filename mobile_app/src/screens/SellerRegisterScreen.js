@@ -30,9 +30,9 @@ const SellerRegisterScreen = ({ navigation }) => {
 
   const handleSubmit = async () => {
     if (!isAuthenticated) {
-      Alert.alert('Sign In Required', 'Please sign in before registering as a seller.', [
+      Alert.alert('Login In Required', 'Please login in before registering as a seller.', [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign In', onPress: () => navigation.navigate('LoginScreen') },
+        { text: 'Login In', onPress: () => navigation.navigate('LoginScreen') },
       ]);
       return;
     }

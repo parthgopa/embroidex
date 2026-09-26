@@ -35,10 +35,10 @@ const CustomDrawerContent = (props) => {
   };
 
   const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Sign Out',
+        text: 'Logout',
         style: 'destructive',
         onPress: async () => {
           await logout();
@@ -134,7 +134,7 @@ const CustomDrawerContent = (props) => {
             style={[styles.ctaBanner, { backgroundColor: colors.primary }]}
             onPress={() => handleNavigation('LoginScreen')}
           >
-            <Text style={styles.ctaBannerTitle}>Sign In or Register</Text>
+            <Text style={styles.ctaBannerTitle}>Login In or Register</Text>
             <Text style={styles.ctaBannerSub}>
               Access instant downloads & track orders
             </Text>
@@ -292,7 +292,7 @@ const CustomDrawerContent = (props) => {
         )}
       </ScrollView>
 
-      {/* Sticky Bottom Footer: Sign Out / In + Fixed Theme Toggle */}
+      {/* Sticky Bottom Footer: Logout / Login In + Fixed Theme Toggle */}
       <View
         style={[
           styles.drawerFooter,
@@ -306,7 +306,7 @@ const CustomDrawerContent = (props) => {
         {isAuthenticated ? (
           <TouchableOpacity style={styles.logoutItem} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={20} color={colors.danger || '#ef4444'} style={styles.navIcon} />
-            <Text style={[styles.logoutLabel, { color: colors.danger || '#ef4444' }]}>Sign Out</Text>
+            <Text style={[styles.logoutLabel, { color: colors.danger || '#ef4444' }]}>Logout</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -314,7 +314,7 @@ const CustomDrawerContent = (props) => {
             onPress={() => handleNavigation('LoginScreen')}
           >
             <Ionicons name="log-in-outline" size={20} color={colors.primary} style={styles.navIcon} />
-            <Text style={[styles.loginLabel, { color: colors.primary }]}>Sign In / Register</Text>
+            <Text style={[styles.loginLabel, { color: colors.primary }]}>Login In / Register</Text>
           </TouchableOpacity>
         )}
 
