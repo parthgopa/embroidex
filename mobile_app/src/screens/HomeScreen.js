@@ -14,12 +14,14 @@ import TopBar from '../components/TopBar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import API, { BASE_URL } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { COLORS, SHADOWS } from '../theme/theme';
 
 const { width } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
   const { colors, isDark } = useTheme();
+  const { isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showcases, setShowcases] = useState([]);
@@ -96,32 +98,49 @@ const HomeScreen = ({ navigation }) => {
               Verified .EMB & .DST files designed for multi-head machines
             </Text>
 
-            {/* Action Buttons: Prominent Icons for Explore and AI */}
+            {/* Action Buttons: Buy Designs and Ask AI / Login In */}
             <View style={styles.heroActionRow}>
               <TouchableOpacity
                 style={[styles.heroExploreBtn, { backgroundColor: colors.primary }]}
                 onPress={() => navigation.navigate('Explore')}
                 activeOpacity={0.85}
               >
-                <Ionicons name="compass" size={18} color="#ffffff" style={{ marginRight: 6 }} />
-                <Text style={styles.heroExploreBtnText}>Explore Designs</Text>
+                <Ionicons name="bag-handle-outline" size={18} color="#ffffff" style={{ marginRight: 6 }} />
+                <Text style={styles.heroExploreBtnText}>Buy Designs</Text>
                 <Ionicons name="arrow-forward" size={15} color="#ffffff" style={{ marginLeft: 6 }} />
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.heroAiBtn,
-                  {
-                    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.18)' : '#eef2ff',
-                    borderColor: isDark ? 'rgba(99, 102, 241, 0.35)' : '#c7d2fe',
-                  },
-                ]}
-                onPress={() => navigation.navigate('ChatbotModal')}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="sparkles" size={16} color={colors.primary} style={{ marginRight: 6 }} />
-                <Text style={[styles.heroAiBtnText, { color: colors.primary }]}>Ask AI</Text>
-              </TouchableOpacity>
+              {isAuthenticated ? (
+                <TouchableOpacity
+                  style={[
+                    styles.heroAiBtn,
+                    {
+                      backgroundColor: isDark ? 'rgba(99, 102, 241, 0.18)' : '#eef2ff',
+                      borderColor: isDark ? 'rgba(99, 102, 241, 0.35)' : '#c7d2fe',
+                    },
+                  ]}
+                  onPress={() => navigation.navigate('ChatbotModal')}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="sparkles" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                  <Text style={[styles.heroAiBtnText, { color: colors.primary }]}>Ask AI</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.heroAiBtn,
+                    {
+                      backgroundColor: isDark ? 'rgba(99, 102, 241, 0.18)' : '#eef2ff',
+                      borderColor: isDark ? 'rgba(99, 102, 241, 0.35)' : '#c7d2fe',
+                    },
+                  ]}
+                  onPress={() => navigation.navigate('LoginScreen')}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="log-in-outline" size={17} color={colors.primary} style={{ marginRight: 6 }} />
+                  <Text style={[styles.heroAiBtnText, { color: colors.primary }]}>Login In</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
