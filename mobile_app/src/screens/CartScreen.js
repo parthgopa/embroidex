@@ -222,13 +222,13 @@ const CartScreen = ({ navigation }) => {
             data={cartItems}
             keyExtractor={(item) => item._id}
             renderItem={renderItem}
-            contentContainerStyle={[styles.list, { paddingBottom: 120 + insets.bottom }]}
+            contentContainerStyle={[styles.list, { paddingBottom: 85 }]}
             showsVerticalScrollIndicator={false}
             ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           />
 
           {/* Sticky checkout footer */}
-          <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 12), ...SHADOWS.floating }]}>
+          <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border, ...SHADOWS.floating }]}>
             <View style={styles.totalBlock}>
               <Text style={[styles.totalLabel, { color: colors.slate }]}>Total</Text>
               <View style={styles.totalRow}>
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1,
+    paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1,
   },
   totalBlock: { marginRight: 14 },
   totalLabel: { fontSize: 11, fontWeight: '600' },

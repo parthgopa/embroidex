@@ -11,7 +11,6 @@ import { AlertProvider } from './src/context/AlertContext';
 import { navigationRef } from './src/navigation/navigationRef';
 import RootNavigator from './src/navigation/RootNavigator';
 import AnimatedSplash from './src/components/AnimatedSplash';
-import FloatingAiBot from './src/components/FloatingAiBot';
 
 function MainApp() {
   const { isDark, colors } = useTheme();
@@ -42,7 +41,6 @@ function MainApp() {
               <NavigationContainer ref={navigationRef} theme={navTheme}>
                 <DrawerProvider>
                   <RootNavigator />
-                  <FloatingAiBot />
                 </DrawerProvider>
               </NavigationContainer>
             </ChatProvider>
