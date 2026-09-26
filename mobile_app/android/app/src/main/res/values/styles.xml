@@ -6,4 +6,9 @@
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     </style>
 
+    <!-- Theme for Razorpay Checkout to opt out of edge-to-edge and fit system bars -->
+    <style name="AppTheme.RazorpayCheckout" parent="CheckoutTheme">
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+        <item name="android:fitsSystemWindows">true</item>
+    </style>
 </resources>

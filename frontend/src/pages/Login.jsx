@@ -122,7 +122,7 @@ const Login = () => {
       const status = err.response?.status;
       let message = err.response?.data?.error || "Login failed";
       if (message === "Invalid credentials" || message.toLowerCase().includes("invalid credential")) {
-        message = "Invalid password or email Id";
+        message = "Wrong password or email.";
       }
       if (status === 403) {
         setDeactivated(true);
@@ -256,307 +256,307 @@ const Login = () => {
         <div className={styles.formSide}>
           <div className={styles.formInner}>
             {deactivated && (
-            <div className={styles.deactivatedBanner}>
-              <strong>Account Deactivated</strong>
-              <p>Your account has been deactivated by the admin. To restore access, please contact Admin.</p>
-            </div>
-          )}
-
-          {error && (
-            <div className={styles.errorBanner}>
-              <MdErrorOutline size={18} />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {successMsg && (
-            <div className={styles.successBanner}>
-              <MdCheckCircle size={18} />
-              <span>{successMsg}</span>
-            </div>
-          )}
-
-          {/* 1. LOGIN VIEW */}
-          {view === "login" && (
-            <>
-              <div className={styles.header}>
-                <h2 className={styles.title}>Welcome Back</h2>
-                <p className={styles.subtitle}>Sign in to access your Embroidex workspace</p>
+              <div className={styles.deactivatedBanner}>
+                <strong>Account Deactivated</strong>
+                <p>Your account has been deactivated by the admin. To restore access, please contact Admin.</p>
               </div>
+            )}
 
-              <form onSubmit={handleSubmit} className={styles.form}>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Email Address</label>
-                  <div className={styles.inputWrapper}>
-                    <MdMailOutline size={19} className={styles.inputIcon} />
-                    <input
-                      type="email"
-                      name="email"
-                      placeholder="name@example.com"
-                      className={`input-custom ${styles.inputField}`}
-                      onChange={handleChange}
-                      value={form.email}
-                      required
-                    />
-                  </div>
+            {error && (
+              <div className={styles.errorBanner}>
+                <MdErrorOutline size={18} />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {successMsg && (
+              <div className={styles.successBanner}>
+                <MdCheckCircle size={18} />
+                <span>{successMsg}</span>
+              </div>
+            )}
+
+            {/* 1. LOGIN VIEW */}
+            {view === "login" && (
+              <>
+                <div className={styles.header}>
+                  <h2 className={styles.title}>Welcome Back</h2>
+                  <p className={styles.subtitle}>Sign in to access your Embroidex workspace</p>
                 </div>
 
-                <div className={styles.formGroup}>
-                  <div className={styles.labelRow}>
-                    <label className={styles.label}>Password</label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setResetEmail(form.email || "");
-                        setView("forgot_email");
-                        setError(null);
-                        setSuccessMsg(null);
-                      }}
-                      className={styles.forgotBtn}
-                    >
-                      Forgot Password?
-                    </button>
+                <form onSubmit={handleSubmit} className={styles.form}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>Email Address</label>
+                    <div className={styles.inputWrapper}>
+                      <MdMailOutline size={19} className={styles.inputIcon} />
+                      <input
+                        type="email"
+                        name="email"
+                        placeholder="name@example.com"
+                        className={`input-custom ${styles.inputField}`}
+                        onChange={handleChange}
+                        value={form.email}
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className={styles.inputWrapper}>
-                    <MdLockOutline size={19} className={styles.inputIcon} />
-                    <input
-                      type={showLoginPw ? "text" : "password"}
-                      name="password"
-                      placeholder="Enter your password"
-                      className={`input-custom ${styles.inputField}`}
-                      onChange={handleChange}
-                      value={form.password}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className={styles.eyeBtn}
-                      onClick={() => setShowLoginPw(!showLoginPw)}
-                      aria-label="Toggle password visibility"
-                    >
-                      {showLoginPw ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
-                    </button>
+
+                  <div className={styles.formGroup}>
+                    <div className={styles.labelRow}>
+                      <label className={styles.label}>Password</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResetEmail(form.email || "");
+                          setView("forgot_email");
+                          setError(null);
+                          setSuccessMsg(null);
+                        }}
+                        className={styles.forgotBtn}
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                    <div className={styles.inputWrapper}>
+                      <MdLockOutline size={19} className={styles.inputIcon} />
+                      <input
+                        type={showLoginPw ? "text" : "password"}
+                        name="password"
+                        placeholder="Enter your password"
+                        className={`input-custom ${styles.inputField}`}
+                        onChange={handleChange}
+                        value={form.password}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className={styles.eyeBtn}
+                        onClick={() => setShowLoginPw(!showLoginPw)}
+                        aria-label="Toggle password visibility"
+                      >
+                        {showLoginPw ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
+                      </button>
+                    </div>
                   </div>
+
+                  <button
+                    type="submit"
+                    className={`btn-primary-custom ${styles.submitBtn}`}
+                    disabled={loading || googleLoading}
+                  >
+                    {loading ? "Logging in..." : "Sign In"}
+                  </button>
+                </form>
+
+                <div className={styles.divider}>
+                  <span>or continue with</span>
                 </div>
 
                 <button
-                  type="submit"
-                  className={`btn-primary-custom ${styles.submitBtn}`}
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  className={styles.googleBtn}
                   disabled={loading || googleLoading}
                 >
-                  {loading ? "Logging in..." : "Sign In"}
+                  <FcGoogle size={22} />
+                  <span>{googleLoading ? "Connecting with Google..." : "Continue with Google"}</span>
                 </button>
-              </form>
 
-              <div className={styles.divider}>
-                <span>or continue with</span>
-              </div>
+                <div className={styles.footer}>
+                  <p className={styles.footerText}>
+                    Don't have an account?{" "}
+                    <Link to="/signup" className={styles.link}>
+                      Create Account
+                    </Link>
+                  </p>
+                </div>
+              </>
+            )}
 
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                className={styles.googleBtn}
-                disabled={loading || googleLoading}
-              >
-                <FcGoogle size={22} />
-                <span>{googleLoading ? "Connecting with Google..." : "Continue with Google"}</span>
-              </button>
+            {/* 2. FORGOT PASSWORD - EMAIL INPUT */}
+            {view === "forgot_email" && (
+              <>
+                <button type="button" onClick={switchBackToLogin} className={styles.backLink}>
+                  <MdArrowBack size={18} />
+                  <span>Back to Login</span>
+                </button>
 
-              <div className={styles.footer}>
-                <p className={styles.footerText}>
-                  Don't have an account?{" "}
-                  <Link to="/signup" className={styles.link}>
-                    Create Account
-                  </Link>
-                </p>
-              </div>
-            </>
-          )}
-
-          {/* 2. FORGOT PASSWORD - EMAIL INPUT */}
-          {view === "forgot_email" && (
-            <>
-              <button type="button" onClick={switchBackToLogin} className={styles.backLink}>
-                <MdArrowBack size={18} />
-                <span>Back to Login</span>
-              </button>
-
-              <div className={styles.header}>
-                <h2 className={styles.title}>Forgot Password</h2>
-                <p className={styles.subtitle}>
-                  Enter your registered email address and we'll send you a 6-digit verification code.
-                </p>
-              </div>
-
-              <form onSubmit={handleSendResetOtp} className={styles.form}>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Registered Email Address</label>
-                  <div className={styles.inputWrapper}>
-                    <MdMailOutline size={19} className={styles.inputIcon} />
-                    <input
-                      type="email"
-                      placeholder="name@example.com"
-                      className={`input-custom ${styles.inputField}`}
-                      value={resetEmail}
-                      onChange={(e) => {
-                        setResetEmail(e.target.value);
-                        setError(null);
-                      }}
-                      required
-                      autoFocus
-                    />
-                  </div>
+                <div className={styles.header}>
+                  <h2 className={styles.title}>Forgot Password</h2>
+                  <p className={styles.subtitle}>
+                    Enter your registered email address and we'll send you a 6-digit verification code.
+                  </p>
                 </div>
 
-                <button
-                  type="submit"
-                  className={`btn-primary-custom ${styles.submitBtn}`}
-                  disabled={loading}
-                >
-                  {loading ? "Sending Code..." : "Send Verification Code"}
-                </button>
-              </form>
-            </>
-          )}
-
-          {/* 3. FORGOT PASSWORD - 6-DIGIT OTP AUTO-CHECK */}
-          {view === "forgot_otp" && (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setView("forgot_email");
-                  setError(null);
-                }}
-                className={styles.backLink}
-              >
-                <MdArrowBack size={18} />
-                <span>Change Email</span>
-              </button>
-
-              <div className={styles.header}>
-                <h2 className={styles.title}>Enter 6-Digit Code</h2>
-                <p className={styles.subtitle}>
-                  We sent a verification code to <strong>{resetEmail}</strong>. Code is automatically checked once 6 digits are entered.
-                </p>
-              </div>
-
-              <div className={styles.otpCardBox}>
-                <label className={styles.otpLabel}>6-Digit Verification Code</label>
-                <input
-                  ref={otpInputRef}
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  value={otp}
-                  onChange={handleOtpChange}
-                  placeholder="------"
-                  className={styles.otpBigInput}
-                  disabled={verifyingOtp}
-                  autoComplete="one-time-code"
-                />
-
-                {verifyingOtp && (
-                  <div className={styles.verifyingIndicator}>
-                    <span className={styles.spinner} />
-                    <span>Verifying code automatically...</span>
+                <form onSubmit={handleSendResetOtp} className={styles.form}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>Registered Email Address</label>
+                    <div className={styles.inputWrapper}>
+                      <MdMailOutline size={19} className={styles.inputIcon} />
+                      <input
+                        type="email"
+                        placeholder="name@example.com"
+                        className={`input-custom ${styles.inputField}`}
+                        value={resetEmail}
+                        onChange={(e) => {
+                          setResetEmail(e.target.value);
+                          setError(null);
+                        }}
+                        required
+                        autoFocus
+                      />
+                    </div>
                   </div>
-                )}
 
-                <div className={styles.resendArea}>
-                  <span className={styles.resendText}>Didn't receive the code?</span>
-                  {countdown > 0 ? (
-                    <span className={styles.countdownBadge}>Resend in {countdown}s</span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleResendOtp}
-                      disabled={resending || verifyingOtp}
-                      className={styles.resendActionBtn}
-                    >
-                      <MdRefresh size={16} />
-                      <span>{resending ? "Sending..." : "Resend Code"}</span>
-                    </button>
+                  <button
+                    type="submit"
+                    className={`btn-primary-custom ${styles.submitBtn}`}
+                    disabled={loading}
+                  >
+                    {loading ? "Sending Code..." : "Send Verification Code"}
+                  </button>
+                </form>
+              </>
+            )}
+
+            {/* 3. FORGOT PASSWORD - 6-DIGIT OTP AUTO-CHECK */}
+            {view === "forgot_otp" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setView("forgot_email");
+                    setError(null);
+                  }}
+                  className={styles.backLink}
+                >
+                  <MdArrowBack size={18} />
+                  <span>Change Email</span>
+                </button>
+
+                <div className={styles.header}>
+                  <h2 className={styles.title}>Enter 6-Digit Code</h2>
+                  <p className={styles.subtitle}>
+                    We sent a verification code to <strong>{resetEmail}</strong>. Code is automatically checked once 6 digits are entered.
+                  </p>
+                </div>
+
+                <div className={styles.otpCardBox}>
+                  <label className={styles.otpLabel}>6-Digit Verification Code</label>
+                  <input
+                    ref={otpInputRef}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={otp}
+                    onChange={handleOtpChange}
+                    placeholder="------"
+                    className={styles.otpBigInput}
+                    disabled={verifyingOtp}
+                    autoComplete="one-time-code"
+                  />
+
+                  {verifyingOtp && (
+                    <div className={styles.verifyingIndicator}>
+                      <span className={styles.spinner} />
+                      <span>Verifying code automatically...</span>
+                    </div>
                   )}
-                </div>
-              </div>
-            </>
-          )}
 
-          {/* 4. FORGOT PASSWORD - NEW PASSWORD */}
-          {view === "forgot_reset" && (
-            <>
-              <div className={styles.header}>
-                <h2 className={styles.title}>Set New Password</h2>
-                <p className={styles.subtitle}>Create a strong new password for your account</p>
-              </div>
-
-              <form onSubmit={handleResetPassword} className={styles.form}>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>New Password</label>
-                  <div className={styles.inputWrapper}>
-                    <MdLockOutline size={19} className={styles.inputIcon} />
-                    <input
-                      type={showNewPw ? "text" : "password"}
-                      placeholder="Minimum 6 characters"
-                      className={`input-custom ${styles.inputField}`}
-                      value={newPassword}
-                      onChange={(e) => {
-                        setNewPassword(e.target.value);
-                        setError(null);
-                      }}
-                      required
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      className={styles.eyeBtn}
-                      onClick={() => setShowNewPw(!showNewPw)}
-                      aria-label="Toggle password visibility"
-                    >
-                      {showNewPw ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
-                    </button>
+                  <div className={styles.resendArea}>
+                    <span className={styles.resendText}>Didn't receive the code?</span>
+                    {countdown > 0 ? (
+                      <span className={styles.countdownBadge}>Resend in {countdown}s</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResendOtp}
+                        disabled={resending || verifyingOtp}
+                        className={styles.resendActionBtn}
+                      >
+                        <MdRefresh size={16} />
+                        <span>{resending ? "Sending..." : "Resend Code"}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
+              </>
+            )}
 
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Confirm New Password</label>
-                  <div className={styles.inputWrapper}>
-                    <MdLockOutline size={19} className={styles.inputIcon} />
-                    <input
-                      type={showConfirmPw ? "text" : "password"}
-                      placeholder="Re-enter your new password"
-                      className={`input-custom ${styles.inputField}`}
-                      value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value);
-                        setError(null);
-                      }}
-                      required
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      className={styles.eyeBtn}
-                      onClick={() => setShowConfirmPw(!showConfirmPw)}
-                      aria-label="Toggle password visibility"
-                    >
-                      {showConfirmPw ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
-                    </button>
-                  </div>
+            {/* 4. FORGOT PASSWORD - NEW PASSWORD */}
+            {view === "forgot_reset" && (
+              <>
+                <div className={styles.header}>
+                  <h2 className={styles.title}>Set New Password</h2>
+                  <p className={styles.subtitle}>Create a strong new password for your account</p>
                 </div>
 
-                <button
-                  type="submit"
-                  className={`btn-primary-custom ${styles.submitBtn}`}
-                  disabled={loading}
-                >
-                  {loading ? "Updating Password..." : "Update Password & Sign In"}
-                </button>
-              </form>
-            </>
-          )}
+                <form onSubmit={handleResetPassword} className={styles.form}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>New Password</label>
+                    <div className={styles.inputWrapper}>
+                      <MdLockOutline size={19} className={styles.inputIcon} />
+                      <input
+                        type={showNewPw ? "text" : "password"}
+                        placeholder="Minimum 6 characters"
+                        className={`input-custom ${styles.inputField}`}
+                        value={newPassword}
+                        onChange={(e) => {
+                          setNewPassword(e.target.value);
+                          setError(null);
+                        }}
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        className={styles.eyeBtn}
+                        onClick={() => setShowNewPw(!showNewPw)}
+                        aria-label="Toggle password visibility"
+                      >
+                        {showNewPw ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>Confirm New Password</label>
+                    <div className={styles.inputWrapper}>
+                      <MdLockOutline size={19} className={styles.inputIcon} />
+                      <input
+                        type={showConfirmPw ? "text" : "password"}
+                        placeholder="Re-enter your new password"
+                        className={`input-custom ${styles.inputField}`}
+                        value={confirmPassword}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setError(null);
+                        }}
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        className={styles.eyeBtn}
+                        onClick={() => setShowConfirmPw(!showConfirmPw)}
+                        aria-label="Toggle password visibility"
+                      >
+                        {showConfirmPw ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className={`btn-primary-custom ${styles.submitBtn}`}
+                    disabled={loading}
+                  >
+                    {loading ? "Updating Password..." : "Update Password & Sign In"}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
 

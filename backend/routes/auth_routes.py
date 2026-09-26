@@ -178,7 +178,7 @@ def login():
     user = USERS_COLLECTION.find_one({"email": email})
 
     if not user:
-        return jsonify({"error": "Invalid password or email Id"}), 401
+        return jsonify({"error": "Wrong password or email"}), 401
 
     signup_method = get_user_signup_method(user)
 
@@ -189,7 +189,7 @@ def login():
         }), 400
 
     if not user.get("password") or not verify_password(password, user["password"]):
-        return jsonify({"error": "Invalid password or email Id"}), 401
+        return jsonify({"error": "Wrong password or email"}), 401
 
     if user.get("is_active") == False:
         return jsonify({"error": "Your account has been deactivated. Please contact admin."}), 403
@@ -295,7 +295,9 @@ def get_current_user():
         "email": user.get("email"),
         "role": user.get("role", "buyer"),
         "is_seller": user.get("is_seller", False),
-        "signup_method": get_user_signup_method(user)
+        "signup_method": get_user_signup_method(user),
+        "address": user.get("address", ""),
+        "phone": user.get("phone", "")
     }), 200
 
 
@@ -394,7 +396,68 @@ def get_profile():
         "role": user.get("role", "buyer"),
         "is_seller": user.get("is_seller", False),
         "seller_info": user.get("seller_info"),
-        "signup_method": get_user_signup_method(user)
+        "signup_method": get_user_signup_method(user),
+        "address": user.get("address", ""),
+        "phone": user.get("phone", "")
+    }), 200
+
+
+@auth_bp.route("/profile", methods=["PUT", "PATCH"])
+@auth_bp.route("/update-profile", methods=["PUT", "POST"])
+def update_profile():
+    """Update user profile name, address, and phone"""
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        token = token.replace("Bearer ", "")
+        user_id = decode_token(token)
+    except:
+        return jsonify({"error": "Invalid token"}), 401
+    
+    user = USERS_COLLECTION.find_one({"_id": user_id})
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.json or {}
+    name = (data.get("name") or "").strip()
+    address = (data.get("address") or "").strip()
+    phone = (data.get("phone") or "").strip()
+
+    if not name:
+        return jsonify({"error": "Name cannot be empty"}), 400
+
+    update_fields = {
+        "name": name,
+        "address": address,
+        "phone": phone
+    }
+
+    # If seller, keep seller_info in sync
+    if user.get("is_seller") and user.get("seller_info"):
+        seller_info = dict(user.get("seller_info") or {})
+        if phone:
+            seller_info["mobile_number"] = phone
+        if address:
+            seller_info["business_address"] = address
+        update_fields["seller_info"] = seller_info
+
+    USERS_COLLECTION.update_one({"_id": user_id}, {"$set": update_fields})
+    updated_user = USERS_COLLECTION.find_one({"_id": user_id})
+
+    return jsonify({
+        "message": "Profile updated successfully",
+        "user": {
+            "name": updated_user.get("name"),
+            "email": updated_user.get("email"),
+            "role": updated_user.get("role", "buyer"),
+            "is_seller": updated_user.get("is_seller", False),
+            "seller_info": updated_user.get("seller_info"),
+            "signup_method": get_user_signup_method(updated_user),
+            "address": updated_user.get("address", ""),
+            "phone": updated_user.get("phone", "")
+        }
     }), 200
 
 

@@ -12,9 +12,16 @@ import { SHADOWS } from '../theme/theme';
 import API from '../services/api';
 
 const ProfileScreen = ({ navigation }) => {
-  const { user, isAuthenticated, isSeller, logout, stats } = useAuth();
+  const { user, isAuthenticated, isSeller, logout, stats, refreshProfile } = useAuth();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+
+  // Edit Profile States
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
 
   // Change Password Modal States
   const [modalVisible, setModalVisible] = useState(false);
@@ -64,6 +71,37 @@ const ProfileScreen = ({ navigation }) => {
     setNewPw('');
     setConfirmPw('');
     setChangeToken('');
+  };
+
+  const handleOpenEditProfile = () => {
+    setEditName(user?.name || '');
+    setEditAddress(user?.address || user?.seller_info?.business_address || '');
+    setEditPhone(user?.phone || user?.seller_info?.mobile_number || '');
+    setEditModalVisible(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      Alert.alert('Required', 'Name cannot be empty.');
+      return;
+    }
+    setEditLoading(true);
+    try {
+      await API.put('/auth/profile', {
+        name: editName.trim(),
+        address: editAddress.trim(),
+        phone: editPhone.trim(),
+      });
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+      setEditModalVisible(false);
+      Alert.alert('Success', 'Profile updated successfully!');
+    } catch (err) {
+      Alert.alert('Update Failed', err.response?.data?.error || 'Could not update profile details.');
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   const handleSendPwOtp = async () => {
@@ -156,6 +194,24 @@ const ProfileScreen = ({ navigation }) => {
             {isAuthenticated ? user?.email : 'Sign in to access your library'}
           </Text>
 
+          {/* Phone & Address Details */}
+          {isAuthenticated && (
+            <View style={styles.detailsBlock}>
+              <View style={styles.detailRow}>
+                <Ionicons name="call-outline" size={13} color={colors.slate} />
+                <Text style={[styles.detailText, { color: colors.slate }]}>
+                  {user?.phone || user?.seller_info?.mobile_number || 'No phone number added'}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Ionicons name="location-outline" size={13} color={colors.slate} />
+                <Text style={[styles.detailText, { color: colors.slate }]} numberOfLines={2}>
+                  {user?.address || user?.seller_info?.business_address || 'No address added'}
+                </Text>
+              </View>
+            </View>
+          )}
+
           <View style={styles.badgeRow}>
             {/* Role Badge */}
             <View style={[
@@ -188,6 +244,18 @@ const ProfileScreen = ({ navigation }) => {
               </View>
             )}
           </View>
+
+          {/* Edit Profile Button */}
+          {isAuthenticated && (
+            <TouchableOpacity
+              style={[styles.editProfileBtn, { borderColor: colors.border, backgroundColor: colors.background }]}
+              onPress={handleOpenEditProfile}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="create-outline" size={15} color={colors.primary} />
+              <Text style={[styles.editProfileBtnText, { color: colors.primary }]}>Edit Profile Details</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Stats */}
@@ -273,6 +341,16 @@ const ProfileScreen = ({ navigation }) => {
               >
                 <Ionicons name="bag-handle-outline" size={20} color={colors.midnight} style={styles.menuIcon} />
                 <Text style={[styles.menuLabel, { color: colors.midnight }]}>My Purchases</Text>
+              </TouchableOpacity>
+
+              {/* Edit Profile Details Option */}
+              <TouchableOpacity
+                style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+                onPress={handleOpenEditProfile}
+              >
+                <Ionicons name="person-outline" size={20} color={colors.midnight} style={styles.menuIcon} />
+                <Text style={[styles.menuLabel, { color: colors.midnight, flex: 1 }]}>Edit Name & Address</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.slate} />
               </TouchableOpacity>
 
               {/* Password Change Option (Only for Password Accounts) */}
@@ -478,6 +556,114 @@ const ProfileScreen = ({ navigation }) => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* EDIT PROFILE MODAL */}
+      <Modal
+        visible={editModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={StyleSheet.absoluteFillObject}
+            activeOpacity={1}
+            onPress={() => setEditModalVisible(false)}
+          />
+          <View style={[styles.modalContent, { backgroundColor: colors.surface, paddingBottom: modalPaddingBottom }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.midnight }]}>Edit Profile Details</Text>
+              <TouchableOpacity
+                onPress={() => setEditModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={22} color={colors.slate} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <View style={styles.modalBody}>
+                {/* Full Name */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Full Name</Text>
+                  <View style={[styles.modalInputWrap, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Ionicons name="person-outline" size={18} color={colors.slate} />
+                    <TextInput
+                      style={[styles.modalTextInput, { color: colors.midnight }]}
+                      placeholder="Enter your full name"
+                      placeholderTextColor={colors.slate}
+                      value={editName}
+                      onChangeText={setEditName}
+                    />
+                  </View>
+                </View>
+
+                {/* Email (Read-only) */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Email Address (Account ID)</Text>
+                  <View style={[styles.modalInputWrap, { backgroundColor: colors.borderLight, borderColor: colors.border }]}>
+                    <Ionicons name="mail-outline" size={18} color={colors.slate} />
+                    <TextInput
+                      style={[styles.modalTextInput, { color: colors.slate }]}
+                      value={user?.email || ''}
+                      editable={false}
+                    />
+                  </View>
+                </View>
+
+                {/* Phone */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Phone Number</Text>
+                  <View style={[styles.modalInputWrap, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Ionicons name="call-outline" size={18} color={colors.slate} />
+                    <TextInput
+                      style={[styles.modalTextInput, { color: colors.midnight }]}
+                      placeholder="e.g. +91 98765 43210"
+                      placeholderTextColor={colors.slate}
+                      keyboardType="phone-pad"
+                      value={editPhone}
+                      onChangeText={setEditPhone}
+                    />
+                  </View>
+                </View>
+
+                {/* Address */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Address (Shipping / Business)</Text>
+                  <View style={[styles.modalInputWrap, { backgroundColor: colors.background, borderColor: colors.border, height: 78, alignItems: 'flex-start', paddingTop: 8 }]}>
+                    <Ionicons name="location-outline" size={18} color={colors.slate} style={{ marginTop: 2 }} />
+                    <TextInput
+                      style={[styles.modalTextInput, { color: colors.midnight, height: '100%', textAlignVertical: 'top' }]}
+                      placeholder="Enter full address (street, city, state, pin)"
+                      placeholderTextColor={colors.slate}
+                      multiline
+                      numberOfLines={3}
+                      value={editAddress}
+                      onChangeText={setEditAddress}
+                    />
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.modalBtn, { backgroundColor: colors.primary }, editLoading && styles.btnDisabled]}
+                  onPress={handleSaveProfile}
+                  disabled={editLoading}
+                  activeOpacity={0.82}
+                >
+                  {editLoading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.modalBtnText}>Save Profile Changes</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
@@ -650,6 +836,38 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     color: '#ffffff',
+  },
+  detailsBlock: {
+    width: '100%',
+    marginTop: 8,
+    marginBottom: 4,
+    paddingHorizontal: 8,
+    gap: 4,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 1,
+  },
+  detailText: {
+    fontSize: 12.5,
+    flexShrink: 1,
+    lineHeight: 18,
+  },
+  editProfileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  editProfileBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
   },
 });
 

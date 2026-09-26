@@ -248,7 +248,7 @@ const CartScreen = ({ navigation }) => {
                 : (
                   <>
                     <Ionicons name="lock-closed" size={16} color="#fff" style={{ marginRight: 8 }} />
-                    <Text style={styles.checkoutTxt}>Secure Checkout</Text>
+                    <Text style={styles.checkoutTxt}>Buy</Text>
                     <Ionicons name="arrow-forward" size={16} color="#fff" style={{ marginLeft: 8 }} />
                   </>
                 )
