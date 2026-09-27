@@ -31,6 +31,7 @@ const SellerEarningsScreen = ({ route, navigation }) => {
   const { colors, isDark } = useTheme();
   const { isAuthenticated, isSeller } = useAuth();
   const scrollViewRef = useRef(null);
+  const tabBarYRef = useRef(0);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
@@ -51,6 +52,18 @@ const SellerEarningsScreen = ({ route, navigation }) => {
   // Active tab: 'overview' | 'withdrawals' | 'settings'
   const initialTab = route.params?.initialTab === 'settings' ? 'settings' : 'overview';
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Switch to Payment Settings tab and smoothly scroll to it
+  const handleOpenSettingsTab = useCallback(() => {
+    setActiveTab('settings');
+    setTimeout(() => {
+      if (tabBarYRef.current > 0) {
+        scrollViewRef.current?.scrollTo({ y: Math.max(0, tabBarYRef.current - 12), animated: true });
+      } else {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }
+    }, 120);
+  }, []);
 
   // Data states
   const [loading, setLoading] = useState(true);
@@ -153,16 +166,16 @@ const SellerEarningsScreen = ({ route, navigation }) => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Re-fetch on focus
+  // Re-fetch on focus and scroll if opened directly to settings
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchDashboardData();
       if (route.params?.initialTab === 'settings') {
-        setActiveTab('settings');
+        handleOpenSettingsTab();
       }
     });
     return unsubscribe;
-  }, [navigation, fetchDashboardData, route.params?.initialTab]);
+  }, [navigation, fetchDashboardData, route.params?.initialTab, handleOpenSettingsTab]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -230,7 +243,7 @@ const SellerEarningsScreen = ({ route, navigation }) => {
         'Please set up either your UPI ID or Bank Account in Payment Settings before requesting a withdrawal.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Configure Now', onPress: () => setActiveTab('settings') },
+          { text: 'Configure Now', onPress: handleOpenSettingsTab },
         ]
       );
       return;
@@ -365,169 +378,211 @@ const SellerEarningsScreen = ({ route, navigation }) => {
         >
           {/* Header Title */}
           <View style={styles.headerTitleArea}>
-            <Text style={[styles.pageTitle, { color: colors.midnight }]}>Withdraw Earnings</Text>
+            <Text style={[styles.pageTitle, { color: colors.midnight }]}>My Earnings (मेरी कमाई)</Text>
             <Text style={[styles.pageSubtitle, { color: colors.slate }]}>
-              Request withdrawal of your available balance
+              Check your earnings and withdraw money to your bank or UPI
             </Text>
           </View>
 
-          {/* Hero Available Balance Card - Exact Match with Website Banner */}
+          {/* Hero Available Balance Card - Simple, Bold & Easy to Understand */}
           <View
             style={[
               styles.heroCard,
               {
-                backgroundColor: isDark ? '#1e1b4b' : '#3730a3',
+                backgroundColor: isDark ? '#1e1b4b' : '#312e81',
                 borderColor: isDark ? '#4338ca' : '#4f46e5',
               },
             ]}
           >
             <View style={styles.heroTopRow}>
-              <View>
-                <Text style={styles.heroLabel}>AVAILABLE BALANCE</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.heroLabel}>MONEY YOU CAN WITHDRAW</Text>
                 <Text
                   style={[
                     styles.heroAmount,
                     availableBal < 0 && { color: '#fca5a5' },
                   ]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
-                  ₹{availableBal.toFixed(2)}
+                  ₹{availableBal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+                <Text style={styles.heroHelperSubtitle}>
+                  उपलब्ध बैलेंस • Ready to transfer to your bank
                 </Text>
               </View>
               <View style={styles.heroIconBadge}>
-                <Ionicons name="wallet-outline" size={26} color="#ffffff" />
+                <Ionicons name="wallet" size={28} color="#ffffff" />
               </View>
             </View>
 
-            {/* 3-Column Sub-Metrics Grid: Total Earnings, Total Withdrawn, Pending Requests */}
-            <View style={styles.bannerSubGrid}>
-              <View style={styles.bannerSubItem}>
-                <Text style={styles.bannerSubLabel}>TOTAL EARNINGS</Text>
-                <Text style={styles.bannerSubVal}>₹{totalEarned.toFixed(2)}</Text>
-              </View>
-              <View style={styles.bannerSubItem}>
-                <Text style={styles.bannerSubLabel}>TOTAL WITHDRAWN</Text>
-                <Text style={styles.bannerSubVal}>₹{totalWithdrawn.toFixed(2)}</Text>
-              </View>
-              <View style={styles.bannerSubItem}>
-                <Text style={styles.bannerSubLabel}>PENDING REQUESTS</Text>
-                <Text style={[styles.bannerSubVal, { color: '#fde047' }]}>
-                  ₹{pendingRequests.toFixed(2)}
+            {/* Pending Withdrawal Notification (if any) */}
+            {pendingRequests > 0 && (
+              <View style={styles.pendingNoticeBanner}>
+                <Ionicons name="time-outline" size={16} color="#fde047" style={{ marginRight: 6 }} />
+                <Text style={styles.pendingNoticeText}>
+                  ₹{pendingRequests.toLocaleString('en-IN')} transfer is processing (takes 2-3 business days)
                 </Text>
               </View>
-            </View>
+            )}
 
-            {/* Payout Destination Info Pill */}
-            <View style={styles.payoutDestinationPill}>
+            {/* Main Action Button */}
+            <TouchableOpacity
+              style={[
+                styles.withdrawMainBtn,
+                {
+                  backgroundColor: availableBal >= MIN_WITHDRAWAL ? '#10b981' : 'rgba(255,255,255,0.18)',
+                  opacity: availableBal >= MIN_WITHDRAWAL ? 1 : 0.7,
+                },
+              ]}
+              onPress={handleOpenWithdrawModal}
+              disabled={availableBal < MIN_WITHDRAWAL}
+              activeOpacity={0.8}
+            >
               <Ionicons
-                name={hasUpi ? 'qr-code-outline' : hasBank ? 'business-outline' : 'warning-outline'}
-                size={14}
-                color={payoutDetails ? '#34d399' : '#fbbf24'}
-                style={{ marginRight: 6 }}
+                name={availableBal >= MIN_WITHDRAWAL ? 'arrow-up-circle' : 'lock-closed-outline'}
+                size={20}
+                color="#ffffff"
+                style={{ marginRight: 8 }}
               />
-              <Text style={styles.payoutDestinationText} numberOfLines={1}>
-                {hasUpi
-                  ? `Payout via UPI: ${payoutDetails.upiId}`
-                  : hasBank
-                  ? `Payout to Bank: ${payoutDetails.bankName || 'Bank'} (${payoutDetails.accountNumber})`
-                  : 'No payment method set up yet'}
+              <Text style={styles.withdrawMainBtnText}>
+                {availableBal >= MIN_WITHDRAWAL
+                  ? 'Withdraw Money to Bank / UPI'
+                  : `Withdraw (Min. ₹${MIN_WITHDRAWAL.toLocaleString('en-IN')} required)`}
               </Text>
-            </View>
+            </TouchableOpacity>
 
-            {/* Action Buttons */}
-            <View style={styles.heroActionRow}>
-              <TouchableOpacity
-                style={[
-                  styles.withdrawBtn,
-                  {
-                    backgroundColor: availableBal >= MIN_WITHDRAWAL ? colors.primary : 'rgba(255,255,255,0.18)',
-                    opacity: availableBal >= MIN_WITHDRAWAL ? 1 : 0.65,
-                  },
-                ]}
-                onPress={handleOpenWithdrawModal}
-                disabled={availableBal < MIN_WITHDRAWAL}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="arrow-up-circle-outline" size={18} color="#ffffff" style={{ marginRight: 6 }} />
-                <Text style={styles.withdrawBtnText}>
-                  {availableBal >= MIN_WITHDRAWAL ? 'Request Withdrawal' : `Min. ₹${MIN_WITHDRAWAL}`}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.bankQuickBtn}
-                onPress={() => setActiveTab('settings')}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={payoutDetails ? 'checkmark-circle' : 'add-circle-outline'}
-                  size={16}
-                  color={payoutDetails ? '#34d399' : '#ffffff'}
-                  style={{ marginRight: 6 }}
-                />
-                <Text style={styles.bankQuickBtnText}>
-                  {payoutDetails ? 'Edit Settings' : 'Setup Payout'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            {/* Helper text if balance is below threshold */}
+            {availableBal < MIN_WITHDRAWAL && (
+              <Text style={styles.minThresholdHint}>
+                ℹ️ You need ₹{MIN_WITHDRAWAL.toLocaleString('en-IN')} to withdraw. You need ₹{Math.max(0, MIN_WITHDRAWAL - availableBal).toFixed(0)} more.
+              </Text>
+            )}
           </View>
 
-          {/* Warning / Helper Note when Balance is below ₹2000 */}
-          {availableBal < MIN_WITHDRAWAL && (
+          {/* Connected Payout Account Card (Where the money will go) */}
+          {payoutDetails ? (
+            <View style={[styles.payoutAccountCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.payoutAccountIconWrap, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5' }]}>
+                <Ionicons
+                  name={hasUpi ? 'qr-code-outline' : 'business-outline'}
+                  size={22}
+                  color="#059669"
+                />
+              </View>
+              <View style={styles.payoutAccountInfo}>
+                <Text style={[styles.payoutAccountLabel, { color: colors.slate }]}>
+                  Your money will be sent to:
+                </Text>
+                <Text style={[styles.payoutAccountValue, { color: colors.midnight }]} numberOfLines={1}>
+                  {hasUpi
+                    ? `UPI ID: ${payoutDetails.upiId}`
+                    : `${payoutDetails.bankName || 'Bank'} A/C: ••••${String(payoutDetails.accountNumber || '').slice(-4)}`}
+                </Text>
+                {hasBank && payoutDetails.accountHolderName ? (
+                  <Text style={[styles.payoutAccountSub, { color: colors.slateMuted }]} numberOfLines={1}>
+                    Name: {payoutDetails.accountHolderName}
+                  </Text>
+                ) : null}
+              </View>
+              <TouchableOpacity
+                style={[
+                  styles.editAccountBtn,
+                  {
+                    borderColor: colors.primary,
+                    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#eef2ff',
+                  },
+                ]}
+                onPress={handleOpenSettingsTab}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="pencil" size={13} color={colors.primary} style={{ marginRight: 4 }} />
+                <Text style={[styles.editAccountBtnText, { color: colors.primary }]}>Change</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
             <View
               style={[
-                styles.minWarningBox,
+                styles.payoutMissingCard,
                 {
                   backgroundColor: isDark ? 'rgba(217, 119, 6, 0.15)' : '#fffbeb',
                   borderColor: isDark ? '#b45309' : '#fde68a',
                 },
               ]}
             >
-              <Ionicons name="alert-circle-outline" size={18} color="#d97706" style={{ marginRight: 8 }} />
-              <Text style={[styles.minWarningText, { color: isDark ? '#fde68a' : '#b45309' }]}>
-                {availableBal < 0
-                  ? `Available balance is ₹${availableBal.toFixed(2)} due to pending & completed payouts. You need at least ₹${MIN_WITHDRAWAL} to request a withdrawal.`
-                  : `You need at least ₹${MIN_WITHDRAWAL} to request a withdrawal. Available: ₹${availableBal.toFixed(2)}`}
-              </Text>
+              <View style={styles.payoutMissingLeft}>
+                <Ionicons name="alert-circle" size={24} color="#d97706" style={{ marginRight: 10 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.payoutMissingTitle, { color: isDark ? '#fde047' : '#92400e' }]}>
+                    No Bank or UPI Added
+                  </Text>
+                  <Text style={[styles.payoutMissingSub, { color: isDark ? '#fef3c7' : '#b45309' }]}>
+                    Add your account details to receive your money.
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={[styles.addAccountBtn, { backgroundColor: '#d97706' }]}
+                onPress={handleOpenSettingsTab}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="add-circle-outline" size={15} color="#ffffff" style={{ marginRight: 4 }} />
+                <Text style={styles.addAccountBtnText}>Add Now</Text>
+              </TouchableOpacity>
             </View>
           )}
 
-          {/* Secondary Metric Cards Grid */}
-          <View style={styles.metricsGrid}>
-            <View style={[styles.metricCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <View style={[styles.metricIconCircle, { backgroundColor: '#ecfdf5' }]}>
-                <Ionicons name="trending-up-outline" size={20} color="#059669" />
+          {/* Simple 3-Card Summary (Total Earned, Sent to Bank, Designs Sold) */}
+          <View style={styles.summaryContainer}>
+            {/* Big Total Earned Card */}
+            <View style={[styles.summaryCardFull, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.summaryCardIconWrap, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5' }]}>
+                <Ionicons name="cash-outline" size={22} color="#059669" />
               </View>
-              <Text style={[styles.metricVal, { color: colors.midnight }]}>₹{totalEarned.toLocaleString('en-IN')}</Text>
-              <Text style={[styles.metricLabel, { color: colors.slate }]}>Net Royalty (70%)</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.summaryCardLabel, { color: colors.slate }]}>TOTAL MONEY EARNED (कुल कमाई)</Text>
+                <Text style={[styles.summaryCardValBig, { color: colors.midnight }]}>
+                  ₹{totalEarned.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+                <Text style={[styles.summaryCardSub, { color: colors.slateMuted }]}>
+                  Your 70% share from all sold designs
+                </Text>
+              </View>
             </View>
 
-            <View style={[styles.metricCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <View style={[styles.metricIconCircle, { backgroundColor: '#eff6ff' }]}>
-                <Ionicons name="cart-outline" size={20} color="#2563eb" />
+            {/* Row of 2 Supporting Cards */}
+            <View style={styles.summaryCardsRow}>
+              <View style={[styles.summaryCardHalf, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={[styles.summaryCardIconWrapSmall, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff' }]}>
+                  <Ionicons name="checkmark-done-circle-outline" size={18} color="#2563eb" />
+                </View>
+                <Text style={[styles.summaryCardValMedium, { color: colors.midnight }]}>
+                  ₹{totalWithdrawn.toLocaleString('en-IN')}
+                </Text>
+                <Text style={[styles.summaryCardLabelSmall, { color: colors.slate }]}>SENT TO BANK</Text>
+                <Text style={[styles.summaryCardSubSmall, { color: colors.slateMuted }]}>Already paid out</Text>
               </View>
-              <Text style={[styles.metricVal, { color: colors.midnight }]}>₹{totalSalesVal.toLocaleString('en-IN')}</Text>
-              <Text style={[styles.metricLabel, { color: colors.slate }]}>Gross Sales</Text>
-            </View>
 
-            <View style={[styles.metricCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <View style={[styles.metricIconCircle, { backgroundColor: '#fef3c7' }]}>
-                <Ionicons name="bag-check-outline" size={20} color="#d97706" />
+              <View style={[styles.summaryCardHalf, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={[styles.summaryCardIconWrapSmall, { backgroundColor: isDark ? 'rgba(147, 51, 234, 0.15)' : '#f5f3ff' }]}>
+                  <Ionicons name="shirt-outline" size={18} color="#7c3aed" />
+                </View>
+                <Text style={[styles.summaryCardValMedium, { color: colors.midnight }]}>
+                  {ordersCount}
+                </Text>
+                <Text style={[styles.summaryCardLabelSmall, { color: colors.slate }]}>DESIGNS SOLD</Text>
+                <Text style={[styles.summaryCardSubSmall, { color: colors.slateMuted }]}>Total copies purchased</Text>
               </View>
-              <Text style={[styles.metricVal, { color: colors.midnight }]}>{ordersCount}</Text>
-              <Text style={[styles.metricLabel, { color: colors.slate }]}>Orders Fulfilled</Text>
-            </View>
-
-            <View style={[styles.metricCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <View style={[styles.metricIconCircle, { backgroundColor: '#f3e8ff' }]}>
-                <Ionicons name="pie-chart-outline" size={20} color="#9333ea" />
-              </View>
-              <Text style={[styles.metricVal, { color: colors.midnight }]}>{earnings.platform_fee_percent || 30}%</Text>
-              <Text style={[styles.metricLabel, { color: colors.slate }]}>Platform Fee</Text>
             </View>
           </View>
 
           {/* Segmented Navigation Tabs */}
-          <View style={styles.tabBar}>
+          <View
+            style={styles.tabBar}
+            onLayout={(e) => {
+              tabBarYRef.current = e.nativeEvent.layout.y;
+            }}
+          >
             <TouchableOpacity
               style={[
                 styles.tabBtn,
@@ -1057,7 +1112,7 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     marginHorizontal: 16,
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 20,
     borderWidth: 1,
     ...SHADOWS.medium,
@@ -1066,62 +1121,228 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
   },
   heroLabel: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
-    fontWeight: '600',
+    fontSize: 11.5,
+    color: 'rgba(255,255,255,0.85)',
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
   heroAmount: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 34,
+    fontWeight: '900',
     color: '#ffffff',
     marginTop: 4,
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
-  bannerSubGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(0, 0, 0, 0.18)',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 12,
-    marginBottom: 14,
-    gap: 6,
+  heroHelperSubtitle: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.78)',
+    fontWeight: '500',
+    marginTop: 3,
   },
-  bannerSubItem: {
-    flex: 1,
+  heroIconBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  bannerSubLabel: {
-    fontSize: 9.5,
-    fontWeight: '700',
-    color: 'rgba(255, 255, 255, 0.82)',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    marginBottom: 3,
-  },
-  bannerSubVal: {
-    fontSize: 13.5,
-    fontWeight: '800',
-    color: '#ffffff',
-  },
-  minWarningBox: {
+  pendingNoticeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(253, 224, 71, 0.18)',
+    borderColor: 'rgba(253, 224, 71, 0.35)',
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 14,
+  },
+  pendingNoticeText: {
+    color: '#fef08a',
+    fontSize: 12,
+    fontWeight: '700',
+    flex: 1,
+    lineHeight: 16,
+  },
+  withdrawMainBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginTop: 16,
+    ...SHADOWS.small,
+  },
+  withdrawMainBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  minThresholdHint: {
+    fontSize: 11.5,
+    color: 'rgba(255,255,255,0.72)',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 16,
+  },
+  payoutAccountCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginHorizontal: 16,
     marginTop: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    ...SHADOWS.small,
   },
-  minWarningText: {
+  payoutAccountIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  payoutAccountInfo: {
     flex: 1,
-    fontSize: 12.5,
-    lineHeight: 17,
+    marginHorizontal: 12,
+  },
+  payoutAccountLabel: {
+    fontSize: 11,
     fontWeight: '600',
+  },
+  payoutAccountValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  payoutAccountSub: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  editAccountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  editAccountBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  payoutMissingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+  },
+  payoutMissingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  payoutMissingTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  payoutMissingSub: {
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  addAccountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  addAccountBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  summaryContainer: {
+    paddingHorizontal: 16,
+    marginTop: 14,
+  },
+  summaryCardFull: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 10,
+    ...SHADOWS.small,
+  },
+  summaryCardIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  summaryCardLabel: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  summaryCardValBig: {
+    fontSize: 24,
+    fontWeight: '900',
+    marginTop: 2,
+    letterSpacing: -0.5,
+  },
+  summaryCardSub: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  summaryCardsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  summaryCardHalf: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    ...SHADOWS.small,
+  },
+  summaryCardIconWrapSmall: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  summaryCardValMedium: {
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+  },
+  summaryCardLabelSmall: {
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 3,
+    letterSpacing: 0.2,
+  },
+  summaryCardSubSmall: {
+    fontSize: 10.5,
+    marginTop: 2,
   },
   modalWarningNotice: {
     flexDirection: 'row',
@@ -1136,92 +1357,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     lineHeight: 16,
-  },
-  heroIconBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  payoutDestinationPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-    marginBottom: 16,
-  },
-  payoutDestinationText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
-    flex: 1,
-  },
-  heroActionRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  withdrawBtn: {
-    flex: 1.3,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  withdrawBtnText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  bankQuickBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  bankQuickBtnText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 12,
-    marginTop: 14,
-    gap: 8,
-  },
-  metricCard: {
-    width: '48.5%',
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 14,
-    ...SHADOWS.small,
-  },
-  metricIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  metricVal: {
-    fontSize: 17,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  metricLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 3,
   },
   tabBar: {
     flexDirection: 'row',
