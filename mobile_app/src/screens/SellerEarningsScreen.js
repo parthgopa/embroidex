@@ -378,7 +378,7 @@ const SellerEarningsScreen = ({ route, navigation }) => {
         >
           {/* Header Title */}
           <View style={styles.headerTitleArea}>
-            <Text style={[styles.pageTitle, { color: colors.midnight }]}>My Earnings (मेरी कमाई)</Text>
+            <Text style={[styles.pageTitle, { color: colors.midnight }]}>My Earnings</Text>
             <Text style={[styles.pageSubtitle, { color: colors.slate }]}>
               Check your earnings and withdraw money to your bank or UPI
             </Text>
@@ -408,7 +408,7 @@ const SellerEarningsScreen = ({ route, navigation }) => {
                   ₹{availableBal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Text>
                 <Text style={styles.heroHelperSubtitle}>
-                  उपलब्ध बैलेंस • Ready to transfer to your bank
+                  Available Balance • Ready to transfer to your bank
                 </Text>
               </View>
               <View style={styles.heroIconBadge}>
@@ -540,7 +540,7 @@ const SellerEarningsScreen = ({ route, navigation }) => {
                 <Ionicons name="cash-outline" size={22} color="#059669" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.summaryCardLabel, { color: colors.slate }]}>TOTAL MONEY EARNED (कुल कमाई)</Text>
+                <Text style={[styles.summaryCardLabel, { color: colors.slate }]}>TOTAL MONEY EARNED</Text>
                 <Text style={[styles.summaryCardValBig, { color: colors.midnight }]}>
                   ₹{totalEarned.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Text>
