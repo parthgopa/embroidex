@@ -20,7 +20,7 @@ import { SHADOWS } from '../theme/theme';
 const CustomDrawerContent = (props) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { user, isAuthenticated, isSeller, logout, stats } = useAuth();
+  const { user, isAuthenticated, isSeller, logout } = useAuth();
   const { cartCount } = useCart();
   const { themeMode, setThemeMode, colors, isDark } = useTheme();
   const [sellerMenuExpanded, setSellerMenuExpanded] = useState(true);
@@ -152,23 +152,7 @@ const CustomDrawerContent = (props) => {
               Earn 70% commission selling your designs
             </Text>
           </TouchableOpacity>
-        ) : (
-          <View style={[styles.sellerQuickStats, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <View style={styles.quickStatItem}>
-              <Text style={[styles.quickStatVal, { color: colors.midnight }]}>
-                {stats?.totalDesigns || 0}
-              </Text>
-              <Text style={[styles.quickStatLabel, { color: colors.slate }]}>Designs</Text>
-            </View>
-            <View style={[styles.quickStatDivider, { backgroundColor: colors.border }]} />
-            <View style={styles.quickStatItem}>
-              <Text style={[styles.quickStatVal, { color: colors.midnight }]}>
-                ₹{stats?.totalEarnings || 0}
-              </Text>
-              <Text style={[styles.quickStatLabel, { color: colors.slate }]}>Earnings</Text>
-            </View>
-          </View>
-        )}
+        ) : null}
 
         <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
 
@@ -497,30 +481,6 @@ const styles = StyleSheet.create({
     color: '#c7d2fe',
     fontSize: 11,
     marginTop: 2,
-  },
-  sellerQuickStats: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    padding: 10,
-    marginBottom: 14,
-    borderWidth: 1,
-  },
-  quickStatItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  quickStatVal: {
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  quickStatLabel: {
-    fontSize: 11,
-    marginTop: 1,
-  },
-  quickStatDivider: {
-    width: 1,
-    height: '80%',
-    alignSelf: 'center',
   },
   divider: {
     height: 1,
