@@ -379,9 +379,9 @@ const SellerEarningsScreen = ({ route, navigation }) => {
           {/* Header Title */}
           <View style={styles.headerTitleArea}>
             <Text style={[styles.pageTitle, { color: colors.midnight }]}>My Earnings</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.slate }]}>
+            {/* <Text style={[styles.pageSubtitle, { color: colors.slate }]}>
               Check your earnings and withdraw money to your bank or UPI
-            </Text>
+            </Text> */}
           </View>
 
           {/* Hero Available Balance Card - Simple, Bold & Easy to Understand */}
@@ -407,9 +407,9 @@ const SellerEarningsScreen = ({ route, navigation }) => {
                 >
                   ₹{availableBal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Text>
-                <Text style={styles.heroHelperSubtitle}>
+                {/* <Text style={styles.heroHelperSubtitle}>
                   Available Balance • Ready to transfer to your bank
-                </Text>
+                </Text> */}
               </View>
               <View style={styles.heroIconBadge}>
                 <Ionicons name="wallet" size={28} color="#ffffff" />
@@ -544,9 +544,6 @@ const SellerEarningsScreen = ({ route, navigation }) => {
                 <Text style={[styles.summaryCardValBig, { color: colors.midnight }]}>
                   ₹{totalEarned.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Text>
-                <Text style={[styles.summaryCardSub, { color: colors.slateMuted }]}>
-                  Your 70% share from all sold designs
-                </Text>
               </View>
             </View>
 
@@ -560,7 +557,6 @@ const SellerEarningsScreen = ({ route, navigation }) => {
                   ₹{totalWithdrawn.toLocaleString('en-IN')}
                 </Text>
                 <Text style={[styles.summaryCardLabelSmall, { color: colors.slate }]}>SENT TO BANK</Text>
-                <Text style={[styles.summaryCardSubSmall, { color: colors.slateMuted }]}>Already paid out</Text>
               </View>
 
               <View style={[styles.summaryCardHalf, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -571,7 +567,6 @@ const SellerEarningsScreen = ({ route, navigation }) => {
                   {ordersCount}
                 </Text>
                 <Text style={[styles.summaryCardLabelSmall, { color: colors.slate }]}>DESIGNS SOLD</Text>
-                <Text style={[styles.summaryCardSubSmall, { color: colors.slateMuted }]}>Total copies purchased</Text>
               </View>
             </View>
           </View>
@@ -653,10 +648,10 @@ const SellerEarningsScreen = ({ route, navigation }) => {
                 sales.map((item, index) => {
                   const dateStr = item.purchased_at
                     ? new Date(item.purchased_at).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })
                     : 'Recent';
 
                   return (
@@ -710,10 +705,10 @@ const SellerEarningsScreen = ({ route, navigation }) => {
 
                   const dateStr = w.requestedAt || w.requested_at
                     ? new Date(w.requestedAt || w.requested_at).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })
                     : 'Recent';
 
                   const pDetails = w.payoutDetails || w.bank_account;

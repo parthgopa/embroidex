@@ -118,57 +118,49 @@ To test the `.aab` locally before uploading to Google Play:
 
 ## 7. Production Keystore & Google Play App Signing
 
-### Current Development Setup
-The project is configured to sign release builds using the debug key for easy local testing and verification:
-```groovy
-signingConfigs {
-    debug {
-        storeFile file('debug.keystore')
-        storePassword 'android'
-        keyAlias 'androiddebugkey'
-        keyPassword 'android'
-    }
-}
+The project is now fully configured with an automated release signing pipeline:
+
+### A. Automatic Setup with `generate_keystore.sh`
+Run the automated script from `mobile_app/`:
+```bash
+./generate_keystore.sh
+```
+This script:
+1. Generates a 2048-bit RSA PKCS12 upload keystore at `android/app/embroidex-upload-key.keystore` (valid for 10,000 days).
+2. Generates `android/key.properties` with your credentials.
+3. Both files are automatically **git-ignored** for security.
+
+### B. Manual Configuration via `key.properties`
+If you already have a keystore or want to configure it manually:
+1. Copy the template:
+   ```bash
+   cp android/key.properties.example android/key.properties
+   ```
+2. Put your keystore in `android/app/` (e.g. `embroidex-upload-key.keystore`).
+3. Fill in `android/key.properties`:
+   ```properties
+   storeFile=embroidex-upload-key.keystore
+   storePassword=your_keystore_password
+   keyAlias=embroidex-key-alias
+   keyPassword=your_key_password
+   ```
+
+### C. Build & Auto-Sign for Google Play Console
+Whenever you run:
+```bash
+./build_abb.sh
+```
+Gradle will automatically sign `Embroidex.aab` with your release key.
+The build script verifies the signature using `jarsigner` and reports:
+`Signing Certificate: RELEASE KEY (CN=Embroidex, ...)`
+
+### D. Manual / Standalone Bundle Signing (Optional)
+To sign any existing `.aab` or `.apk` manually:
+```bash
+./sign_bundle.sh Embroidex.aab
 ```
 
-### Steps for Official Google Play Production Signing
-When publishing officially to the Google Play Store:
-
-1. **Generate a Dedicated Upload Keystore**:
-   ```bash
-   keytool -genkeypair -v -keystore my-upload-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
-   ```
-   > ⚠️ **CRITICAL**: Store the keystore file and passwords in a safe password manager. Never commit production keystore files or passwords to Git.
-
-2. **Configure Gradle Properties Privately**:
-   In your home directory file `~/.gradle/gradle.properties` (outside any Git repository):
-   ```properties
-   MYAPP_UPLOAD_STORE_FILE=/path/to/my-upload-key.keystore
-   MYAPP_UPLOAD_KEY_ALIAS=my-key-alias
-   MYAPP_UPLOAD_STORE_PASSWORD=your_store_password
-   MYAPP_UPLOAD_KEY_PASSWORD=your_key_password
-   ```
-
-3. **Configure `android/app/build.gradle`**:
-   ```groovy
-   signingConfigs {
-       release {
-           if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
-               storeFile file(MYAPP_UPLOAD_STORE_FILE)
-               storePassword MYAPP_UPLOAD_STORE_PASSWORD
-               keyAlias MYAPP_UPLOAD_KEY_ALIAS
-               keyPassword MYAPP_UPLOAD_KEY_PASSWORD
-           }
-       }
-   }
-   buildTypes {
-       release {
-           signingConfig signingConfigs.release
-           minifyEnabled enableProguardInReleaseBuilds
-           proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-       }
-   }
-   ```
+> ⚠️ **CRITICAL SECURITY RULE**: Store a copy of `embroidex-upload-key.keystore` and your passwords in a safe password manager or secure backup (e.g. 1Password, Google Drive). If you lose this key, you will not be able to update your app on Google Play without contacting Google Support to reset your upload key!
 
 ---
 

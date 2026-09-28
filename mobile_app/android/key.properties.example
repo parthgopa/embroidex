@@ -1,0 +1,24 @@
+# ====================================================================
+# Embroidex - Android Release Signing Configuration (key.properties)
+# ====================================================================
+# Instructions:
+# 1. Copy this file and rename it to 'key.properties' in this folder (android/)
+# 2. Update the values below with your actual keystore details.
+#
+# IMPORTANT:
+# - 'key.properties' and '*.keystore' are GIT-IGNORED.
+# - NEVER commit your real passwords or keystore file to GitHub!
+# - Keep a secure backup of your keystore file & passwords.
+# ====================================================================
+
+# Keystore file name (placed in 'android/app/' or 'android/')
+storeFile=embroidex-upload-key.keystore
+
+# Keystore password (entered when creating the keystore)
+storePassword=your_keystore_password_here
+
+# Key alias (the alias name specified when creating the keystore)
+keyAlias=embroidex-key-alias
+
+# Key password (usually identical to storePassword)
+keyPassword=your_key_password_here

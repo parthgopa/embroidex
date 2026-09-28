@@ -35,6 +35,12 @@ VERSION_NAME=$(grep -E 'versionName\s+"[^"]+"' android/app/build.gradle | head -
 echo -e "${CYAN}Target App Name  : ${APP_NAME}${NC}"
 echo -e "${CYAN}App Version      : v${VERSION_NAME} (code: ${VERSION_CODE})${NC}"
 echo -e "${CYAN}Outputs Target   : ${APP_NAME}.aab & ${APP_NAME}.abb${NC}"
+
+if [ -f "android/key.properties" ]; then
+    echo -e "${GREEN}Signing Config   : Release Key (android/key.properties detected)${NC}"
+else
+    echo -e "${YELLOW}Signing Config   : Debug Key (Run ./generate_keystore.sh to configure Release Key)${NC}"
+fi
 echo ""
 
 # Remove previous outputs if exist
@@ -68,6 +74,16 @@ cp "android/$RELEASE_AAB_PATH" "$OUTPUT_ABB"
 echo -e "${YELLOW}➔ Step 3/3: Verifying generated App Bundle...${NC}"
 FILE_SIZE=$(du -h "$OUTPUT_AAB" | cut -f1)
 
+# Check signing certificate info
+SIGNER_DN=$(jarsigner -verify -verbose -certs "$OUTPUT_AAB" 2>/dev/null | grep -E "CN=" | head -n 1 | sed 's/^[ \t]*//' || true)
+if echo "$SIGNER_DN" | grep -qi "Android Debug"; then
+    SIGN_BADGE="${YELLOW}Debug Key (Not for Play Store)${NC}"
+elif [ -n "$SIGNER_DN" ]; then
+    SIGN_BADGE="${GREEN}RELEASE KEY (${SIGNER_DN})${NC}"
+else
+    SIGN_BADGE="${CYAN}Signed${NC}"
+fi
+
 echo ""
 echo -e "${GREEN}====================================================${NC}"
 echo -e "${GREEN}  ✓ BUILD SUCCESSFUL!                               ${NC}"
@@ -75,6 +91,7 @@ echo -e "${GREEN}  Primary AAB (Play Store) : $OUTPUT_AAB            ${NC}"
 echo -e "${GREEN}  Copy ABB                 : $OUTPUT_ABB            ${NC}"
 echo -e "${GREEN}  File Size                : $FILE_SIZE             ${NC}"
 echo -e "${GREEN}  Version                  : v${VERSION_NAME} (code: ${VERSION_CODE}) ${NC}"
+echo -e "${GREEN}  Signing Certificate      : $SIGN_BADGE            ${NC}"
 echo -e "${GREEN}====================================================${NC}"
 echo ""
 echo -e "You can upload ${CYAN}${APP_NAME}.aab${NC} to Google Play Console."

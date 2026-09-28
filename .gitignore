@@ -39,3 +39,10 @@ google-services.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Android Keystores & Signing
+*.keystore
+!debug.keystore
+*.jks
+key.properties
+**/key.properties
