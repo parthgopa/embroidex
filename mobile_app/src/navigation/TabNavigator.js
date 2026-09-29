@@ -52,6 +52,8 @@ const TabNavigator = () => {
         tabBarShowLabel: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.slate,
+        tabBarAllowFontScaling: false,
+        tabBarItemStyle: styles.tabBarItem,
         tabBarStyle: [
           styles.tabBar,
           {
@@ -103,7 +105,21 @@ const TabNavigator = () => {
         name="Purchases"
         component={MyPurchasesScreen}
         options={{
-          tabBarLabel: 'My Purchase',
+          tabBarLabel: ({ color }) => (
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+              allowFontScaling={false}
+              style={[
+                styles.tabBarLabel,
+                styles.purchasesLabel,
+                { color },
+              ]}
+            >
+              My Purchase
+            </Text>
+          ),
           tabBarIcon: ({ focused }) => (
             <TabBarIcon focused={focused} iconName="bag-check" colors={colors} />
           ),
@@ -129,11 +145,19 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     ...SHADOWS.subtle,
   },
+  tabBarItem: {
+    paddingHorizontal: 0,
+  },
   tabBarLabel: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     marginTop: 1,
     marginBottom: 2,
+    textAlign: 'center',
+  },
+  purchasesLabel: {
+    fontSize: 10,
+    letterSpacing: -0.3,
   },
   iconWrapper: {
     alignItems: 'center',
