@@ -103,7 +103,7 @@ const TabNavigator = () => {
         name="Purchases"
         component={MyPurchasesScreen}
         options={{
-          tabBarLabel: 'Purchases',
+          tabBarLabel: 'My Purchase',
           tabBarIcon: ({ focused }) => (
             <TabBarIcon focused={focused} iconName="bag-check" colors={colors} />
           ),
